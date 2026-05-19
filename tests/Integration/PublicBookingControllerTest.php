@@ -186,4 +186,62 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         $response = rest_do_request($req);
         self::assertSame(403, $response->get_status());
     }
+
+    public function test_end_to_end_booking_flow(): void
+    {
+        // 1. services
+        $r = new WP_REST_Request('GET', '/trinity-booking/v1/services');
+        $services = rest_do_request($r)->get_data();
+        self::assertNotEmpty($services);
+
+        // 2. availability
+        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r->set_query_params([
+            'service' => 'pv',
+            'from'    => '2026-06-15',
+            'to'      => '2026-06-16',
+        ]);
+        $av = rest_do_request($r);
+        self::assertSame(200, $av->get_status());
+        $slots = $av->get_data()['slots'];
+        self::assertNotEmpty($slots);
+
+        // 3. booking
+        $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r->set_header('content-type', 'application/json');
+        $r->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+            'service' => 'pv',
+            'start'   => $slots[0]['start'],
+            'customer_name' => 'Jean E2E',
+            'customer_email' => 'e2e@test.fr',
+            'customer_phone' => '0600000000',
+            'customer_address' => '1 rue Z, 75001 Paris',
+            'consent' => true,
+        ]));
+        $resp = rest_do_request($r);
+        self::assertSame(201, $resp->get_status());
+        $uid = $resp->get_data()['public_uid'];
+
+        // 4. plus dispo
+        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r->set_query_params(['service' => 'pv', 'from' => '2026-06-15', 'to' => '2026-06-16']);
+        $av2 = rest_do_request($r);
+        $newSlots = $av2->get_data()['slots'];
+        $newStarts = array_column($newSlots, 'start');
+        self::assertNotContains($slots[0]['start'], $newStarts, 'Slot still available after booking');
+
+        // 5. cancel via HMAC
+        $exp = time() + 3600;
+        $sig = $this->signCancel($uid, $exp);
+        $cancelReq = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $cancelReq->set_query_params(['uid' => $uid, 'exp' => $exp, 'sig' => $sig]);
+        self::assertSame(200, rest_do_request($cancelReq)->get_status());
+
+        // 6. slot redevient dispo
+        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r->set_query_params(['service' => 'pv', 'from' => '2026-06-15', 'to' => '2026-06-16']);
+        $av3 = rest_do_request($r);
+        $finalStarts = array_column($av3->get_data()['slots'], 'start');
+        self::assertContains($slots[0]['start'], $finalStarts);
+    }
 }
