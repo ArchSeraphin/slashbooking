@@ -80,6 +80,8 @@ final class Plugin
 
     private function register(): void
     {
-        // Hooks are registered later (Task 7+)
+        $router = new Http\RestRouter();
+        $router->register();
+        $this->set(Http\RestRouter::class, $router);
     }
 }
