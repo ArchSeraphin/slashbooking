@@ -64,7 +64,7 @@ final class Activator
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $exists = $wpdb->get_var(
                 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-                $wpdb->prepare('SELECT id FROM ' . $table . ' WHERE slug = %s', $row['slug']) // @phpstan-ignore argument.type
+                $wpdb->prepare('SELECT id FROM ' . $table . ' WHERE slug = %s', $row['slug'])
             );
             if ($exists) {
                 continue;

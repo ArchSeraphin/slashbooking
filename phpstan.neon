@@ -7,5 +7,13 @@ parameters:
     - src
   bootstrapFiles:
     - tests/bootstrap.php
+  reportUnmatchedIgnoredErrors: false
   ignoreErrors:
-    # WordPress stubs sometimes lack precise types; we tighten via PHPDoc
+    # $wpdb->prepare wants literal-string; we always concatenate $wpdb->prefix
+    # because table names cannot be parameterized. The prefix is trusted.
+    -
+      identifier: argument.type
+      paths:
+        - src/Persistence/*
+        - src/Activator.php
+    # WordPress stubs sometimes lack precise types; we tighten via PHPDoc.
