@@ -5,6 +5,7 @@ namespace Trinity\Booking\Http;
 
 use Trinity\Booking\Availability\AvailabilityCalculator;
 use Trinity\Booking\Availability\SlotGenerator;
+use Trinity\Booking\Booking\CreateBooking;
 use Trinity\Booking\Domain\TimeSlot;
 use Trinity\Booking\Persistence\BookingRepository;
 use Trinity\Booking\Persistence\BusyBlockRepository;
@@ -24,6 +25,7 @@ final class PublicBookingController
         private readonly BookingRepository $bookings,
         private readonly BusyBlockRepository $busyBlocks,
         private readonly SlotGenerator $slotGenerator,
+        private readonly CreateBooking $createBooking,
     ) {
     }
 
@@ -51,6 +53,16 @@ final class PublicBookingController
                     'from'    => ['type' => 'string', 'required' => true],
                     'to'      => ['type' => 'string', 'required' => true],
                 ],
+            ]
+        );
+
+        register_rest_route(
+            Plugin::REST_NAMESPACE,
+            '/bookings',
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [$this, 'createBooking'],
+                'permission_callback' => '__return_true',
             ]
         );
     }
@@ -120,5 +132,55 @@ final class PublicBookingController
 
         $data = array_map(static fn ($s) => $s->toArray(), $free);
         return new WP_REST_Response(['slots' => $data], 200);
+    }
+
+    public function createBooking(WP_REST_Request $request): WP_REST_Response|WP_Error
+    {
+        $params = $request->get_json_params() ?: [];
+
+        // Honeypot
+        if (!empty($params['website'])) {
+            return new WP_REST_Response(['public_uid' => 'honeypot'], 201);
+        }
+
+        $svc = $this->services->findBySlug((string) ($params['service'] ?? ''));
+        if ($svc === null) {
+            return new WP_Error('tb_service_not_found', 'Service introuvable', ['status' => 404]);
+        }
+
+        try {
+            $start = new DateTimeImmutable((string) ($params['start'] ?? ''), new DateTimeZone('UTC'));
+            $start = $start->setTimezone(new DateTimeZone('UTC'));
+        } catch (\Exception $e) {
+            return new WP_Error('tb_invalid_date', 'start invalide', ['status' => 400]);
+        }
+        $end = $start->modify('+' . $svc->durationMin . ' minutes');
+        $slot = new TimeSlot($start, $end);
+
+        $cmd = [
+            'service'          => $svc,
+            'slot'             => $slot,
+            'timezone'         => wp_timezone_string(),
+            'customer_name'    => sanitize_text_field((string) ($params['customer_name'] ?? '')),
+            'customer_email'   => sanitize_email((string) ($params['customer_email'] ?? '')),
+            'customer_phone'   => sanitize_text_field((string) ($params['customer_phone'] ?? '')),
+            'customer_address' => sanitize_textarea_field((string) ($params['customer_address'] ?? '')),
+            'customer_meta'    => is_array($params['customer_meta'] ?? null) ? $params['customer_meta'] : [],
+            'notes'            => sanitize_textarea_field((string) ($params['notes'] ?? '')),
+            'consent'          => (bool) ($params['consent'] ?? false),
+        ];
+
+        try {
+            $booking = $this->createBooking->execute($cmd);
+        } catch (\Trinity\Booking\Booking\Exceptions\InvalidBookingInput $e) {
+            return new WP_Error('tb_invalid_input', 'Champs invalides', ['status' => 422, 'errors' => $e->errors]);
+        } catch (\Trinity\Booking\Booking\Exceptions\SlotUnavailable $e) {
+            return new WP_Error('tb_slot_unavailable', 'Créneau indisponible', ['status' => 409]);
+        }
+
+        return new WP_REST_Response([
+            'public_uid' => $booking->publicUid(),
+            'status'     => $booking->status()->value,
+        ], 201);
     }
 }

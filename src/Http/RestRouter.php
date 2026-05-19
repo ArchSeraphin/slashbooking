@@ -26,6 +26,24 @@ final class RestRouter
             siteTimezone: wp_timezone_string(),
         );
 
-        (new PublicBookingController($services, $bookings, $busy, $generator))->registerRoutes();
+        $createBooking = new \Trinity\Booking\Booking\CreateBooking(
+            slotIsFree: function (\Trinity\Booking\Domain\Service $svc, \Trinity\Booking\Domain\TimeSlot $slot) use ($bookings, $busy): bool {
+                $blocking = $bookings->findOverlapping($svc->id ?? 0, $slot);
+                if ($blocking !== []) {
+                    return false;
+                }
+                foreach ($busy->findInRange($slot->start, $slot->end) as $bb) {
+                    if ($slot->overlaps($bb->slot)) {
+                        return false;
+                    }
+                }
+                return true;
+            },
+            persist: function (\Trinity\Booking\Domain\Booking $b) use ($bookings): void {
+                $bookings->save($b);
+            },
+        );
+
+        (new PublicBookingController($services, $bookings, $busy, $generator, $createBooking))->registerRoutes();
     }
 }
