@@ -1,0 +1,16 @@
+# Files to exclude from git archive (release ZIP)
+/.github          export-ignore
+/tests            export-ignore
+/docs             export-ignore
+/.superpowers     export-ignore
+/phpstan.neon     export-ignore
+/phpcs.xml.dist   export-ignore
+/phpunit.xml      export-ignore
+/.gitattributes   export-ignore
+/.gitignore       export-ignore
+
+# Line endings
+*.php             text eol=lf
+*.md              text eol=lf
+*.json            text eol=lf
+*.yml             text eol=lf

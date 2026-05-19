@@ -1,0 +1,24 @@
+# WordPress
+/vendor/
+/node_modules/
+/assets/dist/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Brainstorming companion
+/.superpowers/
+
+# Tests
+.phpunit.result.cache
+coverage/
+
+# Build artefacts
+*.zip
