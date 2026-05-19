@@ -83,5 +83,10 @@ final class Plugin
         $router = new Http\RestRouter();
         $router->register();
         $this->set(Http\RestRouter::class, $router);
+
+        global $wpdb;
+        $services = new Persistence\ServiceRepository($wpdb);
+        $shortcode = new PublicFront\Shortcode($services);
+        $shortcode->register();
     }
 }
