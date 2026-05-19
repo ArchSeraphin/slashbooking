@@ -23,4 +23,7 @@ if (!is_file($autoload)) {
 }
 require_once $autoload;
 
+register_activation_hook(__FILE__, [\Trinity\Booking\Activator::class, 'activate']);
+register_deactivation_hook(__FILE__, [\Trinity\Booking\Deactivator::class, 'deactivate']);
+
 \Trinity\Booking\Plugin::boot(__FILE__);
