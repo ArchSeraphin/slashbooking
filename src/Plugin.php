@@ -88,5 +88,16 @@ final class Plugin
         $services = new Persistence\ServiceRepository($wpdb);
         $shortcode = new PublicFront\Shortcode($services);
         $shortcode->register();
+
+        add_action('init', [$this, 'loadTextDomain']);
+    }
+
+    public function loadTextDomain(): void
+    {
+        load_plugin_textdomain(
+            self::TEXT_DOMAIN,
+            false,
+            dirname(plugin_basename($this->pluginFile)) . '/languages'
+        );
     }
 }
