@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Trinity\Booking\Tests\Integration;
+
+use WP_UnitTestCase;
+use Trinity\Booking\Activator;
+use Trinity\Booking\Domain\Booking;
+use Trinity\Booking\Domain\TimeSlot;
+use Trinity\Booking\Persistence\BookingRepository;
+use Trinity\Booking\Persistence\ServiceRepository;
+use DateTimeImmutable;
+use DateTimeZone;
+
+final class BookingRepositoryTest extends WP_UnitTestCase
+{
+    private BookingRepository $bookings;
+    private int $serviceId;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Activator::activate();
+        global $wpdb;
+        $this->bookings = new BookingRepository($wpdb);
+        $services = new ServiceRepository($wpdb);
+        $this->serviceId = $services->findBySlug('pv')->id;
+    }
+
+    private function utc(string $s): DateTimeImmutable
+    {
+        return new DateTimeImmutable($s, new DateTimeZone('UTC'));
+    }
+
+    private function pending(string $start, string $end, string $email = 'a@b.fr'): Booking
+    {
+        $slot = new TimeSlot($this->utc($start), $this->utc($end));
+        return Booking::createPending(
+            serviceId: $this->serviceId,
+            slot: $slot,
+            timezone: 'Europe/Paris',
+            customerName: 'Test',
+            customerEmail: $email,
+            customerPhone: '0600000000',
+            customerAddress: 'x',
+            customerMeta: [],
+            notes: '',
+        );
+    }
+
+    public function test_save_assigns_id_and_reload(): void
+    {
+        $b = $this->pending('2026-06-01T08:00:00Z', '2026-06-01T09:30:00Z');
+        $this->bookings->save($b);
+        self::assertNotNull($b->id());
+
+        $reloaded = $this->bookings->findById($b->id());
+        self::assertNotNull($reloaded);
+        self::assertSame('a@b.fr', $reloaded->customerEmail());
+    }
+
+    public function test_find_by_public_uid(): void
+    {
+        $b = $this->pending('2026-06-02T08:00:00Z', '2026-06-02T09:30:00Z');
+        $this->bookings->save($b);
+        $found = $this->bookings->findByPublicUid($b->publicUid());
+        self::assertNotNull($found);
+        self::assertSame($b->id(), $found->id());
+    }
+
+    public function test_find_overlapping_only_blocking_statuses(): void
+    {
+        $a = $this->pending('2026-06-03T08:00:00Z', '2026-06-03T09:30:00Z');
+        $this->bookings->save($a);
+
+        $overlapping = $this->bookings->findOverlapping(
+            $this->serviceId,
+            new TimeSlot($this->utc('2026-06-03T09:00:00Z'), $this->utc('2026-06-03T10:00:00Z'))
+        );
+        self::assertCount(1, $overlapping);
+
+        $a->cancel();
+        $this->bookings->save($a);
+
+        $overlapping = $this->bookings->findOverlapping(
+            $this->serviceId,
+            new TimeSlot($this->utc('2026-06-03T09:00:00Z'), $this->utc('2026-06-03T10:00:00Z'))
+        );
+        self::assertCount(0, $overlapping);
+    }
+}
