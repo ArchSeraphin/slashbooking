@@ -2,7 +2,6 @@
 <phpunit
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-    bootstrap="tests/bootstrap.php"
     colors="true"
     cacheDirectory=".phpunit.cache"
     failOnRisky="true"
@@ -20,4 +19,7 @@
             <directory>src</directory>
         </include>
     </source>
+    <php>
+        <ini name="error_reporting" value="-1" />
+    </php>
 </phpunit>
