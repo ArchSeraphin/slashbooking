@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Trinity\Booking\Http;
 
+use Trinity\Booking\Persistence\ServiceRepository;
+
 final class RestRouter
 {
     public function register(): void
@@ -12,6 +14,8 @@ final class RestRouter
 
     public function registerRoutes(): void
     {
-        // Controllers self-register here in later tasks (T24+).
+        global $wpdb;
+        $services = new ServiceRepository($wpdb);
+        (new PublicBookingController($services))->registerRoutes();
     }
 }
