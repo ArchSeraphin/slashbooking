@@ -27,4 +27,46 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         $slugs = array_column($data, 'slug');
         self::assertSame(['pv', 'irve'], $slugs);
     }
+
+    public function test_get_availability_returns_slots(): void
+    {
+        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request->set_query_params([
+            'service' => 'pv',
+            'from'    => '2026-06-01',
+            'to'      => '2026-06-02',
+        ]);
+        $response = rest_do_request($request);
+        self::assertSame(200, $response->get_status());
+
+        $data = $response->get_data();
+        self::assertIsArray($data);
+        self::assertArrayHasKey('slots', $data);
+        self::assertNotEmpty($data['slots']);
+        self::assertArrayHasKey('start', $data['slots'][0]);
+    }
+
+    public function test_get_availability_unknown_service_returns_404(): void
+    {
+        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request->set_query_params([
+            'service' => 'inconnu',
+            'from'    => '2026-06-01',
+            'to'      => '2026-06-02',
+        ]);
+        $response = rest_do_request($request);
+        self::assertSame(404, $response->get_status());
+    }
+
+    public function test_get_availability_invalid_date_returns_400(): void
+    {
+        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request->set_query_params([
+            'service' => 'pv',
+            'from'    => 'oops',
+            'to'      => '2026-06-02',
+        ]);
+        $response = rest_do_request($request);
+        self::assertSame(400, $response->get_status());
+    }
 }
