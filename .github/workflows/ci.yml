@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ '8.1', '8.2', '8.3' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+      - name: Validate composer.json
+        run: composer validate --strict
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
+      - name: Install
+        run: composer install --no-progress --prefer-dist
+      - name: PHPUnit (unit)
+        run: composer test
+      - name: PHPStan
+        run: composer stan
+      - name: PHPCS
+        run: composer cs
