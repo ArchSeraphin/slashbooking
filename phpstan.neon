@@ -1,0 +1,11 @@
+includes:
+  - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+  level: 8
+  paths:
+    - src
+  bootstrapFiles:
+    - tests/bootstrap.php
+  ignoreErrors:
+    # WordPress stubs sometimes lack precise types; we tighten via PHPDoc
