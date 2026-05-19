@@ -151,4 +151,39 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         $resp2 = rest_do_request($r2);
         self::assertSame(409, $resp2->get_status());
     }
+
+    private function signCancel(string $uid, int $exp): string
+    {
+        $secret = get_option('tb_decision_secret');
+        return hash_hmac('sha256', 'cancel|' . $uid . '|' . $exp, $secret);
+    }
+
+    public function test_cancel_with_valid_token_returns_200(): void
+    {
+        $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r->set_header('content-type', 'application/json');
+        $r->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+            'service' => 'pv', 'start' => '2026-06-10T07:00:00+00:00',
+            'customer_name' => 'A', 'customer_email' => 'a@a.fr',
+            'customer_phone' => '0600', 'customer_address' => 'x', 'consent' => true,
+        ]));
+        $resp = rest_do_request($r);
+        $uid = $resp->get_data()['public_uid'];
+
+        $exp = time() + 3600;
+        $sig = $this->signCancel($uid, $exp);
+        $req = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $req->set_query_params(['uid' => $uid, 'exp' => $exp, 'sig' => $sig]);
+        $response = rest_do_request($req);
+        self::assertSame(200, $response->get_status());
+    }
+
+    public function test_cancel_with_bad_signature_returns_403(): void
+    {
+        $exp = time() + 3600;
+        $req = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $req->set_query_params(['uid' => 'fake', 'exp' => $exp, 'sig' => 'wrong']);
+        $response = rest_do_request($req);
+        self::assertSame(403, $response->get_status());
+    }
 }

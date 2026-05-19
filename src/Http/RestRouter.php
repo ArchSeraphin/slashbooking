@@ -45,5 +45,12 @@ final class RestRouter
         );
 
         (new PublicBookingController($services, $bookings, $busy, $generator, $createBooking))->registerRoutes();
+
+        $signer = new \Trinity\Booking\Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
+        $cancel = new \Trinity\Booking\Booking\CancelBooking(
+            find: fn (string $uid) => $bookings->findByPublicUid($uid),
+            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+        );
+        (new PublicCancelController($signer, $cancel))->registerRoutes();
     }
 }
