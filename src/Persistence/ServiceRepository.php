@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace Trinity\Booking\Persistence;
@@ -18,23 +17,19 @@ final class ServiceRepository
 
     public function findById(int $id): ?Service
     {
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
         $row = $this->wpdb->get_row(
             $this->wpdb->prepare("SELECT * FROM {$this->table} WHERE id = %d", $id),
             ARRAY_A
         );
-        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
         return is_array($row) ? Service::fromRow($row) : null;
     }
 
     public function findBySlug(string $slug): ?Service
     {
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
         $row = $this->wpdb->get_row(
             $this->wpdb->prepare("SELECT * FROM {$this->table} WHERE slug = %s", $slug),
             ARRAY_A
         );
-        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
         return is_array($row) ? Service::fromRow($row) : null;
     }
 
@@ -43,12 +38,10 @@ final class ServiceRepository
      */
     public function findAllActive(): array
     {
-        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $rows = $this->wpdb->get_results(
             "SELECT * FROM {$this->table} WHERE active = 1 ORDER BY sort_order, id",
             ARRAY_A
         );
-        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         if (!is_array($rows)) {
             return [];
         }
