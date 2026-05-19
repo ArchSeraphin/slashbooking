@@ -143,6 +143,10 @@ final class PublicBookingController
             return new WP_REST_Response(['public_uid' => 'honeypot'], 201);
         }
 
+        if ($this->isRateLimited()) {
+            return new WP_Error('tb_rate_limited', 'Trop de requêtes', ['status' => 429]);
+        }
+
         $svc = $this->services->findBySlug((string) ($params['service'] ?? ''));
         if ($svc === null) {
             return new WP_Error('tb_service_not_found', 'Service introuvable', ['status' => 404]);
@@ -182,5 +186,21 @@ final class PublicBookingController
             'public_uid' => $booking->publicUid(),
             'status'     => $booking->status()->value,
         ], 201);
+    }
+
+    private function isRateLimited(): bool
+    {
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        if ($ip === '') {
+            return false;
+        }
+        $key = 'tb_rate_' . md5($ip);
+        $count = (int) get_transient($key);
+        if ($count >= 5) {
+            return true;
+        }
+        set_transient($key, $count + 1, MINUTE_IN_SECONDS);
+        return false;
     }
 }

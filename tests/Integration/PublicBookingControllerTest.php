@@ -244,4 +244,23 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         $finalStarts = array_column($av3->get_data()['slots'], 'start');
         self::assertContains($slots[0]['start'], $finalStarts);
     }
+
+    public function test_rate_limit_blocks_after_threshold(): void
+    {
+        $payload = json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
+            'service' => 'pv', 'start' => '2026-07-01T07:00:00+00:00',
+            'customer_name' => 'A', 'customer_email' => 'a@a.fr',
+            'customer_phone' => '0600', 'customer_address' => 'x', 'consent' => true,
+        ]);
+        $_SERVER['REMOTE_ADDR'] = '198.51.100.42';
+        $blocked = false;
+        for ($i = 0; $i < 7; $i++) {
+            $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+            $r->set_header('content-type', 'application/json');
+            $r->set_body($payload);
+            $resp = rest_do_request($r);
+            if ($resp->get_status() === 429) { $blocked = true; break; }
+        }
+        self::assertTrue($blocked, 'Rate limiter did not kick in within 7 attempts');
+    }
 }
