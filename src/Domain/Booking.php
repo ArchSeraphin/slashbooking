@@ -89,7 +89,7 @@ final class Booking
     public function cancel(): void
     {
         if (!in_array($this->status, [BookingStatus::PENDING, BookingStatus::CONFIRMED], true)) {
-            throw new DomainException("Cannot cancel from status {$this->status->value}"); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message, not HTML output
+            throw new DomainException("Cannot cancel from status {$this->status->value}");
         }
         $this->status = BookingStatus::CANCELLED;
         $this->touch();
@@ -221,7 +221,7 @@ final class Booking
     private function mustBe(BookingStatus $expected, string $action): void
     {
         if ($this->status !== $expected) {
-            throw new DomainException("Cannot {$action} from status {$this->status->value}"); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message, not HTML output
+            throw new DomainException("Cannot {$action} from status {$this->status->value}");
         }
     }
 

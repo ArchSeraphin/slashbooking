@@ -72,7 +72,7 @@ final class Plugin
     public function get(string $id): object
     {
         if (!isset($this->services[$id])) {
-            throw new \RuntimeException("Service not registered: {$id}"); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+            throw new \RuntimeException("Service not registered: {$id}");
         }
         /** @var T */
         return $this->services[$id];

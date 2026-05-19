@@ -14,7 +14,10 @@
         conflicts. We keep the WordPress *security* and *i18n* rules and skip the style rules.
     -->
 
-    <rule ref="WordPress.Security" />
+    <rule ref="WordPress.Security">
+        <!-- Exception messages are caught/logged, never echoed raw — false-positive sink. -->
+        <exclude name="WordPress.Security.EscapeOutput.ExceptionNotEscaped" />
+    </rule>
     <rule ref="WordPress.DB" />
     <rule ref="WordPress.WP.I18n">
         <properties>
