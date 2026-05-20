@@ -6,14 +6,21 @@ namespace Trinity\Booking\Cli;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Closure;
+use Trinity\Booking\Domain\GoogleAccount;
 use Trinity\Booking\Google\GoogleClientBuilder;
+use Trinity\Booking\Google\PullResult;
 use Trinity\Booking\Persistence\GoogleAccountRepository;
 
 final class DoctorCommand
 {
+    /**
+     * @param Closure(GoogleAccount): PullResult $pullNow
+     */
     public function __construct(
         private readonly GoogleAccountRepository $accounts,
         private readonly GoogleClientBuilder $clientBuilder,
+        private readonly Closure $pullNow,
     ) {
     }
 
@@ -72,6 +79,30 @@ final class DoctorCommand
             \WP_CLI::success('Deleted probe event ' . $ref['id']);
         } catch (\Throwable $e) {
             \WP_CLI::error('Probe failed: ' . $e->getMessage());
+        }
+
+        \WP_CLI::log('—————————————————');
+        if ($account->watchChannelId() === null) {
+            \WP_CLI::warning('No watch channel registered. Run "Démarrer le watch" from the admin UI to enable inbound sync.');
+        } else {
+            \WP_CLI::success(sprintf(
+                'Watch channel: %s (expires=%s)',
+                $account->watchChannelId(),
+                $account->watchExpiresAt()?->format(\DateTimeInterface::ATOM) ?? 'unknown',
+            ));
+        }
+
+        \WP_CLI::log('Performing test pull…');
+        try {
+            $result = ($this->pullNow)($account);
+            \WP_CLI::success(sprintf(
+                'Pull OK: %d upserted / %d deleted / %d reflection-ignored',
+                $result->upserted,
+                $result->deleted,
+                $result->ignoredReflection,
+            ));
+        } catch (\Throwable $e) {
+            \WP_CLI::error('Pull failed: ' . $e->getMessage());
         }
     }
 }

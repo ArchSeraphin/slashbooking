@@ -351,10 +351,15 @@ final class Plugin
         (new Admin\Assets($this))->register();
 
         if (defined('WP_CLI') && WP_CLI) {
+            $pullNow = static function (Domain\GoogleAccount $account) use ($clientBuilder, $buildSyncEngine): Google\PullResult {
+                $gateway = $clientBuilder->buildGateway($account);
+                return $buildSyncEngine()->pull($account, $gateway);
+            };
             /** @phpstan-ignore-next-line Class.NotFound (WP_CLI conditionally available) */
             \WP_CLI::add_command('trinity-booking doctor', new Cli\DoctorCommand(
                 $accounts,
                 $clientBuilder,
+                $pullNow,
             ));
         }
 
