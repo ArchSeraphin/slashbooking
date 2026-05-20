@@ -117,6 +117,19 @@ final class Plugin
             return $erasers;
         });
 
+        // Cron interval must also be present at runtime, not just at activation.
+        add_filter('cron_schedules', static function (array $s): array {
+            if (!isset($s['tb_monthly'])) {
+                $s['tb_monthly'] = [
+                    'interval' => 2_592_000,
+                    'display'  => 'Once every 30 days (Trinity Booking)',
+                ];
+            }
+            return $s;
+        });
+
+        Privacy\BookingRetentionPurger::register();
+
         $signer = new Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
         $urls   = new Http\UrlBuilder($signer, rest_url(self::REST_NAMESPACE));
 

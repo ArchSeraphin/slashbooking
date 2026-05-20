@@ -20,6 +20,8 @@ final class Deactivator
             }
         }
 
+        wp_clear_scheduled_hook(\Trinity\Booking\Privacy\BookingRetentionPurger::HOOK);
+
         // Note: we don't call stopChannel() here because the deactivation context
         // doesn't guarantee a fully booted plugin (no service container, possibly
         // no token). The watch channel will expire on its own within 7 days.

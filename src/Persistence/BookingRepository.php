@@ -116,6 +116,29 @@ final class BookingRepository
     }
 
     /**
+     * Hard-deletes bookings whose ends_at_utc is older than $cutoff
+     * and status is terminal (completed, cancelled, rejected).
+     *
+     * Confirmed future bookings are NEVER deleted.
+     *
+     * @return int Number of rows deleted.
+     */
+    public function deleteOlderThan(\DateTimeImmutable $cutoff): int
+    {
+        $cutoffStr = $cutoff->format('Y-m-d H:i:s');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $deleted = $this->wpdb->query(
+            $this->wpdb->prepare(
+                "DELETE FROM {$this->table}
+                 WHERE ends_at_utc < %s
+                 AND status IN ('completed', 'cancelled', 'rejected')",
+                $cutoffStr,
+            ),
+        );
+        return is_int($deleted) ? $deleted : 0;
+    }
+
+    /**
      * @param array{status?:?string, service_id?:?int, from?:?\DateTimeImmutable, to?:?\DateTimeImmutable} $filters
      * @return array{items:list<Booking>, total:int, page:int, per_page:int}
      */

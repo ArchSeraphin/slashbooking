@@ -42,6 +42,25 @@ final class Activator
         if (!wp_next_scheduled('tb/google_pull_all')) {
             wp_schedule_event(time() + 900, 'tb_fifteen_minutes', 'tb/google_pull_all');
         }
+
+        // Custom monthly interval (WP doesn't ship one by default).
+        add_filter('cron_schedules', static function (array $s): array {
+            if (!isset($s['tb_monthly'])) {
+                $s['tb_monthly'] = [
+                    'interval' => 2_592_000, // 30 days in seconds
+                    'display'  => 'Once every 30 days (Trinity Booking)',
+                ];
+            }
+            return $s;
+        });
+
+        if (!wp_next_scheduled(\Trinity\Booking\Privacy\BookingRetentionPurger::HOOK)) {
+            wp_schedule_event(
+                self::firstDayNextMonthAt0330SiteTz(),
+                'tb_monthly',
+                \Trinity\Booking\Privacy\BookingRetentionPurger::HOOK
+            );
+        }
     }
 
     private static function tomorrowAt10SiteTz(): int
@@ -61,6 +80,12 @@ final class Activator
     {
         $tz = function_exists('wp_timezone') ? wp_timezone() : new \DateTimeZone('UTC');
         return (new \DateTimeImmutable('tomorrow 04:00', $tz))->getTimestamp();
+    }
+
+    private static function firstDayNextMonthAt0330SiteTz(): int
+    {
+        $tz = function_exists('wp_timezone') ? wp_timezone() : new \DateTimeZone('UTC');
+        return (new \DateTimeImmutable('first day of next month 03:30', $tz))->getTimestamp();
     }
 
     private static function ensureDecisionSecret(): void
