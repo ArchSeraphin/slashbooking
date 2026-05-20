@@ -218,6 +218,14 @@ final class Plugin
         (new Admin\AdminMenu())->register();
         (new Admin\Assets($this))->register();
 
+        if (defined('WP_CLI') && WP_CLI) {
+            /** @phpstan-ignore-next-line Class.NotFound (WP_CLI conditionally available) */
+            \WP_CLI::add_command('trinity-booking doctor', new Cli\DoctorCommand(
+                $accounts,
+                $clientBuilder,
+            ));
+        }
+
         add_action('init', [$this, 'loadTextDomain']);
     }
 
