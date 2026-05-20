@@ -19,6 +19,8 @@ final class FakeCalendarGateway implements CalendarGateway
 
     public bool $failNext = false;
 
+    public ?int $throwClientErrorOnDelete = null;
+
     public function insertEvent(string $calendarId, array $payload): array
     {
         $this->calls[] = ['op' => 'insert', 'calendar' => $calendarId, 'payload' => $payload];
@@ -50,6 +52,11 @@ final class FakeCalendarGateway implements CalendarGateway
     public function deleteEvent(string $calendarId, string $eventId): void
     {
         $this->calls[] = ['op' => 'delete', 'calendar' => $calendarId, 'eventId' => $eventId];
+        if ($this->throwClientErrorOnDelete !== null) {
+            $code = $this->throwClientErrorOnDelete;
+            $this->throwClientErrorOnDelete = null;
+            throw new GoogleClientError("Simulated {$code}", $code);
+        }
         if ($this->failNext) {
             $this->failNext = false;
             throw new GoogleApiError('Simulated 503', 503);

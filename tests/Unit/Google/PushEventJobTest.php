@@ -145,6 +145,44 @@ final class PushEventJobTest extends TestCase
         self::assertSame('ok', $this->log[0]['status']);
     }
 
+    public function test_delete_swallows_404_from_gateway_as_success(): void
+    {
+        $b = $this->pending(42);
+        $b->setGoogleEvent('evt_already_gone', '"etag_x"');
+        $this->gateway->throwClientErrorOnDelete = 404;
+
+        $this->job($b)->handle(42, 'delete');
+
+        self::assertSame('delete', $this->gateway->calls[0]['op']);
+        self::assertNull($b->googleEventId());
+        self::assertSame('ok', $this->log[0]['status']);
+    }
+
+    public function test_delete_swallows_410_from_gateway_as_success(): void
+    {
+        $b = $this->pending(42);
+        $b->setGoogleEvent('evt_gone', '"etag_x"');
+        $this->gateway->throwClientErrorOnDelete = 410;
+
+        $this->job($b)->handle(42, 'delete');
+
+        self::assertNull($b->googleEventId());
+        self::assertSame('ok', $this->log[0]['status']);
+    }
+
+    public function test_delete_propagates_other_4xx_as_failed(): void
+    {
+        $b = $this->pending(42);
+        $b->setGoogleEvent('evt_locked', '"etag_x"');
+        $this->gateway->throwClientErrorOnDelete = 403;
+
+        $this->job($b)->handle(42, 'delete');
+
+        // Event id NOT cleared (operation failed); logged as 'failed'.
+        self::assertSame('evt_locked', $b->googleEventId());
+        self::assertSame('failed', $this->log[0]['status']);
+    }
+
     public function test_transient_5xx_is_logged_as_retry_and_rethrown(): void
     {
         $b = $this->pending(42);
