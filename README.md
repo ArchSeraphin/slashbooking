@@ -7,8 +7,10 @@ Plugin WordPress de prise de rendez-vous commerciaux pour services solaires (pho
 - ✅ **Plan 1** — fondations + parcours de réservation public minimal fonctionnel.
 - ✅ **Plan 2** — notifications e-mail (6 events + templates + .ics) + validation admin (HMAC e-mail + dashboard React).
 - ✅ **Plan 3** — Google OAuth + push WP → GCal via Action Scheduler (chiffrement sodium, journal de sync, `wp trinity-booking doctor`).
-- ⏸️ Plan 4 — webhook + pull GCal → WP.
-- ⏸️ Plan 5 — éditeur de templates + RGPD + i18n + packaging.
+- ✅ **Plan 4** — webhook + pull GCal → WP (SyncEngine + WatchChannelManager + crons + SPA diagnostics).
+- 🚧 **Plan 5** (en cours) — éditeur de templates + RGPD + i18n + packaging V1.
+
+Version courante : **1.0.0-rc1**.
 
 Voir `docs/superpowers/specs/` pour la spécification complète et `docs/superpowers/plans/` pour les plans d'implémentation.
 
