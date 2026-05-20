@@ -50,6 +50,7 @@ final class Assets
         wp_localize_script('trinity-booking-admin', 'TrinityBooking', [
             'restUrl' => esc_url_raw(rest_url(Plugin::REST_NAMESPACE)),
             'nonce'   => wp_create_nonce('wp_rest'),
+            'version' => Plugin::VERSION,
         ]);
     }
 }

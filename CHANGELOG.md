@@ -6,6 +6,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.6] — 2026-05-20
+
+### Changed
+
+- **Refonte design pro du panel admin et du formulaire public.** Système de tokens unifié (palette blue/emerald/orange, neutres slate, radius+shadow scale, spacing 4/8 px), system-ui stack pour zéro dépendance externe RGPD-safe.
+- **Admin SPA** : header avec logo + titre + version, onglets en pills propres, KPI dashboard 4 cards en tête de la liste réservations (Total / À valider / Confirmés / À venir), table custom avec hover + status badges colorés (dot + pill), empty state illustré, boutons WP-components stylés.
+- **Formulaire public** : header trust signals (sécurité données + réponse 24h), step indicator vivant 1/2/3, cards séparées par étape avec hint contextuel, date picker stylé, slots cards avec hover+focus+selected, champs avec labels au-dessus + placeholders + autocomplete sémantique (mobile keyboard), consent box dédiée, CTA orange XXL avec spinner inline, écran de succès illustré, scroll automatique du formulaire à la sélection.
+- **Accessibility** : focus rings 2-3 px sur tous les controls, `prefers-reduced-motion` respecté, `role="progressbar"` + `aria-live` + `htmlFor` partout, autocomplete + types sémantiques (`tel`, `email`).
+- Design system persisté dans `design-system/trinity-booking/MASTER.md` pour future référence.
+
+---
+
 ## [1.0.5] — 2026-05-20
 
 ### Fixed

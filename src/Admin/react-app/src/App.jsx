@@ -7,8 +7,31 @@ import TemplatesPage from './TemplatesPage';
 
 export default function App() {
 	const initial = window.location.hash.replace( '#/', '' ) || 'bookings';
+	const version =
+		( window.TrinityBooking && window.TrinityBooking.version ) || '';
+
 	return (
 		<div className="tb-admin">
+			<header className="tb-app-header">
+				<div className="tb-app-header__brand">
+					<div className="tb-app-header__logo" aria-hidden="true">
+						TB
+					</div>
+					<div>
+						<h1 className="tb-app-header__title">Trinity Booking</h1>
+						<p className="tb-app-header__subtitle">
+							{ __(
+								'Prise de RDV photovoltaïque & bornes IRVE',
+								'trinity-booking'
+							) }
+						</p>
+					</div>
+				</div>
+				{ version && (
+					<span className="tb-app-header__version">v{ version }</span>
+				) }
+			</header>
+
 			<TabPanel
 				className="tb-tabs"
 				tabs={ [

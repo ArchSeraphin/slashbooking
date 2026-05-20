@@ -23,11 +23,13 @@ export default function BookingRow( { booking, onAct } ) {
 	const s = booking.status;
 	return (
 		<tr>
-			<td>{ fmt( booking.starts_at_utc, booking.timezone ) }</td>
+			<td className="tb-table__time">{ fmt( booking.starts_at_utc, booking.timezone ) }</td>
 			<td>#{ booking.service_id }</td>
 			<td>
-				<div><strong>{ booking.customer_name }</strong></div>
-				<div>{ booking.customer_email } &middot; { booking.customer_phone }</div>
+				<div className="tb-table__customer">{ booking.customer_name }</div>
+				<div className="tb-table__customer-meta">
+					{ booking.customer_email } · { booking.customer_phone }
+				</div>
 			</td>
 			<td>
 				<span className={ `tb-status tb-status--${ s }` }>
@@ -35,21 +37,23 @@ export default function BookingRow( { booking, onAct } ) {
 				</span>
 			</td>
 			<td>
-				{ s === 'pending' && (
-					<>
-						<Button variant="primary"   onClick={ () => onAct( booking.id, 'confirm' ) }>
-							{ __( 'Confirmer', 'trinity-booking' ) }
-						</Button>{ ' ' }
-						<Button variant="secondary" onClick={ () => onAct( booking.id, 'reject' ) }>
-							{ __( 'Refuser', 'trinity-booking' ) }
-						</Button>{ ' ' }
-					</>
-				) }
-				{ ( s === 'pending' || s === 'confirmed' ) && (
-					<Button isDestructive variant="tertiary" onClick={ () => onAct( booking.id, 'cancel' ) }>
-						{ __( 'Annuler', 'trinity-booking' ) }
-					</Button>
-				) }
+				<div className="tb-table__actions">
+					{ s === 'pending' && (
+						<>
+							<Button variant="primary" size="small" onClick={ () => onAct( booking.id, 'confirm' ) }>
+								{ __( 'Confirmer', 'trinity-booking' ) }
+							</Button>
+							<Button variant="secondary" size="small" onClick={ () => onAct( booking.id, 'reject' ) }>
+								{ __( 'Refuser', 'trinity-booking' ) }
+							</Button>
+						</>
+					) }
+					{ ( s === 'pending' || s === 'confirmed' ) && (
+						<Button isDestructive variant="tertiary" size="small" onClick={ () => onAct( booking.id, 'cancel' ) }>
+							{ __( 'Annuler', 'trinity-booking' ) }
+						</Button>
+					) }
+				</div>
 			</td>
 		</tr>
 	);
