@@ -75,5 +75,8 @@ final class RestRouter
             redirectUri: rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
         );
         (new AdminGoogleController($accounts, $oauthClient, $oauthState, $encryption))->registerRoutes();
+
+        $syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
+        (new AdminSyncLogController($syncLog))->registerRoutes();
     }
 }
