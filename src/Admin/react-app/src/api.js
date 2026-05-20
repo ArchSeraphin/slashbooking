@@ -173,3 +173,21 @@ export async function saveSettings( { legalPageId, bookingRetentionDays } ) {
 		},
 	} );
 }
+
+// --- Plan 5+ : services CRUD ---
+
+export async function listServices() {
+	return apiFetch( { path: 'admin/services' } );
+}
+
+export async function fetchService( slug ) {
+	return apiFetch( { path: `admin/services/${ slug }` } );
+}
+
+export async function saveService( slug, data ) {
+	return apiFetch( {
+		path: `admin/services/${ slug }`,
+		method: 'POST',
+		data,
+	} );
+}

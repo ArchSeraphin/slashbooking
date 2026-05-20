@@ -47,4 +47,34 @@ final class ServiceRepository
         }
         return array_map(static fn (array $row) => Service::fromRow($row), $rows);
     }
+
+    /**
+     * @return list<Service>
+     */
+    public function findAll(): array
+    {
+        $rows = $this->wpdb->get_results(
+            "SELECT * FROM {$this->table} ORDER BY sort_order, id",
+            ARRAY_A
+        );
+        if (!is_array($rows)) {
+            return [];
+        }
+        return array_map(static fn (array $row) => Service::fromRow($row), $rows);
+    }
+
+    /**
+     * Updates a service by id. Returns true on success.
+     */
+    public function update(Service $service): bool
+    {
+        if ($service->id === null) {
+            return false;
+        }
+        $row = $service->toRow();
+        $row['updated_at'] = current_time('mysql', true);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $res = $this->wpdb->update($this->table, $row, ['id' => $service->id]);
+        return $res !== false;
+    }
 }

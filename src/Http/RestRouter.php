@@ -131,6 +131,7 @@ final class RestRouter
         (new \Trinity\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
         (new \Trinity\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
         (new \Trinity\Booking\Http\AdminSettingsController())->registerRoutes();
+        (new \Trinity\Booking\Http\AdminServiceController($services))->registerRoutes();
     }
 
     private function resolveMailDispatcher(

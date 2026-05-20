@@ -1,6 +1,7 @@
 import { TabPanel } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import BookingsPage from './BookingsPage';
+import ServicesPage from './ServicesPage';
 import GooglePage from './GooglePage';
 import SyncLogPage from './SyncLogPage';
 import TemplatesPage from './TemplatesPage';
@@ -36,6 +37,7 @@ export default function App() {
 				className="tb-tabs"
 				tabs={ [
 					{ name: 'bookings',  title: __( 'Réservations', 'trinity-booking' ) },
+					{ name: 'services',  title: __( 'Services', 'trinity-booking' ) },
 					{ name: 'google',    title: __( 'Google', 'trinity-booking' ) },
 					{ name: 'templates', title: __( 'Templates', 'trinity-booking' ) },
 					{ name: 'log',       title: __( 'Journal', 'trinity-booking' ) },
@@ -46,9 +48,10 @@ export default function App() {
 				} }
 			>
 				{ ( tab ) => {
-					if ( tab.name === 'google' ) return <GooglePage />;
+					if ( tab.name === 'services' )  return <ServicesPage />;
+					if ( tab.name === 'google' )    return <GooglePage />;
 					if ( tab.name === 'templates' ) return <TemplatesPage />;
-					if ( tab.name === 'log' ) return <SyncLogPage />;
+					if ( tab.name === 'log' )       return <SyncLogPage />;
 					return <BookingsPage />;
 				} }
 			</TabPanel>

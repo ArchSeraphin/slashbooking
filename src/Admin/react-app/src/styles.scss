@@ -518,6 +518,102 @@
 }
 
 /* ============================================================
+   Services editor
+   ============================================================ */
+.tb-service-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tb-space-6);
+}
+
+.tb-form-section {
+	&__title {
+		margin: 0 0 var(--tb-space-2);
+		font-size: var(--tb-fs-13);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--tb-c-text-soft);
+	}
+	&__hint {
+		margin: 0 0 var(--tb-space-3);
+		font-size: var(--tb-fs-13);
+		color: var(--tb-c-text-soft);
+	}
+}
+
+.tb-form-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: var(--tb-space-4);
+}
+
+.tb-week {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tb-space-2);
+}
+
+.tb-day {
+	display: flex;
+	flex-direction: column;
+	gap: var(--tb-space-2);
+	padding: var(--tb-space-3) var(--tb-space-4);
+	background: var(--tb-c-surface-alt);
+	border: 1px solid var(--tb-c-border);
+	border-radius: var(--tb-radius-sm);
+	transition: background-color 150ms;
+
+	&.is-open  { background: #fff; }
+	&.is-closed { opacity: .72; }
+
+	&__head .components-toggle-control { margin: 0; }
+	&__head .components-toggle-control__label {
+		font-weight: 600;
+		color: var(--tb-c-text);
+	}
+
+	&__ranges {
+		display: flex;
+		flex-direction: column;
+		gap: var(--tb-space-2);
+		padding-left: 56px; /* aligne sous le label, après le toggle */
+		@media (max-width: 600px) {
+			padding-left: 0;
+		}
+	}
+}
+
+.tb-range {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--tb-space-2);
+
+	&__sep {
+		color: var(--tb-c-text-muted);
+		font-weight: 600;
+	}
+}
+
+.tb-time-input {
+	width: 110px;
+	padding: 6px 8px;
+	font: inherit;
+	font-size: var(--tb-fs-14);
+	font-variant-numeric: tabular-nums;
+	color: var(--tb-c-text);
+	background: var(--tb-c-surface);
+	border: 1px solid var(--tb-c-border-strong);
+	border-radius: var(--tb-radius-sm);
+
+	&:focus {
+		outline: none;
+		border-color: var(--tb-c-primary);
+		box-shadow: 0 0 0 3px var(--tb-c-primary-soft);
+	}
+}
+
+/* ============================================================
    Reduced motion
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {

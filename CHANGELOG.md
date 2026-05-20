@@ -6,6 +6,18 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.9] — 2026-05-20
+
+### Added
+
+- **Éditeur de services dans le panel admin.** Nouveau tab **Services** entre Réservations et Google avec :
+  - Liste de tous les services (slug, nom, durée, buffer, jours ouverts résumés, statut actif/désactivé)
+  - Éditeur par service : nom, couleur, actif, durée, buffer avant/après, délai mini, horizon
+  - **Édition des jours et plages horaires** : 1 toggle par jour de semaine + plages horaires multiples (matin/après-midi via inputs `time` HTML5), bouton "Ajouter une plage" et bouton supprimer par plage
+- Backend : `AdminServiceController` REST (`GET /admin/services`, `GET /admin/services/{slug}`, `POST /admin/services/{slug}`) avec validation stricte des horaires (regex HH:MM, open < close, fallback sur valeur actuelle), `ServiceRepository::findAll()` et `::update()`.
+
+---
+
 ## [1.0.8] — 2026-05-20
 
 ### Fixed
