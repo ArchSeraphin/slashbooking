@@ -13,6 +13,11 @@ final class Deactivator
             wp_unschedule_event($timestamp, \Trinity\Booking\Notifications\ReminderScheduler::HOOK);
         }
 
+        $timestamp = wp_next_scheduled(\Trinity\Booking\Google\SyncLogPurger::HOOK);
+        if ($timestamp !== false) {
+            wp_unschedule_event($timestamp, \Trinity\Booking\Google\SyncLogPurger::HOOK);
+        }
+
         // Watch channel unsubscribe viendra dans Plan 4.
     }
 }
