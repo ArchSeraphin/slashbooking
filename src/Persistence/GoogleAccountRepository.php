@@ -64,8 +64,11 @@ final class GoogleAccountRepository
             'oauth_access_token_enc'   => $a->accessTokenEnc(),
             'oauth_expires_at'         => $fmt($a->expiresAt()),
             'watch_channel_id'         => $a->watchChannelId(),
+            'watch_resource_id'        => $a->watchResourceId(),
+            'watch_token_secret'       => $a->watchTokenSecret(),
             'watch_expires_at'         => $fmt($a->watchExpiresAt()),
             'sync_token'               => $a->syncToken(),
+            'last_full_sync_at'        => $fmt($a->lastFullSyncAt()),
             'created_at'               => $fmt($a->createdAt()),
             'updated_at'               => $fmt($a->updatedAt()),
         ];

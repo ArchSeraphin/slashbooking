@@ -63,4 +63,33 @@ final class GoogleAccountRepositoryTest extends TestCase
         $repo->delete((int) $acct->id());
         self::assertNull($repo->findSingle());
     }
+
+    public function test_save_persists_watch_and_sync_state(): void
+    {
+        global $wpdb;
+        $repo = new GoogleAccountRepository($wpdb);
+        $utc  = new DateTimeZone('UTC');
+
+        $a = GoogleAccount::connect(
+            label: 'X',
+            calendarId: 'primary',
+            refreshTokenEnc: 'r',
+            accessTokenEnc: 'a',
+            expiresAt: new DateTimeImmutable('+1 hour', $utc),
+        );
+        $repo->save($a);
+
+        $a->attachWatch('ch_1', 'res_1', 'sec_1', new DateTimeImmutable('+7 days', $utc));
+        $a->updateSyncToken('sync_xyz');
+        $a->markFullSyncedAt(new DateTimeImmutable('2026-05-20 10:00:00', $utc));
+        $repo->save($a);
+
+        $reloaded = $repo->findById((int) $a->id());
+        self::assertNotNull($reloaded);
+        self::assertSame('ch_1', $reloaded->watchChannelId());
+        self::assertSame('res_1', $reloaded->watchResourceId());
+        self::assertSame('sec_1', $reloaded->watchTokenSecret());
+        self::assertSame('sync_xyz', $reloaded->syncToken());
+        self::assertSame('2026-05-20 10:00:00', $reloaded->lastFullSyncAt()?->format('Y-m-d H:i:s'));
+    }
 }
