@@ -80,14 +80,6 @@ final class Plugin
 
     private function register(): void
     {
-        add_action('init', static function (): void {
-            load_plugin_textdomain(
-                'trinity-booking',
-                false,
-                'trinity-booking/languages'
-            );
-        }, 0);
-
         $router = new Http\RestRouter();
         $router->register();
         $this->set(Http\RestRouter::class, $router);
