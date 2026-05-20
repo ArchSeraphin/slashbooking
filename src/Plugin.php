@@ -111,6 +111,110 @@ final class Plugin
             $urls,
         ))->register();
 
+        // ----- Google sync (Plan 3) -----
+        $accounts    = new Persistence\GoogleAccountRepository($wpdb);
+        $syncLogRepo = new Persistence\SyncLogRepository($wpdb);
+        $keyResolver = new Google\EncryptionKeyResolver();
+        $encryption  = new Google\Encryption($keyResolver->resolve());
+
+        $pendingColor   = (string) get_option('tb_gcal_color_pending', '6');
+        $confirmedColor = (string) get_option('tb_gcal_color_confirmed', '10');
+        $formatter      = new Google\EventFormatter($pendingColor, $confirmedColor);
+
+        (new Google\PushScheduler())->register();
+
+        (new Google\SyncLogPurger(
+            purge: fn (\DateTimeImmutable $cutoff): int => $syncLogRepo->purgeOlderThan($cutoff),
+        ))->register();
+
+        $clientBuilder = new Google\GoogleClientBuilder($encryption, $accounts);
+
+        // Register Action Scheduler handler.
+        add_action(Google\PushScheduler::HOOK, function (int $bookingId, string $action) use (
+            $bookings,
+            $services,
+            $accounts,
+            $syncLogRepo,
+            $formatter,
+            $clientBuilder
+        ): void {
+            $booking = $bookings->findById($bookingId);
+            if ($booking === null) {
+                return;
+            }
+            $service = $services->findById($booking->serviceId());
+            if ($service === null) {
+                return;
+            }
+
+            $account = $accounts->findSingle();
+            if ($account === null) {
+                $syncLogRepo->append(
+                    level: 'warn',
+                    direction: 'wp_to_g',
+                    entity: 'booking',
+                    entityId: $bookingId,
+                    googleEventId: null,
+                    action: $action,
+                    status: 'failed',
+                    payload: [],
+                    errorMessage: 'No Google account connected',
+                );
+                return;
+            }
+
+            try {
+                $gateway = $clientBuilder->buildGateway($account);
+            } catch (\Throwable $e) {
+                $syncLogRepo->append(
+                    level: 'error',
+                    direction: 'wp_to_g',
+                    entity: 'booking',
+                    entityId: $bookingId,
+                    googleEventId: $booking->googleEventId(),
+                    action: $action,
+                    status: 'failed',
+                    payload: [],
+                    errorMessage: 'Token refresh failed: ' . $e->getMessage(),
+                );
+                return;
+            }
+
+            $job = new Google\PushEventJob(
+                findBooking: fn () => $booking,
+                findAccount: fn () => $account,
+                persistBooking: fn (Domain\Booking $b) => $bookings->save($b),
+                gateway: $gateway,
+                formatter: $formatter,
+                service: $service,
+                log: function (array $entry) use ($syncLogRepo): void {
+                    $syncLogRepo->append(
+                        level: (string) $entry['level'],
+                        direction: (string) $entry['direction'],
+                        entity: (string) $entry['entity'],
+                        entityId: (int) $entry['entity_id'],
+                        googleEventId: $entry['google_event_id'] !== null ? (string) $entry['google_event_id'] : null,
+                        action: (string) $entry['action'],
+                        status: (string) $entry['status'],
+                        payload: [],
+                        errorMessage: $entry['error_message'] !== null ? (string) $entry['error_message'] : null,
+                    );
+                },
+            );
+
+            $job->handle($bookingId, $action);
+        }, 10, 2);
+
+        // Admin notice if encryption key falls back to option.
+        if ($keyResolver->usingFallback()) {
+            add_action('admin_notices', function (): void {
+                if (!current_user_can('manage_options')) {
+                    return;
+                }
+                echo '<div class="notice notice-warning"><p><strong>Trinity Booking :</strong> définissez <code>TRINITY_BOOKING_ENC_KEY</code> dans <code>wp-config.php</code> pour chiffrer les tokens Google avec une clé hors base.</p></div>';
+            });
+        }
+
         (new Admin\AdminMenu())->register();
         (new Admin\Assets($this))->register();
 
