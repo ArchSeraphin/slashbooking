@@ -1,14 +1,51 @@
-import { Notice } from '@wordpress/components';
+import { TabPanel } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import BookingsPage from './BookingsPage';
+import GooglePage from './GooglePage';
+
+function SyncLogPlaceholder() {
+	return (
+		<p>
+			{ __(
+				'Journal de synchronisation — prochain commit.',
+				'trinity-booking'
+			) }
+		</p>
+	);
+}
 
 export default function App() {
+	const initial = window.location.hash.replace( '#/', '' ) || 'bookings';
 	return (
 		<div className="tb-admin">
-			<Notice status="info" isDismissible={ false }>
-				{ __( 'Trinity Booking — dashboard V1', 'trinity-booking' ) }
-			</Notice>
-			<BookingsPage />
+			<TabPanel
+				className="tb-tabs"
+				tabs={ [
+					{
+						name: 'bookings',
+						title: __( 'Réservations', 'trinity-booking' ),
+					},
+					{
+						name: 'google',
+						title: __( 'Google', 'trinity-booking' ),
+					},
+					{ name: 'log', title: __( 'Journal', 'trinity-booking' ) },
+				] }
+				initialTabName={ initial }
+				onSelect={ ( name ) => {
+					window.history.replaceState( null, '', `#/${ name }` );
+				} }
+			>
+				{ ( tab ) => {
+					if ( tab.name === 'google' ) {
+						return <GooglePage />;
+					}
+					if ( tab.name === 'log' ) {
+						return <SyncLogPlaceholder />;
+					}
+					return <BookingsPage />;
+				} }
+			</TabPanel>
 		</div>
 	);
 }

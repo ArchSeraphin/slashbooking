@@ -2,10 +2,16 @@ import apiFetch from '@wordpress/api-fetch';
 
 export function setupApi() {
 	if ( window.TrinityBooking?.nonce ) {
-		apiFetch.use( apiFetch.createNonceMiddleware( window.TrinityBooking.nonce ) );
+		apiFetch.use(
+			apiFetch.createNonceMiddleware( window.TrinityBooking.nonce )
+		);
 	}
 	if ( window.TrinityBooking?.restUrl ) {
-		apiFetch.use( apiFetch.createRootURLMiddleware( window.TrinityBooking.restUrl + '/' ) );
+		apiFetch.use(
+			apiFetch.createRootURLMiddleware(
+				window.TrinityBooking.restUrl + '/'
+			)
+		);
 	}
 }
 
@@ -19,4 +25,38 @@ export async function actBooking( id, action ) {
 		path: `admin/bookings/${ id }/${ action }`,
 		method: 'POST',
 	} );
+}
+
+export async function fetchGoogleStatus() {
+	return apiFetch( { path: 'admin/google/status' } );
+}
+
+export async function startGoogleOAuth() {
+	return apiFetch( {
+		path: 'admin/google/oauth/start',
+		method: 'POST',
+	} );
+}
+
+export async function disconnectGoogle() {
+	return apiFetch( {
+		path: 'admin/google/disconnect',
+		method: 'POST',
+	} );
+}
+
+export async function fetchSyncLog( {
+	page = 1,
+	perPage = 50,
+	level,
+	status,
+} = {} ) {
+	const params = new URLSearchParams( { page, per_page: perPage } );
+	if ( level ) {
+		params.set( 'level', level );
+	}
+	if ( status ) {
+		params.set( 'status', status );
+	}
+	return apiFetch( { path: `admin/sync-log?${ params }` } );
 }
