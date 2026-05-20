@@ -24,6 +24,24 @@ final class Activator
         if (!wp_next_scheduled(\Trinity\Booking\Google\SyncLogPurger::HOOK)) {
             wp_schedule_event(self::tomorrowAt3SiteTz(), 'daily', \Trinity\Booking\Google\SyncLogPurger::HOOK);
         }
+
+        if (!wp_next_scheduled('tb/watch_renew_check')) {
+            wp_schedule_event(self::tomorrowAt4SiteTz(), 'daily', 'tb/watch_renew_check');
+        }
+
+        // 15-minute cron interval: filter must be registered before scheduling.
+        add_filter('cron_schedules', static function (array $s): array {
+            if (!isset($s['tb_fifteen_minutes'])) {
+                $s['tb_fifteen_minutes'] = [
+                    'interval' => 900,
+                    'display'  => 'Every 15 minutes (Trinity Booking)',
+                ];
+            }
+            return $s;
+        });
+        if (!wp_next_scheduled('tb/google_pull_all')) {
+            wp_schedule_event(time() + 900, 'tb_fifteen_minutes', 'tb/google_pull_all');
+        }
     }
 
     private static function tomorrowAt10SiteTz(): int
@@ -37,6 +55,12 @@ final class Activator
     {
         $tz = function_exists('wp_timezone') ? wp_timezone() : new \DateTimeZone('UTC');
         return (new \DateTimeImmutable('tomorrow 03:00', $tz))->getTimestamp();
+    }
+
+    private static function tomorrowAt4SiteTz(): int
+    {
+        $tz = function_exists('wp_timezone') ? wp_timezone() : new \DateTimeZone('UTC');
+        return (new \DateTimeImmutable('tomorrow 04:00', $tz))->getTimestamp();
     }
 
     private static function ensureDecisionSecret(): void
