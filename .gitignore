@@ -16,6 +16,9 @@ Thumbs.db
 # Brainstorming companion
 /.superpowers/
 
+# Claude Code runtime (scheduled tasks lock, etc.)
+/.claude/
+
 # Tests
 .phpunit.result.cache
 .phpunit.cache/
