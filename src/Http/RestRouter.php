@@ -64,5 +64,16 @@ final class RestRouter
         (new DecisionController($signer, $confirmUC, $rejectUC))->registerRoutes();
 
         (new AdminBookingController($bookings, $confirmUC, $rejectUC, $cancel))->registerRoutes();
+
+        $accounts    = new \Trinity\Booking\Persistence\GoogleAccountRepository($wpdb);
+        $keyResolver = new \Trinity\Booking\Google\EncryptionKeyResolver();
+        $encryption  = new \Trinity\Booking\Google\Encryption($keyResolver->resolve());
+        $oauthState  = new \Trinity\Booking\Google\OAuthState((string) get_option('tb_decision_secret'));
+        $oauthClient = new \Trinity\Booking\Google\OAuthClient(
+            clientId: (string) get_option('tb_google_client_id', ''),
+            clientSecret: (string) get_option('tb_google_client_secret', ''),
+            redirectUri: rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
+        );
+        (new AdminGoogleController($accounts, $oauthClient, $oauthState, $encryption))->registerRoutes();
     }
 }
