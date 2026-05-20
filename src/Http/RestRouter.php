@@ -52,5 +52,15 @@ final class RestRouter
             persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
         );
         (new PublicCancelController($signer, $cancel))->registerRoutes();
+
+        $confirmUC = new \Trinity\Booking\Booking\ConfirmBooking(
+            find: fn (int $id) => $bookings->findById($id),
+            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+        );
+        $rejectUC = new \Trinity\Booking\Booking\RejectBooking(
+            find: fn (int $id) => $bookings->findById($id),
+            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+        );
+        (new DecisionController($signer, $confirmUC, $rejectUC))->registerRoutes();
     }
 }
