@@ -99,6 +99,54 @@ final class GoogleAccount
         return $now >= $this->expiresAt;
     }
 
+    public function attachWatch(
+        string $channelId,
+        string $resourceId,
+        string $tokenSecret,
+        DateTimeImmutable $expiresAt,
+    ): void {
+        $this->watchChannelId   = $channelId;
+        $this->watchResourceId  = $resourceId;
+        $this->watchTokenSecret = $tokenSecret;
+        $this->watchExpiresAt   = $expiresAt;
+        $this->touch();
+    }
+
+    public function clearWatch(): void
+    {
+        $this->watchChannelId   = null;
+        $this->watchResourceId  = null;
+        $this->watchTokenSecret = null;
+        $this->watchExpiresAt   = null;
+        $this->touch();
+    }
+
+    public function verifyWatchToken(string $candidate): bool
+    {
+        if ($this->watchTokenSecret === null || $candidate === '') {
+            return false;
+        }
+        return hash_equals($this->watchTokenSecret, $candidate);
+    }
+
+    public function updateSyncToken(string $token): void
+    {
+        $this->syncToken = $token;
+        $this->touch();
+    }
+
+    public function clearSyncToken(): void
+    {
+        $this->syncToken = null;
+        $this->touch();
+    }
+
+    public function markFullSyncedAt(DateTimeImmutable $when): void
+    {
+        $this->lastFullSyncAt = $when;
+        $this->touch();
+    }
+
     public function id(): ?int { return $this->id; }
     public function label(): string { return $this->label; }
     public function calendarId(): string { return $this->calendarId; }
