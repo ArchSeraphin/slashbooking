@@ -3,6 +3,7 @@ import { __ } from '@wordpress/i18n';
 import BookingsPage from './BookingsPage';
 import GooglePage from './GooglePage';
 import SyncLogPage from './SyncLogPage';
+import TemplatesPage from './TemplatesPage';
 
 export default function App() {
 	const initial = window.location.hash.replace( '#/', '' ) || 'bookings';
@@ -11,15 +12,10 @@ export default function App() {
 			<TabPanel
 				className="tb-tabs"
 				tabs={ [
-					{
-						name: 'bookings',
-						title: __( 'Réservations', 'trinity-booking' ),
-					},
-					{
-						name: 'google',
-						title: __( 'Google', 'trinity-booking' ),
-					},
-					{ name: 'log', title: __( 'Journal', 'trinity-booking' ) },
+					{ name: 'bookings',  title: __( 'Réservations', 'trinity-booking' ) },
+					{ name: 'google',    title: __( 'Google', 'trinity-booking' ) },
+					{ name: 'templates', title: __( 'Templates', 'trinity-booking' ) },
+					{ name: 'log',       title: __( 'Journal', 'trinity-booking' ) },
 				] }
 				initialTabName={ initial }
 				onSelect={ ( name ) => {
@@ -27,12 +23,9 @@ export default function App() {
 				} }
 			>
 				{ ( tab ) => {
-					if ( tab.name === 'google' ) {
-						return <GooglePage />;
-					}
-					if ( tab.name === 'log' ) {
-						return <SyncLogPage />;
-					}
+					if ( tab.name === 'google' ) return <GooglePage />;
+					if ( tab.name === 'templates' ) return <TemplatesPage />;
+					if ( tab.name === 'log' ) return <SyncLogPage />;
 					return <BookingsPage />;
 				} }
 			</TabPanel>
