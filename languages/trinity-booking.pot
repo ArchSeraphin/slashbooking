@@ -1,0 +1,416 @@
+# Copyright (C) 2026 Trinity
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Trinity Booking 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/trinity/booking/issues\n"
+"Last-Translator: Trinity <nicolas@voilavoila.tv>\n"
+"Language-Team: French <nicolas@voilavoila.tv>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-20T18:02:16+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: trinity-booking\n"
+
+#. Plugin Name of the plugin
+#: trinity-booking.php
+#: src/Admin/AdminMenu.php:16
+#: src/Admin/AdminMenu.php:17
+#: src/Admin/AdminMenu.php:28
+msgid "Trinity Booking"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: trinity-booking.php
+msgid "https://trinity.example/"
+msgstr ""
+
+#. Description of the plugin
+#: trinity-booking.php
+msgid "Online appointment booking with Google Calendar sync."
+msgstr ""
+
+#. Author of the plugin
+#: trinity-booking.php
+msgid "Trinity"
+msgstr ""
+
+#: src/Http/AdminBookingController.php:61
+msgid "Forbidden"
+msgstr ""
+
+#: src/Http/AdminBookingController.php:109
+msgid "Booking not found."
+msgstr ""
+
+#: src/Http/AdminGoogleController.php:95
+msgid "Not logged in"
+msgstr ""
+
+#: src/Http/AdminGoogleController.php:108
+msgid "Invalid or expired OAuth state."
+msgstr ""
+
+#: src/Http/AdminGoogleController.php:120
+msgid "Google did not return a refresh token. Revoke access at myaccount.google.com and retry with prompt=consent."
+msgstr ""
+
+#: src/Http/DecisionController.php:51
+msgid "Action invalide"
+msgstr ""
+
+#: src/Http/DecisionController.php:58
+msgid "Lien invalide ou expiré"
+msgstr ""
+
+#: src/Http/DecisionController.php:59
+msgid "Demandez un nouveau lien."
+msgstr ""
+
+#: src/Http/DecisionController.php:66
+msgid "RDV confirmé ✓"
+msgstr ""
+
+#: src/Http/DecisionController.php:67
+#: src/Http/DecisionController.php:71
+msgid "Le client a été notifié."
+msgstr ""
+
+#: src/Http/DecisionController.php:70
+msgid "RDV refusé"
+msgstr ""
+
+#: src/Http/DecisionController.php:74
+msgid "Réservation introuvable"
+msgstr ""
+
+#: src/Http/DecisionController.php:78
+msgid "Impossible"
+msgstr ""
+
+#: src/Http/DecisionController.php:97
+msgid "Décision RDV"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:91
+#: src/Http/PublicBookingController.php:152
+msgid "Service introuvable"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:99
+msgid "Date invalide"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:102
+msgid "from doit précéder to"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:147
+msgid "Trop de requêtes"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:159
+msgid "start invalide"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:180
+msgid "Champs invalides"
+msgstr ""
+
+#: src/Http/PublicBookingController.php:182
+msgid "Créneau indisponible"
+msgstr ""
+
+#: src/Http/PublicCancelController.php:49
+msgid "Lien invalide ou expiré."
+msgstr ""
+
+#: src/Http/PublicCancelController.php:55
+msgid "Réservation introuvable."
+msgstr ""
+
+#: src/Notifications/DefaultTemplates.php:17
+msgid "Votre demande de RDV — en attente de validation"
+msgstr ""
+
+#: src/Notifications/DefaultTemplates.php:21
+msgid "Nouvelle demande de RDV : {{service_name}} — {{customer_name}}"
+msgstr ""
+
+#: src/Notifications/DefaultTemplates.php:25
+msgid "RDV confirmé — {{appointment_date}} à {{appointment_time}}"
+msgstr ""
+
+#: src/Notifications/DefaultTemplates.php:29
+msgid "Votre demande de RDV n'a pas pu être confirmée"
+msgstr ""
+
+#: src/Notifications/DefaultTemplates.php:33
+msgid "Annulation de votre RDV confirmée"
+msgstr ""
+
+#: src/Notifications/DefaultTemplates.php:37
+msgid "Rappel : RDV demain à {{appointment_time}}"
+msgstr ""
+
+#: src/PublicFront/Shortcode.php:30
+msgid "Service inconnu"
+msgstr ""
+
+#: src/Admin/react-app/src/App.jsx:16
+msgid "Réservations"
+msgstr ""
+
+#: src/Admin/react-app/src/App.jsx:20
+msgid "Google"
+msgstr ""
+
+#: src/Admin/react-app/src/App.jsx:22
+msgid "Journal"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:15
+#: src/Admin/react-app/src/BookingsPage.jsx:11
+msgid "En attente"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:16
+msgid "Confirmé"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:17
+msgid "Refusé"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:18
+msgid "Annulé"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:19
+msgid "Passé"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:41
+msgid "Confirmer"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:44
+msgid "Refuser"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingRow.jsx:50
+msgid "Annuler"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:10
+msgid "Tous statuts"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:12
+msgid "Confirmés"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:13
+msgid "Refusés"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:14
+msgid "Annulés"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:62
+#: src/Admin/react-app/src/BookingsPage.jsx:82
+#: src/Admin/react-app/src/SyncLogPage.jsx:66
+#: src/Admin/react-app/src/SyncLogPage.jsx:81
+msgid "Statut"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:79
+#: src/Admin/react-app/src/SyncLogPage.jsx:77
+msgid "Date"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:80
+msgid "Service"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:81
+msgid "Client"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:83
+msgid "Actions"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:88
+msgid "Aucun RDV."
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:99
+msgid "Précédent"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:102
+msgid "Page"
+msgstr ""
+
+#: src/Admin/react-app/src/BookingsPage.jsx:105
+msgid "Suivant"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:56
+msgid "Erreur diagnostics : "
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:80
+msgid "Vraiment déconnecter ce compte ?"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:112
+msgid "Watch activé. Channel : "
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:115
+#: src/Admin/react-app/src/GooglePage.jsx:316
+msgid "expire"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:123
+#: src/Admin/react-app/src/GooglePage.jsx:146
+#: src/Admin/react-app/src/GooglePage.jsx:167
+msgid "Erreur : "
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:134
+msgid "Arrêter le watch ?"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:142
+msgid "Watch arrêté."
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:160
+msgid "Pull enfilé. Vérifie le Journal dans quelques secondes."
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:191
+msgid "Configuration OAuth"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:197
+msgid "URI de redirection à saisir dans Google Cloud Console :"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:206
+msgid "Client ID"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:215
+msgid "Client Secret (déjà défini — saisir pour remplacer)"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:219
+msgid "Client Secret"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:226
+msgid "Enregistrer"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:234
+msgid "Google Calendar"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:241
+msgid "Connecté"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:244
+msgid "Calendrier :"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:250
+msgid "Token expire :"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:263
+msgid "Déconnecter"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:269
+msgid "Aucun calendrier Google connecté."
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:275
+msgid "Connecter mon Google Calendar"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:288
+msgid "Synchronisation entrante (Google → WP)"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:298
+msgid "Connectez d'abord un compte Google ci-dessus."
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:308
+msgid "Watch channel :"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:320
+msgid "aucun"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:324
+msgid "Dernier full sync :"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:330
+msgid "jamais"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:334
+msgid "Sync token :"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:337
+msgid "présent (sync incrémental actif)"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:341
+msgid "absent (prochain pull = full sync)"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:359
+msgid "Démarrer le watch"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:372
+msgid "Arrêter le watch"
+msgstr ""
+
+#: src/Admin/react-app/src/GooglePage.jsx:383
+msgid "Forcer un pull maintenant"
+msgstr ""
+
+#: src/Admin/react-app/src/SyncLogPage.jsx:59
+msgid "Journal de synchronisation"
+msgstr ""
+
+#: src/Admin/react-app/src/SyncLogPage.jsx:78
+msgid "Direction"
+msgstr ""
+
+#: src/Admin/react-app/src/SyncLogPage.jsx:79
+msgid "Entité"
+msgstr ""
+
+#: src/Admin/react-app/src/SyncLogPage.jsx:80
+msgid "Action"
+msgstr ""
+
+#: src/Admin/react-app/src/SyncLogPage.jsx:82
+msgid "Erreur"
+msgstr ""
