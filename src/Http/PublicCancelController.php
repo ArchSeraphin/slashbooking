@@ -46,13 +46,13 @@ final class PublicCancelController
         $payload = 'cancel|' . $uid;
 
         if (!$this->signer->verify($payload, $exp, $sig)) {
-            return new WP_Error('tb_invalid_token', 'Lien invalide ou expiré.', ['status' => 403]);
+            return new WP_Error('tb_invalid_token', __('Lien invalide ou expiré.', 'trinity-booking'), ['status' => 403]);
         }
 
         try {
             $this->cancel->execute($uid);
         } catch (BookingNotFound $e) {
-            return new WP_Error('tb_not_found', 'Réservation introuvable.', ['status' => 404]);
+            return new WP_Error('tb_not_found', __('Réservation introuvable.', 'trinity-booking'), ['status' => 404]);
         }
 
         return new WP_REST_Response(['status' => 'cancelled'], 200);

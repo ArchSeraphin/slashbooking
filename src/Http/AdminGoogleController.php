@@ -92,7 +92,7 @@ final class AdminGoogleController
     {
         $userId = get_current_user_id();
         if ($userId === 0) {
-            return new WP_Error('not_logged_in', 'Not logged in', ['status' => 401]);
+            return new WP_Error('not_logged_in', __('Not logged in', 'trinity-booking'), ['status' => 401]);
         }
         $stateToken = $this->state->issue($userId);
         $url        = $this->oauthClient->authUrl($stateToken);
@@ -105,7 +105,7 @@ final class AdminGoogleController
         $state = (string) $req->get_param('state');
 
         if ($code === '' || $this->state->verify($state) === null) {
-            return new WP_Error('invalid_state', 'Invalid or expired OAuth state.', ['status' => 403]);
+            return new WP_Error('invalid_state', __('Invalid or expired OAuth state.', 'trinity-booking'), ['status' => 403]);
         }
 
         try {
@@ -117,7 +117,7 @@ final class AdminGoogleController
         if (!isset($tokens['refresh_token'])) {
             return new WP_Error(
                 'missing_refresh_token',
-                'Google did not return a refresh token. Revoke access at myaccount.google.com and retry with prompt=consent.',
+                __('Google did not return a refresh token. Revoke access at myaccount.google.com and retry with prompt=consent.', 'trinity-booking'),
                 ['status' => 502]
             );
         }

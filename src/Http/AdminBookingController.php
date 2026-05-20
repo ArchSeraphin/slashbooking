@@ -58,7 +58,7 @@ final class AdminBookingController
     public function permission(): bool|WP_Error
     {
         if (!current_user_can(Capabilities::MANAGE)) {
-            return new WP_Error('tb_forbidden', 'Forbidden', ['status' => is_user_logged_in() ? 403 : 401]);
+            return new WP_Error('tb_forbidden', __('Forbidden', 'trinity-booking'), ['status' => is_user_logged_in() ? 403 : 401]);
         }
         return true;
     }
@@ -106,7 +106,7 @@ final class AdminBookingController
                     break;
             }
         } catch (BookingNotFound $e) {
-            return new WP_Error('tb_not_found', 'Booking not found.', ['status' => 404]);
+            return new WP_Error('tb_not_found', __('Booking not found.', 'trinity-booking'), ['status' => 404]);
         } catch (\DomainException $e) {
             return new WP_Error('tb_invalid_transition', $e->getMessage(), ['status' => 409]);
         }

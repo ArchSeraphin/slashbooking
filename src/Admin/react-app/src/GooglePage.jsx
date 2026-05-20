@@ -203,7 +203,7 @@ export default function GooglePage() {
 							<code>{ settings.redirect_uri }</code>
 						</p>
 						<TextControl
-							label="Client ID"
+							label={ __( 'Client ID', 'trinity-booking' ) }
 							value={ settings.client_id }
 							onChange={ ( v ) =>
 								setSettings( { ...settings, client_id: v } )
@@ -216,7 +216,7 @@ export default function GooglePage() {
 											'Client Secret (déjà défini — saisir pour remplacer)',
 											'trinity-booking'
 									  )
-									: 'Client Secret'
+									: __( 'Client Secret', 'trinity-booking' )
 							}
 							type="password"
 							value={ secret }

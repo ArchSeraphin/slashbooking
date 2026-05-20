@@ -48,28 +48,35 @@ final class DecisionController
         $sig    = (string) $request['sig'];
 
         if (!in_array($action, ['confirm', 'reject'], true)) {
-            return $this->htmlResponse(400, '<h1>Action invalide</h1>');
+            return $this->htmlResponse(400, '<h1>' . esc_html__('Action invalide', 'trinity-booking') . '</h1>');
         }
 
         $payload = 'decide|' . $id . '|' . $action;
         if (!$this->signer->verify($payload, $exp, $sig)) {
-            return $this->htmlResponse(403, '<h1>Lien invalide ou expiré</h1><p>Demandez un nouveau lien.</p>');
+            return $this->htmlResponse(
+                403,
+                '<h1>' . esc_html__('Lien invalide ou expiré', 'trinity-booking') . '</h1>'
+                . '<p>' . esc_html__('Demandez un nouveau lien.', 'trinity-booking') . '</p>',
+            );
         }
 
         try {
             if ($action === 'confirm') {
                 $this->confirm->execute($id);
-                $message = '<h1>RDV confirmé ✓</h1><p>Le client a été notifié.</p>';
+                $message = '<h1>' . esc_html__('RDV confirmé ✓', 'trinity-booking') . '</h1>'
+                    . '<p>' . esc_html__('Le client a été notifié.', 'trinity-booking') . '</p>';
             } else {
                 $this->reject->execute($id);
-                $message = '<h1>RDV refusé</h1><p>Le client a été notifié.</p>';
+                $message = '<h1>' . esc_html__('RDV refusé', 'trinity-booking') . '</h1>'
+                    . '<p>' . esc_html__('Le client a été notifié.', 'trinity-booking') . '</p>';
             }
         } catch (BookingNotFound $e) {
-            return $this->htmlResponse(404, '<h1>Réservation introuvable</h1>');
+            return $this->htmlResponse(404, '<h1>' . esc_html__('Réservation introuvable', 'trinity-booking') . '</h1>');
         } catch (\DomainException $e) {
             return $this->htmlResponse(
                 409,
-                '<h1>Impossible</h1><p>' . esc_html($e->getMessage()) . '</p>',
+                '<h1>' . esc_html__('Impossible', 'trinity-booking') . '</h1>'
+                . '<p>' . esc_html($e->getMessage()) . '</p>',
             );
         }
 
