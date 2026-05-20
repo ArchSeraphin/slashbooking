@@ -48,12 +48,13 @@ echo "→ php-scoper (prefix Trinity\\Booking\\Vendor)"
 echo "→ composer dump-autoload (scoped, classmap-authoritative)"
 # Copy a minimal composer.json into scoped dir for dump-autoload to work
 cp "${ROOT_DIR}/composer.json" "${SCOPED_DIR}/composer.json"
-# Strip require-dev (we don't ship test deps)
-php -r "
-\$j = json_decode(file_get_contents('${SCOPED_DIR}/composer.json'), true);
-unset(\$j['require-dev'], \$j['autoload-dev'], \$j['scripts']);
-file_put_contents('${SCOPED_DIR}/composer.json', json_encode(\$j, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
-"
+# Strip require-dev (we don't ship test deps). Pass path via $argv to avoid bash→PHP string injection.
+SCOPED_COMPOSER="${SCOPED_DIR}/composer.json" php -r '
+$path = getenv("SCOPED_COMPOSER");
+$j = json_decode(file_get_contents($path), true);
+unset($j["require-dev"], $j["autoload-dev"], $j["scripts"]);
+file_put_contents($path, json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+'
 (cd "${SCOPED_DIR}" && composer dump-autoload --classmap-authoritative --no-interaction --quiet)
 
 # 6. Stage final tree
