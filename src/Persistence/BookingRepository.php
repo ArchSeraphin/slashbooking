@@ -64,6 +64,24 @@ final class BookingRepository
     }
 
     /**
+     * @return list<Booking>
+     */
+    public function findByCustomerEmail(string $email): array
+    {
+        $rows = $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->table} WHERE customer_email = %s ORDER BY starts_at_utc DESC",
+                $email,
+            ),
+            ARRAY_A
+        );
+        if (!is_array($rows)) {
+            return [];
+        }
+        return array_values(array_map(fn (array $r) => $this->fromRow($r), $rows));
+    }
+
+    /**
      * @param array{status?:?string, service_id?:?int, from?:?\DateTimeImmutable, to?:?\DateTimeImmutable} $filters
      * @return array{items:list<Booking>, total:int, page:int, per_page:int}
      */
