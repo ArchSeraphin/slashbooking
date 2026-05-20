@@ -1,18 +1,27 @@
 import apiFetch from '@wordpress/api-fetch';
 
+const NAMESPACE = 'trinity-booking/v1/';
+
 export function setupApi() {
 	if ( window.TrinityBooking?.nonce ) {
 		apiFetch.use(
 			apiFetch.createNonceMiddleware( window.TrinityBooking.nonce )
 		);
 	}
-	if ( window.TrinityBooking?.restUrl ) {
-		apiFetch.use(
-			apiFetch.createRootURLMiddleware(
-				window.TrinityBooking.restUrl + '/'
-			)
-		);
-	}
+	// Prefix every path with our REST namespace so WordPress's default
+	// rootURL middleware builds wp-json/trinity-booking/v1/<path> correctly.
+	// We do NOT override the rootURL itself — last-added middleware would
+	// run first, then WP's own rootURL middleware would overwrite the URL
+	// using the bare path, producing wp-json/<path> and a 404.
+	apiFetch.use( ( options, next ) => {
+		if ( typeof options.path === 'string' ) {
+			const clean = options.path.replace( /^\//, '' );
+			if ( ! clean.startsWith( NAMESPACE ) ) {
+				return next( { ...options, path: NAMESPACE + clean } );
+			}
+		}
+		return next( options );
+	} );
 }
 
 export async function listBookings( params = {} ) {

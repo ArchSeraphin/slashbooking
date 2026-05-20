@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.4] — 2026-05-20
+
+### Fixed
+
+- **404 sur toutes les requêtes REST du SPA.** `setupApi()` ajoutait un `createRootURLMiddleware` pointant vers `wp-json/trinity-booking/v1/`. Notre middleware était exécuté en premier (LIFO), construisait l'URL correcte, mais laissait `options.path` intact. Le rootURL middleware natif de WP s'exécutait ensuite, voyait `path` toujours string, et **réécrivait l'URL** en `wp-json/<path>` — sans le namespace. Fix : on n'override plus le rootURL ; on injecte simplement `trinity-booking/v1/` dans le `path` avant que WP construise l'URL finale. Bug latent depuis Plan 2.
+
+---
+
 ## [1.0.3] — 2026-05-20
 
 ### Fixed
