@@ -1,0 +1,24 @@
+# Liste des paths exclus du ZIP de release.
+.distignore
+.editorconfig
+.git
+.github
+.gitignore
+.phpunit.cache
+.vscode
+bin
+build
+docs
+node_modules
+package.json
+package-lock.json
+phpcs.xml.dist
+phpstan.neon
+phpunit.xml
+scoper.inc.php
+src/Admin/react-app
+tests
+vendor-bin
+README.dev.md
+*.log
+.DS_Store
