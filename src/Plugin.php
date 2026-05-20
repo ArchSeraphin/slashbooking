@@ -112,6 +112,7 @@ final class Plugin
         ))->register();
 
         (new Admin\AdminMenu())->register();
+        (new Admin\Assets($this))->register();
 
         add_action('init', [$this, 'loadTextDomain']);
     }
