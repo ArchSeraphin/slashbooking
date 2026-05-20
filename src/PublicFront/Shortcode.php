@@ -58,9 +58,13 @@ final class Shortcode
             Plugin::VERSION,
             true
         );
+        $legalId  = (int) get_option('tb_legal_page_id', 0);
+        $legalUrl = $legalId > 0 ? (string) get_permalink($legalId) : '';
+
         wp_localize_script('trinity-booking-public', 'TrinityBooking', [
-            'nonce'  => wp_create_nonce('wp_rest'),
-            'locale' => get_locale(),
+            'nonce'    => wp_create_nonce('wp_rest'),
+            'locale'   => get_locale(),
+            'legalUrl' => $legalUrl,
         ]);
     }
 

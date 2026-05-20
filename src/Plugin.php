@@ -94,6 +94,29 @@ final class Plugin
         $reminder = new Notifications\ReminderScheduler($bookings);
         $reminder->register();
 
+        // Plan 5: WP privacy data exporters / erasers
+        $privacyExporter = new Privacy\BookingExporter(
+            findByEmail: fn (string $email) => $bookings->findByCustomerEmail($email),
+        );
+        add_filter('wp_privacy_personal_data_exporters', static function (array $exporters) use ($privacyExporter): array {
+            $exporters['trinity-booking'] = [
+                'exporter_friendly_name' => __('Trinity Booking', 'trinity-booking'),
+                'callback'               => static fn (string $email, int $page = 1) => $privacyExporter->export($email, $page),
+            ];
+            return $exporters;
+        });
+
+        $privacyEraser = new Privacy\BookingEraser(
+            anonymizeByEmail: fn (string $email) => $bookings->anonymizeByEmail($email),
+        );
+        add_filter('wp_privacy_personal_data_erasers', static function (array $erasers) use ($privacyEraser): array {
+            $erasers['trinity-booking'] = [
+                'eraser_friendly_name' => __('Trinity Booking', 'trinity-booking'),
+                'callback'             => static fn (string $email, int $page = 1) => $privacyEraser->erase($email, $page),
+            ];
+            return $erasers;
+        });
+
         $signer = new Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
         $urls   = new Http\UrlBuilder($signer, rest_url(self::REST_NAMESPACE));
 

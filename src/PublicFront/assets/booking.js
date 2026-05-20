@@ -67,6 +67,18 @@
       consentWrap.append(consent, ' ', document.createTextNode('J’accepte que mes données soient utilisées pour me recontacter.'));
       s.append(consentWrap);
 
+      var legalUrl = (window.TrinityBooking && window.TrinityBooking.legalUrl) || '';
+      if (legalUrl) {
+          var link = document.createElement('a');
+          link.href = legalUrl;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = 'Mentions légales';
+          link.className = 'tb-legal-link';
+          consentWrap.appendChild(document.createTextNode(' — '));
+          consentWrap.appendChild(link);
+      }
+
       var btn = el('button', 'tb-button');
       btn.type = 'button';
       btn.textContent = 'Réserver';
