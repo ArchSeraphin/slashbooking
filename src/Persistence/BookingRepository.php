@@ -82,6 +82,40 @@ final class BookingRepository
     }
 
     /**
+     * Anonymizes all bookings matching the given e-mail, preserving aggregates.
+     *
+     * Replaces customer PII with a SHA-256 hash of the original e-mail
+     * (idempotent — calling twice on the same e-mail is a no-op the second time
+     * because the hash != original e-mail).
+     *
+     * @return int Number of rows updated.
+     */
+    public function anonymizeByEmail(string $email): int
+    {
+        $hash = hash('sha256', strtolower(trim($email)));
+        $now  = current_time('mysql', true);
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $updated = $this->wpdb->update(
+            $this->table,
+            [
+                'customer_name'    => 'Anonyme',
+                'customer_email'   => substr($hash, 0, 16) . '@anon.invalid',
+                'customer_phone'   => '',
+                'customer_address' => '',
+                'customer_meta'    => wp_json_encode([]),
+                'notes'            => '',
+                'ip'               => null,
+                'user_agent'       => null,
+                'updated_at'       => $now,
+            ],
+            ['customer_email' => $email],
+        );
+
+        return is_int($updated) ? $updated : 0;
+    }
+
+    /**
      * @param array{status?:?string, service_id?:?int, from?:?\DateTimeImmutable, to?:?\DateTimeImmutable} $filters
      * @return array{items:list<Booking>, total:int, page:int, per_page:int}
      */
