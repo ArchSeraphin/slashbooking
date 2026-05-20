@@ -15,7 +15,6 @@ final class Shortcode
     public function register(): void
     {
         add_shortcode('trinity_booking', [$this, 'render']);
-        add_action('wp_enqueue_scripts', [$this, 'maybeEnqueue']);
     }
 
     /**
@@ -30,7 +29,11 @@ final class Shortcode
             return '<div class="tb-error">' . esc_html__('Service inconnu', 'trinity-booking') . '</div>';
         }
 
-        $this->markEnqueueNeeded();
+        // Enqueue assets directly here — WP queues them and prints in footer.
+        // The previous wp_enqueue_scripts-hook approach failed because that hook
+        // fires BEFORE the shortcode renders, so a global flag set in render()
+        // is never readable by the hook callback.
+        $this->enqueueAssets();
 
         return sprintf(
             '<div class="tb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
@@ -39,18 +42,17 @@ final class Shortcode
         );
     }
 
-    public function maybeEnqueue(): void
+    private function enqueueAssets(): void
     {
-        if (!$this->shouldEnqueue()) {
-            return;
-        }
         $pluginUrl = plugin_dir_url(Plugin::instance()->pluginFile());
+
         wp_enqueue_style(
             'trinity-booking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.css',
             [],
             Plugin::VERSION
         );
+
         wp_enqueue_script(
             'trinity-booking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.js',
@@ -58,6 +60,7 @@ final class Shortcode
             Plugin::VERSION,
             true
         );
+
         $legalId  = (int) get_option('tb_legal_page_id', 0);
         $legalUrl = $legalId > 0 ? (string) get_permalink($legalId) : '';
 
@@ -66,17 +69,5 @@ final class Shortcode
             'locale'   => get_locale(),
             'legalUrl' => $legalUrl,
         ]);
-    }
-
-    private function markEnqueueNeeded(): void
-    {
-        if (!isset($GLOBALS['tb_enqueue_needed'])) {
-            $GLOBALS['tb_enqueue_needed'] = true; // @phpstan-ignore-line
-        }
-    }
-
-    private function shouldEnqueue(): bool
-    {
-        return !empty($GLOBALS['tb_enqueue_needed']); // @phpstan-ignore-line
     }
 }

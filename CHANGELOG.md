@@ -6,6 +6,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.5] — 2026-05-20
+
+### Fixed
+
+- **Shortcode `[trinity_booking]` ne s'affichait pas.** Deux bugs cumulés :
+  1. `scoper.inc.php` finder filtre `*.php` uniquement → `src/PublicFront/assets/booking.{js,css}` étaient absents du ZIP. Fix : `bin/build-release.sh` copie maintenant ce répertoire depuis l'arbre non-scopé.
+  2. `Shortcode::maybeEnqueue()` lisait un flag global set dans `render()`, mais `wp_enqueue_scripts` fire AVANT que les shortcodes ne soient rendus → enqueue never triggered. Fix : `Shortcode::render()` appelle `wp_enqueue_script` / `wp_enqueue_style` directement (WP les queue et imprime en footer). Bug latent depuis Plan 1.
+
+---
+
 ## [1.0.4] — 2026-05-20
 
 ### Fixed

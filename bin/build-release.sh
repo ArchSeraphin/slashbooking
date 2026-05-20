@@ -69,6 +69,10 @@ cp -R "${ROOT_DIR}/assets" "${STAGING_DIR}/assets"
 cp -R "${ROOT_DIR}/languages" "${STAGING_DIR}/languages"
 # Strip JSX sources from staged copy (we shipped only assets/dist)
 rm -rf "${STAGING_DIR}/src/Admin/react-app"
+# Copy non-PHP public assets that scoper skipped (it only globs *.php).
+# These are vanilla JS/CSS that don't need namespace prefixing.
+mkdir -p "${STAGING_DIR}/src/PublicFront/assets"
+cp -R "${ROOT_DIR}/src/PublicFront/assets/." "${STAGING_DIR}/src/PublicFront/assets/"
 
 # 7. ZIP
 echo "→ packaging ZIP ${ZIP_PATH}"
