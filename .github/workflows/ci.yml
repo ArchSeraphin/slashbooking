@@ -33,3 +33,24 @@ jobs:
         run: composer stan
       - name: PHPCS
         run: composer cs
+
+  frontend:
+    name: Frontend build & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install
+        run: npm ci
+      - name: Lint JS
+        run: npm run lint:js
+      - name: Build
+        run: npm run build
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-dist
+          path: assets/dist/
