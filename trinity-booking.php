@@ -23,6 +23,13 @@ if (!is_file($autoload)) {
 }
 require_once $autoload;
 
+// Action Scheduler bootstrap — must run before plugins_loaded so other plugins can enqueue.
+$tb_action_scheduler = __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
+if (is_readable($tb_action_scheduler)) {
+    require_once $tb_action_scheduler;
+}
+unset($tb_action_scheduler);
+
 register_activation_hook(__FILE__, [\Trinity\Booking\Activator::class, 'activate']);
 register_deactivation_hook(__FILE__, [\Trinity\Booking\Deactivator::class, 'deactivate']);
 
