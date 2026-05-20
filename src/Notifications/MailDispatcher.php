@@ -77,6 +77,26 @@ final class MailDispatcher
         }
     }
 
+    /**
+     * Sends a raw HTML e-mail without templating. Used for "Send test" from
+     * the templates editor admin SPA.
+     *
+     * Returns true if wp_mail() reports success.
+     */
+    public function sendRaw(string $to, string $subject, string $htmlBody, ?string $textBody = null): bool
+    {
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: ' . $this->fromHeader(),
+        ];
+
+        return (bool) wp_mail($to, $subject, $htmlBody, $headers);
+    }
+
     private function fromHeader(): string
     {
         $name  = (string) get_option('blogname', 'WordPress');
