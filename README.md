@@ -57,6 +57,34 @@ Voir `docs/superpowers/specs/` pour la spécification complète et `docs/superpo
 
 À partir de là, chaque transition booking (création / confirmation / refus / annulation) déclenche un job Action Scheduler `tb/push_gcal_event` qui crée, met à jour ou supprime l'événement dans Google Calendar. Les erreurs 5xx sont retentées automatiquement ; les 4xx sont consignées dans le journal sans retry. `404`/`410` sur `delete` sont tolérés (déjà absent côté Google = succès).
 
+## Sync entrante Google → WP (Plan 4)
+
+Un événement créé directement dans Google Calendar devient automatiquement un `BusyBlock` côté WP en ~5 secondes (via webhook) ou ≤ 15 minutes (cron fallback).
+
+### Mécanisme
+
+1. **Watch channel.** Une fois OAuth connecté, ouvrir **Trinity Booking → Google** et cliquer **Démarrer le watch**. Un channel push notifications est créé chez Google (TTL 7 jours). À chaque modif de calendrier, Google POST notre webhook public.
+2. **Webhook.** `POST /wp-json/trinity-booking/v1/google/webhook`. Vérification HMAC du header `X-Goog-Channel-Token` contre le secret persisté → enfile un job `tb/google_pull` (debounce 5 s).
+3. **Pull job.** Action Scheduler exécute `tb/google_pull` qui appelle `events.list?syncToken=…` pour récupérer les diffs incrémentaux. Upsert / delete des `BusyBlock` selon `status` de l'event (`confirmed`/`tentative` → upsert ; `cancelled` → delete).
+4. **Reflection.** Quand notre push (Plan 3) crée un event GCal, Google nous re-notifie. On l'ignore (lookup `google_event_id` dans `wp_tb_bookings`).
+5. **Renewal.** Cron quotidien `tb/watch_renew_check` : si le channel expire dans < 24h, on le renouvelle automatiquement.
+6. **Fallback.** Cron `tb/google_pull_all` toutes les 15 min : exécute un pull même si le webhook n'a rien reçu (firewall, DNS, etc.). No-op si rien à pull.
+
+### Pré-requis Google Cloud
+
+- Webhook URL **doit** être HTTPS et publique. Google rejette `http://` et les IPs RFC1918.
+- En dev local : utiliser un tunnel **ngrok** (`ngrok http 8080`) ou **Cloudflare Tunnel** et configurer `WP_HOME` / `WP_SITEURL` sur l'URL publique le temps des tests.
+
+### Diagnostics
+
+- **WP admin → Trinity Booking → Google → Synchronisation entrante** : statut watch (channel id, expires_at), dernier full sync, présence du sync token, boutons "Démarrer / Arrêter watch" et "Forcer un pull maintenant".
+- **WP-CLI** : `wp trinity-booking doctor` — vérifie OAuth, statut watch, et lance un pull de test (rapporte upserted / deleted / reflection-ignored).
+- **Journal** : Trinity Booking → Journal, filtre `direction=g_to_wp` ou `entity=watch`.
+
+### Désactivation propre
+
+Avant de désactiver le plugin, **cliquer Arrêter le watch** pour libérer le channel côté Google. Sinon le channel expire de lui-même en ≤ 7 jours. La désactivation WP n'appelle PAS `stopChannel()` automatiquement (le bootstrap du plugin n'est pas garanti dans le contexte de désactivation).
+
 ## CLI diagnostics
 
 ```bash
