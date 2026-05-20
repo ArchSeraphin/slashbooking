@@ -31,11 +31,17 @@
     }
   },
   "scripts": {
+    "pre-autoload-dump": "Google\\Task\\Composer::cleanup",
     "test": "phpunit --testsuite unit --bootstrap tests/bootstrap.php",
     "test:integration": "phpunit --testsuite integration --bootstrap tests/Integration/bootstrap-wp.php",
     "stan": "phpstan analyse --memory-limit=512M",
     "cs": "phpcs",
     "cs:fix": "phpcbf"
+  },
+  "extra": {
+    "google/apiclient-services": [
+      "Calendar"
+    ]
   },
   "config": {
     "allow-plugins": {
