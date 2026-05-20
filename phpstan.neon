@@ -10,6 +10,8 @@ parameters:
   scanFiles:
     - tests/stubs/wp-cli.stub.php
   reportUnmatchedIgnoredErrors: false
+  # Google SDK phpdoc types are imprecise (e.g. getStart() typed non-null but can return null).
+  # Without this flag, PHPStan 2.x flags our defensive null checks as redundant.
   treatPhpDocTypesAsCertain: false
   ignoreErrors:
     # $wpdb->prepare wants literal-string; we always concatenate $wpdb->prefix
