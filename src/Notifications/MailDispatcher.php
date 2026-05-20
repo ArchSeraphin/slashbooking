@@ -8,6 +8,7 @@ use Trinity\Booking\Domain\Booking;
 use Trinity\Booking\Notifications\Events\BookingContext;
 use Trinity\Booking\Notifications\Events\EventKey;
 use Trinity\Booking\Persistence\MailTemplateRepository;
+use Trinity\Booking\Privacy\EmailMasker;
 
 final class MailDispatcher
 {
@@ -67,12 +68,12 @@ final class MailDispatcher
 
             if (!$sent) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional: mail dispatch failure must be logged; no WP equivalent for server-side error logging.
-                error_log(sprintf('[trinity-booking] wp_mail failed for event=%s to=%s', $event->value, $recipient));
+                error_log(sprintf('[trinity-booking] wp_mail failed for event=%s to=%s', $event->value, EmailMasker::mask($recipient)));
             }
             return (bool) $sent;
         } catch (Throwable $e) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional: fail-safe catch block; error_log is the only safe logging channel available without WP context.
-            error_log('[trinity-booking] MailDispatcher exception: ' . $e->getMessage());
+            error_log(sprintf('[trinity-booking] MailDispatcher exception (to=%s): %s', EmailMasker::mask($recipient), $e->getMessage()));
             return false;
         }
     }
