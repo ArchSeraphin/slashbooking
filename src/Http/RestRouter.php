@@ -78,5 +78,7 @@ final class RestRouter
 
         $syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
         (new AdminSyncLogController($syncLog))->registerRoutes();
+
+        (new AdminGoogleSettingsController())->registerRoutes();
     }
 }

@@ -45,6 +45,18 @@ export async function disconnectGoogle() {
 	} );
 }
 
+export async function fetchGoogleSettings() {
+	return apiFetch( { path: 'admin/google/settings' } );
+}
+
+export async function saveGoogleSettings( { clientId, clientSecret } ) {
+	return apiFetch( {
+		path: 'admin/google/settings',
+		method: 'POST',
+		data: { client_id: clientId, client_secret: clientSecret },
+	} );
+}
+
 export async function fetchSyncLog( {
 	page = 1,
 	perPage = 50,
