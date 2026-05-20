@@ -21,6 +21,10 @@ if (!class_exists(\WP_CLI::class)) {
         public static function log(string $message): void {}
         public static function success(string $message): void {}
         public static function warning(string $message): void {}
+
+        /**
+         * @phpstan-return ($exit is true ? never : void)
+         */
         public static function error(string $message, bool $exit = true): void {}
 
         /**

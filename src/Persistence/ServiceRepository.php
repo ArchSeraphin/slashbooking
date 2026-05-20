@@ -45,6 +45,6 @@ final class ServiceRepository
         if (!is_array($rows)) {
             return [];
         }
-        return array_values(array_map(static fn (array $row) => Service::fromRow($row), $rows));
+        return array_map(static fn (array $row) => Service::fromRow($row), $rows);
     }
 }

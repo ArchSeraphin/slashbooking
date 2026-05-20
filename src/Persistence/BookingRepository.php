@@ -97,7 +97,7 @@ final class BookingRepository
         if (!is_array($rows)) {
             $rows = [];
         }
-        $items = array_values(array_map(fn (array $r) => $this->fromRow($r), $rows));
+        $items = array_map(fn (array $r) => $this->fromRow($r), $rows);
         return ['items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $perPage];
     }
 
@@ -121,7 +121,7 @@ final class BookingRepository
         if (!is_array($rows)) {
             return [];
         }
-        return array_values(array_map(fn (array $r) => $this->fromRow($r), $rows));
+        return array_map(fn (array $r) => $this->fromRow($r), $rows);
     }
 
     public function markReminderSent(int $bookingId, DateTimeImmutable $atUtc): void
@@ -157,7 +157,7 @@ final class BookingRepository
         if (!is_array($rows)) {
             return [];
         }
-        return array_values(array_map(fn (array $row) => $this->fromRow($row), $rows));
+        return array_map(fn (array $row) => $this->fromRow($row), $rows);
     }
 
     /**

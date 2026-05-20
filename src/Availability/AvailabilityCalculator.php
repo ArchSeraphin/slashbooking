@@ -21,7 +21,7 @@ final class AvailabilityCalculator
     public function filter(array $candidates, array $busy): array
     {
         if ($busy === []) {
-            return array_values($candidates);
+            return $candidates;
         }
         $free = [];
         foreach ($candidates as $slot) {

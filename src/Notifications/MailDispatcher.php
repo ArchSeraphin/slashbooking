@@ -59,7 +59,7 @@ final class MailDispatcher
             $sent = wp_mail($recipient, $subject, $body, $headers, $attachments);
 
             foreach ($attachments as $path) {
-                if (is_string($path) && file_exists($path)) {
+                if (file_exists($path)) {
                     // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink -- intentional: temp ICS cleanup after send; error is non-critical; wp_delete_file() wraps unlink but is not available in all contexts and adds no value here.
                     @unlink($path);
                 }
