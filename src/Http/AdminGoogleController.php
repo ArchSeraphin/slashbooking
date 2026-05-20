@@ -3,14 +3,18 @@ declare(strict_types=1);
 
 namespace Trinity\Booking\Http;
 
+use Closure;
 use DateTimeImmutable;
+use DateTimeInterface;
 use DateTimeZone;
 use Trinity\Booking\Admin\Capabilities;
 use Trinity\Booking\Domain\GoogleAccount;
 use Trinity\Booking\Google\Encryption;
 use Trinity\Booking\Google\Exceptions\OAuthFailure;
+use Trinity\Booking\Google\GoogleClientBuilder;
 use Trinity\Booking\Google\OAuthClient;
 use Trinity\Booking\Google\OAuthState;
+use Trinity\Booking\Google\WatchChannelManager;
 use Trinity\Booking\Persistence\GoogleAccountRepository;
 use Trinity\Booking\Plugin;
 use WP_Error;
@@ -19,11 +23,17 @@ use WP_REST_Response;
 
 final class AdminGoogleController
 {
+    /**
+     * @param Closure(int): void $enqueuePull
+     */
     public function __construct(
         private readonly GoogleAccountRepository $accounts,
         private readonly OAuthClient $oauthClient,
         private readonly OAuthState $state,
         private readonly Encryption $encryption,
+        private readonly WatchChannelManager $watchManager,
+        private readonly GoogleClientBuilder $clientBuilder,
+        private readonly Closure $enqueuePull,
     ) {
     }
 
@@ -50,6 +60,26 @@ final class AdminGoogleController
             'methods'             => 'POST',
             'callback'            => [$this, 'disconnect'],
             'permission_callback' => [$this, 'canManage'],
+        ]);
+        register_rest_route($ns, '/admin/google/watch/start', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'watchStart'],
+            'permission_callback' => fn () => current_user_can(Capabilities::MANAGE),
+        ]);
+        register_rest_route($ns, '/admin/google/watch/stop', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'watchStop'],
+            'permission_callback' => fn () => current_user_can(Capabilities::MANAGE),
+        ]);
+        register_rest_route($ns, '/admin/google/pull/now', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'pullNow'],
+            'permission_callback' => fn () => current_user_can(Capabilities::MANAGE),
+        ]);
+        register_rest_route($ns, '/admin/google/diagnostics', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'diagnostics'],
+            'permission_callback' => fn () => current_user_can(Capabilities::MANAGE),
         ]);
     }
 
@@ -141,5 +171,71 @@ final class AdminGoogleController
             $this->accounts->delete($acct->id());
         }
         return new WP_REST_Response(['disconnected' => true], 200);
+    }
+
+    public function watchStart(): WP_REST_Response
+    {
+        $account = $this->accounts->findSingle();
+        if ($account === null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'no_account'], 400);
+        }
+        try {
+            $gateway    = $this->clientBuilder->buildGateway($account);
+            $webhookUrl = rest_url(Plugin::REST_NAMESPACE . '/google/webhook');
+            $this->watchManager->start($account, $gateway, $webhookUrl);
+        } catch (\Throwable $e) {
+            return new WP_REST_Response(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+        return new WP_REST_Response([
+            'ok'        => true,
+            'channelId' => $account->watchChannelId(),
+            'expiresAt' => $account->watchExpiresAt()?->format(DateTimeInterface::ATOM),
+        ]);
+    }
+
+    public function watchStop(): WP_REST_Response
+    {
+        $account = $this->accounts->findSingle();
+        if ($account === null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'no_account'], 400);
+        }
+        try {
+            $gateway = $this->clientBuilder->buildGateway($account);
+            $this->watchManager->stop($account, $gateway);
+        } catch (\Throwable $e) {
+            return new WP_REST_Response(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+        return new WP_REST_Response(['ok' => true]);
+    }
+
+    public function pullNow(): WP_REST_Response
+    {
+        $account = $this->accounts->findSingle();
+        if ($account === null) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'no_account'], 400);
+        }
+        ($this->enqueuePull)((int) $account->id());
+        return new WP_REST_Response(['ok' => true]);
+    }
+
+    public function diagnostics(): WP_REST_Response
+    {
+        $account = $this->accounts->findSingle();
+        if ($account === null) {
+            return new WP_REST_Response(['connected' => false]);
+        }
+        return new WP_REST_Response([
+            'connected'      => true,
+            'label'          => $account->label(),
+            'calendarId'     => $account->calendarId(),
+            'tokenExpiresAt' => $account->expiresAt()->format(DateTimeInterface::ATOM),
+            'watch'          => [
+                'channelId'  => $account->watchChannelId(),
+                'resourceId' => $account->watchResourceId(),
+                'expiresAt'  => $account->watchExpiresAt()?->format(DateTimeInterface::ATOM),
+            ],
+            'syncToken'      => $account->syncToken() !== null,
+            'lastFullSyncAt' => $account->lastFullSyncAt()?->format(DateTimeInterface::ATOM),
+        ]);
     }
 }

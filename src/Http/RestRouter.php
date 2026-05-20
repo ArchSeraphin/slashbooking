@@ -74,11 +74,52 @@ final class RestRouter
             clientSecret: (string) get_option('tb_google_client_secret', ''),
             redirectUri: rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
         );
-        (new AdminGoogleController($accounts, $oauthClient, $oauthState, $encryption))->registerRoutes();
+        $clientBuilder = new \Trinity\Booking\Google\GoogleClientBuilder($encryption, $accounts);
+        $watchMgr      = new \Trinity\Booking\Google\WatchChannelManager(
+            persist: fn (\Trinity\Booking\Domain\GoogleAccount $a) => $accounts->save($a),
+            ttlSeconds: 604_800,
+        );
+        // TODO Task 16: replace inline closure with real Action Scheduler wiring from Plugin.php
+        $enqueuePull = static function (int $accountId): void {
+            if (function_exists('as_schedule_single_action')) {
+                as_schedule_single_action(time() + 5, 'tb/google_pull', [$accountId], 'trinity-booking');
+                return;
+            }
+            do_action('tb/google_pull', $accountId);
+        };
+
+        (new AdminGoogleController(
+            $accounts,
+            $oauthClient,
+            $oauthState,
+            $encryption,
+            $watchMgr,
+            $clientBuilder,
+            $enqueuePull,
+        ))->registerRoutes();
 
         $syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
         (new AdminSyncLogController($syncLog))->registerRoutes();
 
         (new AdminGoogleSettingsController())->registerRoutes();
+
+        // Plan 4 webhook — TODO Task 16: full wiring review
+        (new GoogleWebhookController(
+            $accounts,
+            $enqueuePull,
+            log: function (array $entry) use ($syncLog): void {
+                $syncLog->append(
+                    level: (string) $entry['level'],
+                    direction: (string) $entry['direction'],
+                    entity: (string) $entry['entity'],
+                    entityId: $entry['entity_id'] !== null ? (int) $entry['entity_id'] : null,
+                    googleEventId: $entry['google_event_id'] !== null ? (string) $entry['google_event_id'] : null,
+                    action: (string) $entry['action'],
+                    status: (string) $entry['status'],
+                    payload: is_array($entry['payload'] ?? null) ? $entry['payload'] : [],
+                    errorMessage: $entry['error_message'] !== null ? (string) $entry['error_message'] : null,
+                );
+            },
+        ))->registerRoutes();
     }
 }
