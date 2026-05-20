@@ -23,21 +23,35 @@ final class Shortcode
     public function render($attrs): string
     {
         $attrs = is_array($attrs) ? $attrs : [];
-        $service = isset($attrs['service']) ? sanitize_text_field((string) $attrs['service']) : 'pv';
-        $svc = $this->services->findBySlug($service);
-        if ($svc === null || !$svc->isActive()) {
-            return '<div class="tb-error">' . esc_html__('Service inconnu', 'trinity-booking') . '</div>';
+
+        // The shortcode supports three forms:
+        //   [trinity_booking]                   -> user picks service in the widget (all active services)
+        //   [trinity_booking service="pv"]      -> service forced (no picker step)
+        //   [trinity_booking service="pv,irve"] -> picker filtered to a whitelist
+        $rawService = isset($attrs['service']) ? sanitize_text_field((string) $attrs['service']) : '';
+        $slugs = array_values(array_filter(array_map(
+            static fn (string $s): string => preg_replace('/[^a-z0-9_\-]/i', '', trim($s)) ?? '',
+            $rawService === '' ? [] : explode(',', $rawService)
+        )));
+
+        // If a single slug is provided, validate it. Any other case is left to the widget.
+        if (count($slugs) === 1) {
+            $svc = $this->services->findBySlug($slugs[0]);
+            if ($svc === null || !$svc->isActive()) {
+                return '<div class="tb-error">' . esc_html__('Service inconnu', 'trinity-booking') . '</div>';
+            }
+            $serviceAttr = $svc->slug;
+        } else {
+            // Empty (= all services) or whitelist (= "pv,irve") — widget will fetch /services to render the picker.
+            $serviceAttr = implode(',', $slugs);
         }
 
         // Enqueue assets directly here — WP queues them and prints in footer.
-        // The previous wp_enqueue_scripts-hook approach failed because that hook
-        // fires BEFORE the shortcode renders, so a global flag set in render()
-        // is never readable by the hook callback.
         $this->enqueueAssets();
 
         return sprintf(
             '<div class="tb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
-            esc_attr($svc->slug),
+            esc_attr($serviceAttr),
             esc_url_raw(rest_url(Plugin::REST_NAMESPACE . '/')),
         );
     }

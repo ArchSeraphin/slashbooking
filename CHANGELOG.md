@@ -6,6 +6,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.7] — 2026-05-20
+
+### Added
+
+- **Calendrier visuel mois-par-mois** dans le formulaire public (remplace l'input date HTML5). Navigation prev/next, légende couleurs (Disponible vert plein / Partiel vert pâle / Complet rouge / Fermé gris), respect lead time 24 h + horizon 60 jours.
+- **Choix du projet inline** : `[trinity_booking]` (sans paramètre) affiche les services actifs en pills (`Photovoltaïque (1h30)` / `Bornes de charge (45 min)`) et le visiteur choisit avant la date. `[trinity_booking service="pv"]` continue à forcer un service (rétrocompat). `[trinity_booking service="pv,irve"]` propose une liste filtrée. La durée Google Calendar suit automatiquement le service sélectionné via `Service::duration_min`.
+- Step indicator dynamique (3 ou 4 étapes selon la présence du picker projet).
+
+### Changed
+
+- **Admin SPA background aligné WP** : `.tb-admin` passe en `background: transparent` pour hériter du gris natif de l'admin WordPress (`#f0f0f1`) au lieu de l'override `slate-50` plus blanc. Les cards conservent leur fond blanc pour le contraste.
+
+---
+
 ## [1.0.6] — 2026-05-20
 
 ### Changed

@@ -1,380 +1,637 @@
 (function () {
-  'use strict';
+	'use strict';
 
-  // SVG icons (inline so no external requests).
-  var ICON_SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>';
-  var ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-  var ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 11 12 14 17 8"/></svg>';
-  var ICON_ALERT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+	// Inline SVG icons (no external requests).
+	var ICON_SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>';
+	var ICON_CLOCK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+	var ICON_CHECK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 11 12 14 17 8"/></svg>';
+	var ICON_ALERT  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+	var ICON_CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+	var ICON_CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
 
-  function init(root) {
-    var service = root.dataset.tbService;
-    var rest = root.dataset.tbRest;
-    var nonce = window.TrinityBooking && window.TrinityBooking.nonce;
-    var locale = (window.TrinityBooking && window.TrinityBooking.locale) || 'fr-FR';
+	var WEEKDAYS = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
+	var MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-    var state = { date: null, start: null, submitting: false };
+	function init(root) {
+		var rest = root.dataset.tbRest;
+		var rawServiceAttr = (root.dataset.tbService || '').trim();
+		var serviceWhitelist = rawServiceAttr === '' ? [] : rawServiceAttr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+		var nonce = window.TrinityBooking && window.TrinityBooking.nonce;
+		var locale = (window.TrinityBooking && window.TrinityBooking.locale) || 'fr-FR';
 
-    var stepsEl, dateStep, slotsStep, formStep, feedbackEl;
+		var state = {
+			services: [],         // [{slug, name, duration_min, color}, ...]
+			service: null,        // selected slug
+			date: null,           // ISO 'YYYY-MM-DD'
+			start: null,          // ISO datetime
+			month: monthStart(new Date()),  // first day of currently displayed month
+			dayStates: {},        // { 'YYYY-MM-DD': {state, count} }
+			submitting: false,
+		};
 
-    render();
+		var els = {};
 
-    function render() {
-      root.innerHTML = '';
-      root.append(
-        header(),
-        steps(),
-        stepDate(),
-        stepSlots(),
-        stepForm(),
-        feedback()
-      );
-      updateSteps();
-    }
+		// Decide if we need a project step. If exactly one whitelisted service,
+		// preselect it and skip the step.
+		bootstrap();
 
-    function header() {
-      var h = el('div', 'tb-widget__header');
-      h.append(
-        trustItem(ICON_SHIELD, 'Données sécurisées'),
-        trustItem(ICON_CLOCK,  'Réponse sous 24 h')
-      );
-      return h;
-    }
+		function bootstrap() {
+			if (serviceWhitelist.length === 1) {
+				state.service = serviceWhitelist[0];
+				// We need duration to display alongside slot lists later; fetch it lazily.
+				fetchServices().then(function (list) {
+					state.services = list.filter(function (s) { return s.slug === state.service; });
+					render();
+					loadMonth();
+				});
+				return;
+			}
+			fetchServices().then(function (list) {
+				if (serviceWhitelist.length > 0) {
+					list = list.filter(function (s) { return serviceWhitelist.indexOf(s.slug) !== -1; });
+				}
+				state.services = list;
+				if (list.length === 1) {
+					state.service = list[0].slug;
+				}
+				render();
+				if (state.service) {
+					loadMonth();
+				}
+			});
+		}
 
-    function trustItem(icon, label) {
-      var w = el('span', 'tb-widget__trust');
-      var i = el('span'); i.innerHTML = icon;
-      w.append(i.firstChild, document.createTextNode(label));
-      return w;
-    }
+		function fetchServices() {
+			return fetch(rest + 'services', { headers: { 'X-WP-Nonce': nonce || '' } })
+				.then(function (r) { return r.json(); })
+				.catch(function () { return []; });
+		}
 
-    function steps() {
-      stepsEl = el('div', 'tb-steps');
-      stepsEl.setAttribute('role', 'progressbar');
-      stepsEl.setAttribute('aria-valuemin', '1');
-      stepsEl.setAttribute('aria-valuemax', '3');
-      ['Date', 'Heure', 'Coordonnées'].forEach(function (lbl, i) {
-        var item = el('div', 'tb-steps__item');
-        var dot = el('span', 'tb-steps__dot');
-        dot.textContent = String(i + 1);
-        var l = el('span', 'tb-steps__label');
-        l.textContent = lbl;
-        item.append(dot, l);
-        stepsEl.append(item);
-        if (i < 2) stepsEl.append(el('span', 'tb-steps__line'));
-      });
-      return stepsEl;
-    }
+		// ----- Render -------------------------------------------------------
 
-    function currentStepIndex() {
-      if (!state.date) return 0;
-      if (!state.start) return 1;
-      return 2;
-    }
+		function render() {
+			root.innerHTML = '';
+			root.append(headerEl(), stepsEl());
 
-    function updateSteps() {
-      if (!stepsEl) return;
-      var items = stepsEl.querySelectorAll('.tb-steps__item');
-      var curr = currentStepIndex();
-      items.forEach(function (item, i) {
-        item.classList.remove('tb-steps__item--active', 'tb-steps__item--done');
-        if (i < curr) item.classList.add('tb-steps__item--done');
-        if (i === curr) item.classList.add('tb-steps__item--active');
-      });
-      stepsEl.setAttribute('aria-valuenow', String(curr + 1));
-    }
+			if (needsProjectStep()) root.append(projectStepEl());
+			root.append(dateStepEl());
+			root.append(slotsStepEl());
+			root.append(formStepEl());
+			root.append(feedbackEl());
 
-    function stepDate() {
-      dateStep = el('div', 'tb-step');
-      dateStep.append(h3('Choisissez une date'));
-      dateStep.append(hint('Sélectionnez le jour souhaité pour votre rendez-vous.'));
-      var input = el('input', 'tb-date');
-      input.type = 'date';
-      input.min = todayISO();
-      input.setAttribute('aria-label', 'Date du rendez-vous');
-      input.addEventListener('change', function () {
-        state.date = input.value;
-        state.start = null;
-        updateSteps();
-        loadSlots();
-      });
-      dateStep.append(input);
-      return dateStep;
-    }
+			updateSteps();
+			refreshCalendar();
+		}
 
-    function stepSlots() {
-      slotsStep = el('div', 'tb-step');
-      slotsStep.style.display = 'none';
-      slotsStep.append(h3('Choisissez un créneau'));
-      slotsStep.append(hint('Les horaires affichés sont en heure locale.'));
-      var list = el('div', 'tb-slot-list');
-      list.id = 'tb-slot-list';
-      list.setAttribute('role', 'list');
-      slotsStep.append(list);
-      return slotsStep;
-    }
+		function needsProjectStep() {
+			return state.services.length > 1;
+		}
 
-    function stepForm() {
-      formStep = el('div', 'tb-step');
-      formStep.style.display = 'none';
-      formStep.append(h3('Vos coordonnées'));
-      formStep.append(hint('Nous vous contacterons pour confirmer le rendez-vous.'));
+		function headerEl() {
+			var h = el('div', 'tb-widget__header');
+			h.append(
+				trustItem(ICON_SHIELD, 'Données sécurisées'),
+				trustItem(ICON_CLOCK,  'Réponse sous 24 h')
+			);
+			return h;
+		}
 
-      formStep.append(
-        field('customer_name',    'Nom complet',           'text',     true,  'Jean Dupont'),
-        field('customer_email',   'E-mail',                'email',    true,  'jean.dupont@exemple.fr'),
-        field('customer_phone',   'Téléphone',             'tel',      true,  '06 12 34 56 78'),
-        field('customer_address', 'Adresse du rendez-vous','textarea', true,  '15 rue de la République, 75011 Paris'),
-        field('notes',            'Notes (optionnel)',     'textarea', false, 'Précisions sur votre projet…')
-      );
+		function trustItem(icon, label) {
+			var w = el('span', 'tb-widget__trust');
+			var i = el('span'); i.innerHTML = icon;
+			w.append(i.firstChild, document.createTextNode(label));
+			return w;
+		}
 
-      // Honeypot — hidden but in form
-      var hp = field('website', 'Website', 'text', false, '');
-      hp.classList.add('tb-honeypot');
-      hp.setAttribute('aria-hidden', 'true');
-      hp.querySelector('input').setAttribute('tabindex', '-1');
-      hp.querySelector('input').setAttribute('autocomplete', 'off');
-      formStep.append(hp);
+		function stepsEl() {
+			els.steps = el('div', 'tb-steps');
+			els.steps.setAttribute('role', 'progressbar');
+			var labels = needsProjectStep()
+				? ['Projet', 'Date', 'Heure', 'Coordonnées']
+				: ['Date', 'Heure', 'Coordonnées'];
+			els.steps.setAttribute('aria-valuemin', '1');
+			els.steps.setAttribute('aria-valuemax', String(labels.length));
+			labels.forEach(function (lbl, i) {
+				var item = el('div', 'tb-steps__item');
+				var dot = el('span', 'tb-steps__dot');
+				dot.textContent = String(i + 1);
+				var l = el('span', 'tb-steps__label');
+				l.textContent = lbl;
+				item.append(dot, l);
+				els.steps.append(item);
+				if (i < labels.length - 1) els.steps.append(el('span', 'tb-steps__line'));
+			});
+			return els.steps;
+		}
 
-      // Consent
-      var consentWrap = el('div', 'tb-field tb-field--consent');
-      var consent = el('input');
-      consent.type = 'checkbox';
-      consent.id = 'tb-consent';
-      consent.name = 'consent';
-      consent.required = true;
-      var consentLabel = el('label');
-      consentLabel.htmlFor = 'tb-consent';
-      consentLabel.append(document.createTextNode(
-        "J'accepte que mes données soient utilisées pour me recontacter dans le cadre de ma demande de rendez-vous."
-      ));
+		function currentStepIndex() {
+			var offset = needsProjectStep() ? 1 : 0;
+			if (needsProjectStep() && !state.service) return 0;
+			if (!state.date)  return 0 + offset;
+			if (!state.start) return 1 + offset;
+			return 2 + offset;
+		}
 
-      var legalUrl = (window.TrinityBooking && window.TrinityBooking.legalUrl) || '';
-      if (legalUrl) {
-        var link = document.createElement('a');
-        link.href = legalUrl;
-        link.target = '_blank';
-        link.rel = 'noopener';
-        link.textContent = 'Mentions légales';
-        link.className = 'tb-legal-link';
-        consentLabel.append(document.createTextNode(' — '));
-        consentLabel.append(link);
-      }
-      consentWrap.append(consent, consentLabel);
-      formStep.append(consentWrap);
+		function updateSteps() {
+			if (!els.steps) return;
+			var items = els.steps.querySelectorAll('.tb-steps__item');
+			var curr = currentStepIndex();
+			items.forEach(function (item, i) {
+				item.classList.remove('tb-steps__item--active', 'tb-steps__item--done');
+				if (i < curr) item.classList.add('tb-steps__item--done');
+				if (i === curr) item.classList.add('tb-steps__item--active');
+			});
+			els.steps.setAttribute('aria-valuenow', String(curr + 1));
+		}
 
-      var btn = el('button', 'tb-button');
-      btn.type = 'button';
-      btn.id = 'tb-submit';
-      btn.textContent = 'Confirmer la demande';
-      btn.addEventListener('click', submit);
-      formStep.append(btn);
+		// ----- Step : Project (service picker) ------------------------------
 
-      return formStep;
-    }
+		function projectStepEl() {
+			els.projectStep = el('div', 'tb-step');
+			els.projectStep.append(h3('Choix du projet'));
+			els.projectStep.append(hint('Sélectionnez la nature du rendez-vous — la durée s\'adapte automatiquement.'));
 
-    function feedback() {
-      feedbackEl = el('div', 'tb-feedback');
-      feedbackEl.id = 'tb-feedback';
-      feedbackEl.setAttribute('role', 'status');
-      feedbackEl.setAttribute('aria-live', 'polite');
-      return feedbackEl;
-    }
+			var grid = el('div', 'tb-services');
+			state.services.forEach(function (svc) {
+				var b = el('button', 'tb-service-pill');
+				b.type = 'button';
+				b.dataset.slug = svc.slug;
+				if (state.service === svc.slug) b.classList.add('is-selected');
 
-    function loadSlots() {
-      slotsStep.style.display = '';
-      formStep.style.display = 'none';
-      var list = root.querySelector('#tb-slot-list');
-      list.textContent = '';
-      var loading = el('div', 'tb-slot-empty');
-      loading.textContent = 'Chargement des créneaux…';
-      list.append(loading);
+				var name = el('span', 'tb-service-pill__name');
+				name.textContent = svc.name;
+				var dur = el('span', 'tb-service-pill__duration');
+				dur.textContent = '(' + formatDuration(svc.duration_min) + ')';
+				b.append(name, dur);
 
-      var from = state.date;
-      var to = addDays(from, 1);
-      root.classList.add('tb-loading');
-      fetch(rest + 'availability?service=' + encodeURIComponent(service) + '&from=' + from + '&to=' + to, {
-        headers: { 'X-WP-Nonce': nonce || '' },
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          root.classList.remove('tb-loading');
-          list.textContent = '';
-          if (!data.slots || data.slots.length === 0) {
-            var empty = el('div', 'tb-slot-empty');
-            empty.textContent = 'Aucun créneau disponible ce jour-là. Essayez une autre date.';
-            list.append(empty);
-            return;
-          }
-          data.slots.forEach(function (slot) {
-            var b = el('button', 'tb-slot');
-            b.type = 'button';
-            b.textContent = formatTime(slot.start);
-            b.dataset.start = slot.start;
-            b.addEventListener('click', function () {
-              Array.from(list.children).forEach(function (c) { c.classList.remove('is-selected'); });
-              b.classList.add('is-selected');
-              state.start = slot.start;
-              formStep.style.display = '';
-              updateSteps();
-              // Smooth-scroll the form into view on mobile.
-              setTimeout(function () {
-                formStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }, 50);
-            });
-            list.append(b);
-          });
-        })
-        .catch(function () {
-          root.classList.remove('tb-loading');
-          list.textContent = '';
-          showError('Erreur de chargement des créneaux. Réessayez dans un instant.');
-        });
-    }
+				b.addEventListener('click', function () {
+					Array.from(grid.children).forEach(function (c) { c.classList.remove('is-selected'); });
+					b.classList.add('is-selected');
+					state.service = svc.slug;
+					state.date = null;
+					state.start = null;
+					state.dayStates = {};
+					updateSteps();
+					loadMonth();
+					// Scroll to date step for context.
+					setTimeout(function () {
+						if (els.dateStep) els.dateStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					}, 60);
+				});
+				grid.append(b);
+			});
+			els.projectStep.append(grid);
+			return els.projectStep;
+		}
 
-    function submit() {
-      if (state.submitting) return;
-      if (!state.start) { showError('Choisissez un créneau.'); return; }
-      var btn = root.querySelector('#tb-submit');
-      var data = {
-        service: service,
-        start: state.start,
-        customer_name: formStep.querySelector('[name=customer_name]').value.trim(),
-        customer_email: formStep.querySelector('[name=customer_email]').value.trim(),
-        customer_phone: formStep.querySelector('[name=customer_phone]').value.trim(),
-        customer_address: formStep.querySelector('[name=customer_address]').value.trim(),
-        notes: formStep.querySelector('[name=notes]').value.trim(),
-        consent: formStep.querySelector('[name=consent]').checked,
-        website: formStep.querySelector('[name=website]').value,
-      };
-      state.submitting = true;
-      btn.disabled = true;
-      btn.innerHTML = '';
-      btn.append(spinner(), document.createTextNode('Envoi en cours…'));
-      root.classList.add('tb-loading');
+		// ----- Step : Date (calendar) ---------------------------------------
 
-      fetch(rest + 'bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-WP-Nonce': nonce || '',
-        },
-        body: JSON.stringify(data),
-      })
-        .then(function (r) {
-          return r.json().then(function (body) { return { status: r.status, body: body }; });
-        })
-        .then(function (res) {
-          state.submitting = false;
-          root.classList.remove('tb-loading');
-          if (res.status >= 200 && res.status < 300) {
-            renderSuccess();
-            return;
-          }
-          resetSubmitBtn(btn);
-          if (res.status === 422) {
-            var errs = (res.body && res.body.data && res.body.data.errors) || {};
-            showError(Object.values(errs).join(' ') || 'Veuillez vérifier les champs du formulaire.');
-            return;
-          }
-          if (res.status === 409) {
-            showError('Désolé, ce créneau vient d\'être pris. Choisissez-en un autre.');
-            loadSlots();
-            return;
-          }
-          showError(res.body && res.body.message ? res.body.message : 'Erreur inattendue. Réessayez.');
-        })
-        .catch(function () {
-          state.submitting = false;
-          root.classList.remove('tb-loading');
-          resetSubmitBtn(btn);
-          showError('Impossible d\'envoyer la demande. Vérifiez votre connexion.');
-        });
-    }
+		function dateStepEl() {
+			els.dateStep = el('div', 'tb-step');
+			els.dateStep.append(h3('Choisissez une date'));
+			els.dateStep.append(hint('Cliquez sur un jour disponible (vert) pour voir les créneaux.'));
 
-    function resetSubmitBtn(btn) {
-      btn.disabled = false;
-      btn.textContent = 'Confirmer la demande';
-    }
+			els.cal = el('div', 'tb-cal');
 
-    function renderSuccess() {
-      root.innerHTML = '';
-      root.append(header());
+			// Header : month label + nav
+			var header = el('div', 'tb-cal__header');
+			els.prevBtn = el('button', 'tb-cal__nav');
+			els.prevBtn.type = 'button';
+			els.prevBtn.innerHTML = ICON_CHEV_L;
+			els.prevBtn.setAttribute('aria-label', 'Mois précédent');
+			els.prevBtn.addEventListener('click', function () {
+				state.month = addMonths(state.month, -1);
+				renderCalendarGrid();
+				loadMonth();
+			});
 
-      var ok = el('div', 'tb-success');
-      var iconWrap = el('span');
-      iconWrap.innerHTML = ICON_CHECK;
-      var msgWrap = el('div');
-      var title = el('strong');
-      title.textContent = 'Demande envoyée !';
-      var body = el('div');
-      body.textContent = 'Merci, nous reviendrons vers vous très vite pour confirmer le rendez-vous. Un e-mail récapitulatif vous a été envoyé.';
-      msgWrap.append(title, body);
-      ok.append(iconWrap.firstChild, msgWrap);
-      root.append(ok);
-    }
+			els.nextBtn = el('button', 'tb-cal__nav');
+			els.nextBtn.type = 'button';
+			els.nextBtn.innerHTML = ICON_CHEV_R;
+			els.nextBtn.setAttribute('aria-label', 'Mois suivant');
+			els.nextBtn.addEventListener('click', function () {
+				state.month = addMonths(state.month, 1);
+				renderCalendarGrid();
+				loadMonth();
+			});
 
-    function spinner() {
-      return el('span', 'tb-button__spinner');
-    }
+			els.monthLabel = el('div', 'tb-cal__month');
 
-    function showError(msg) {
-      feedbackEl.innerHTML = '';
-      var e = el('div', 'tb-error');
-      var iconWrap = el('span');
-      iconWrap.innerHTML = ICON_ALERT;
-      var msgEl = el('span');
-      msgEl.textContent = msg;
-      e.append(iconWrap.firstChild, msgEl);
-      feedbackEl.append(e);
-      // Move focus to the error for screen readers.
-      feedbackEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+			header.append(els.prevBtn, els.monthLabel, els.nextBtn);
 
-    function field(name, label, type, required, placeholder) {
-      var wrap = el('div', 'tb-field');
-      var lbl = el('label');
-      lbl.htmlFor = 'tb-input-' + name;
-      lbl.textContent = label;
-      if (required) {
-        var star = el('span', 'tb-required');
-        star.textContent = '*';
-        lbl.append(star);
-      }
-      var input = type === 'textarea' ? el('textarea') : el('input');
-      if (type !== 'textarea') input.type = type;
-      input.id = 'tb-input-' + name;
-      input.name = name;
-      if (required) input.required = true;
-      if (placeholder) input.placeholder = placeholder;
+			// Weekday row
+			var dows = el('div', 'tb-cal__dows');
+			WEEKDAYS.forEach(function (w) {
+				var d = el('div', 'tb-cal__dow');
+				d.textContent = w;
+				dows.append(d);
+			});
 
-      // Semantic input types for mobile keyboards + autocomplete hints.
-      if (name === 'customer_email') input.autocomplete = 'email';
-      if (name === 'customer_phone') input.autocomplete = 'tel';
-      if (name === 'customer_name')  input.autocomplete = 'name';
-      if (name === 'customer_address') input.autocomplete = 'street-address';
+			// Grid
+			els.grid = el('div', 'tb-cal__grid');
 
-      wrap.append(lbl, input);
-      return wrap;
-    }
+			// Legend
+			var legend = el('div', 'tb-cal__legend');
+			legend.append(
+				legendItem('available',  'Disponible'),
+				legendItem('partial',    'Partiel'),
+				legendItem('full',       'Complet'),
+				legendItem('closed',     'Fermé')
+			);
 
-    function hint(t) {
-      var p = el('p', 'tb-step__hint');
-      p.textContent = t;
-      return p;
-    }
+			els.cal.append(header, dows, els.grid, legend);
+			els.dateStep.append(els.cal);
 
-    function el(tag, cls) { var n = document.createElement(tag); if (cls) n.className = cls; return n; }
-    function h3(t) { var n = el('h3'); n.textContent = t; return n; }
-    function todayISO() { var d = new Date(); return d.toISOString().slice(0, 10); }
-    function addDays(iso, n) { var d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
-    function formatTime(iso) {
-      try { return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }); }
-      catch (e) { return iso; }
-    }
-  }
+			renderCalendarGrid();
+			return els.dateStep;
+		}
 
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.tb-widget').forEach(init);
-  });
+		function legendItem(state, label) {
+			var w = el('span', 'tb-cal__legend-item');
+			var sw = el('span', 'tb-cal__legend-swatch tb-cal-day--' + state);
+			var t = el('span'); t.textContent = label;
+			w.append(sw, t);
+			return w;
+		}
+
+		function renderCalendarGrid() {
+			if (!els.grid) return;
+			els.monthLabel.textContent = MONTHS[state.month.getMonth()] + ' ' + state.month.getFullYear();
+			els.grid.textContent = '';
+
+			var firstDay = new Date(state.month);
+			var lastDay = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 0);
+			// JS weekday: 0 Sun .. 6 Sat. We want Mon=0 .. Sun=6.
+			var offset = (firstDay.getDay() + 6) % 7;
+
+			var todayIso = todayISO();
+			var horizonIso = addDaysISO(todayIso, 60);
+			var leadIso = addDaysISO(todayIso, 1); // min lead time 24h
+
+			// Pad with previous-month blanks
+			for (var i = 0; i < offset; i++) {
+				els.grid.append(el('div', 'tb-cal-day tb-cal-day--blank'));
+			}
+
+			for (var d = 1; d <= lastDay.getDate(); d++) {
+				var iso = state.month.getFullYear() + '-' + pad2(state.month.getMonth() + 1) + '-' + pad2(d);
+				var btn = el('button', 'tb-cal-day');
+				btn.type = 'button';
+				btn.dataset.date = iso;
+				btn.textContent = String(d);
+
+				if (iso < leadIso || iso > horizonIso) {
+					btn.classList.add('tb-cal-day--closed');
+					btn.disabled = true;
+				} else {
+					btn.classList.add('tb-cal-day--loading');
+				}
+				if (state.date === iso) btn.classList.add('is-selected');
+
+				btn.addEventListener('click', function (ev) {
+					var cell = ev.currentTarget;
+					var iso = cell.dataset.date;
+					if (cell.disabled) return;
+					if (cell.classList.contains('tb-cal-day--full') || cell.classList.contains('tb-cal-day--closed')) return;
+					Array.from(els.grid.children).forEach(function (c) { c.classList.remove('is-selected'); });
+					cell.classList.add('is-selected');
+					state.date = iso;
+					state.start = null;
+					updateSteps();
+					loadSlots();
+				});
+
+				els.grid.append(btn);
+			}
+		}
+
+		function refreshCalendar() {
+			if (!els.grid) return;
+			Array.from(els.grid.querySelectorAll('.tb-cal-day')).forEach(function (cell) {
+				if (cell.classList.contains('tb-cal-day--blank') || cell.disabled) return;
+				var iso = cell.dataset.date;
+				var info = state.dayStates[iso];
+				cell.classList.remove('tb-cal-day--loading', 'tb-cal-day--available', 'tb-cal-day--partial', 'tb-cal-day--full');
+				if (!info) {
+					cell.classList.add('tb-cal-day--loading');
+					return;
+				}
+				cell.classList.add('tb-cal-day--' + info.state);
+				if (info.state === 'full' || info.state === 'closed') {
+					cell.disabled = true;
+				}
+			});
+		}
+
+		function loadMonth() {
+			if (!state.service) return;
+			if (!els.grid) return;
+			var from = toIso(state.month);
+			var to = toIso(new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1));
+			state.dayStates = {};
+			refreshCalendar();
+			fetch(rest + 'availability?service=' + encodeURIComponent(state.service) + '&from=' + from + '&to=' + to, {
+				headers: { 'X-WP-Nonce': nonce || '' },
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					var byDay = {};
+					(data.slots || []).forEach(function (slot) {
+						var d = slot.start.slice(0, 10);
+						byDay[d] = (byDay[d] || 0) + 1;
+					});
+					// We don't know the "max" per day, so use a simple heuristic.
+					// >=3 slots → available, 1-2 → partial, 0 → full.
+					var totals = Object.values(byDay);
+					var p75 = percentile(totals, 75) || 1;
+					Object.keys(byDay).forEach(function (d) {
+						var c = byDay[d];
+						var st = c >= Math.max(3, p75 * 0.6) ? 'available'
+							:    c >= 1 ? 'partial' : 'full';
+						state.dayStates[d] = { state: st, count: c };
+					});
+					// Mark days with no slots (in horizon) as full.
+					Array.from(els.grid.querySelectorAll('.tb-cal-day')).forEach(function (cell) {
+						if (cell.classList.contains('tb-cal-day--blank') || cell.disabled) return;
+						var iso = cell.dataset.date;
+						if (!state.dayStates[iso]) {
+							state.dayStates[iso] = { state: 'full', count: 0 };
+						}
+					});
+					refreshCalendar();
+				})
+				.catch(function () {
+					// fallback : leave loading state
+				});
+		}
+
+		// ----- Step : Slots -------------------------------------------------
+
+		function slotsStepEl() {
+			els.slotsStep = el('div', 'tb-step');
+			els.slotsStep.style.display = 'none';
+			els.slotsStep.append(h3('Choisissez un créneau'));
+			els.slotsStep.append(hint('Les horaires sont affichés en heure locale.'));
+			els.slotList = el('div', 'tb-slot-list');
+			els.slotList.setAttribute('role', 'list');
+			els.slotsStep.append(els.slotList);
+			return els.slotsStep;
+		}
+
+		function loadSlots() {
+			els.slotsStep.style.display = '';
+			els.formStep.style.display = 'none';
+			els.slotList.textContent = '';
+			var loading = el('div', 'tb-slot-empty');
+			loading.textContent = 'Chargement des créneaux…';
+			els.slotList.append(loading);
+
+			var from = state.date;
+			var to = addDaysISO(from, 1);
+			root.classList.add('tb-loading');
+			fetch(rest + 'availability?service=' + encodeURIComponent(state.service) + '&from=' + from + '&to=' + to, {
+				headers: { 'X-WP-Nonce': nonce || '' },
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					root.classList.remove('tb-loading');
+					els.slotList.textContent = '';
+					if (!data.slots || data.slots.length === 0) {
+						var empty = el('div', 'tb-slot-empty');
+						empty.textContent = 'Aucun créneau disponible ce jour-là. Essayez une autre date.';
+						els.slotList.append(empty);
+						return;
+					}
+					data.slots.forEach(function (slot) {
+						var b = el('button', 'tb-slot');
+						b.type = 'button';
+						b.textContent = formatTime(slot.start);
+						b.dataset.start = slot.start;
+						b.addEventListener('click', function () {
+							Array.from(els.slotList.children).forEach(function (c) { c.classList.remove('is-selected'); });
+							b.classList.add('is-selected');
+							state.start = slot.start;
+							els.formStep.style.display = '';
+							updateSteps();
+							setTimeout(function () {
+								els.formStep.scrollIntoView({ behavior: 'smooth', block: 'start' });
+							}, 50);
+						});
+						els.slotList.append(b);
+					});
+				})
+				.catch(function () {
+					root.classList.remove('tb-loading');
+					els.slotList.textContent = '';
+					showError('Erreur de chargement des créneaux. Réessayez dans un instant.');
+				});
+		}
+
+		// ----- Step : Form --------------------------------------------------
+
+		function formStepEl() {
+			els.formStep = el('div', 'tb-step');
+			els.formStep.style.display = 'none';
+			els.formStep.append(h3('Vos coordonnées'));
+			els.formStep.append(hint('Nous vous contacterons pour confirmer le rendez-vous.'));
+
+			els.formStep.append(
+				field('customer_name',    'Nom complet',           'text',     true,  'Jean Dupont'),
+				field('customer_email',   'E-mail',                'email',    true,  'jean.dupont@exemple.fr'),
+				field('customer_phone',   'Téléphone',             'tel',      true,  '06 12 34 56 78'),
+				field('customer_address', 'Adresse du rendez-vous','textarea', true,  '15 rue de la République, 75011 Paris'),
+				field('notes',            'Notes (optionnel)',     'textarea', false, 'Précisions sur votre projet…')
+			);
+
+			var hp = field('website', 'Website', 'text', false, '');
+			hp.classList.add('tb-honeypot');
+			hp.setAttribute('aria-hidden', 'true');
+			hp.querySelector('input').setAttribute('tabindex', '-1');
+			hp.querySelector('input').setAttribute('autocomplete', 'off');
+			els.formStep.append(hp);
+
+			var consentWrap = el('div', 'tb-field tb-field--consent');
+			var consent = el('input');
+			consent.type = 'checkbox';
+			consent.id = 'tb-consent';
+			consent.name = 'consent';
+			consent.required = true;
+			var consentLabel = el('label');
+			consentLabel.htmlFor = 'tb-consent';
+			consentLabel.append(document.createTextNode(
+				"J'accepte que mes données soient utilisées pour me recontacter dans le cadre de ma demande de rendez-vous."
+			));
+
+			var legalUrl = (window.TrinityBooking && window.TrinityBooking.legalUrl) || '';
+			if (legalUrl) {
+				var link = document.createElement('a');
+				link.href = legalUrl;
+				link.target = '_blank';
+				link.rel = 'noopener';
+				link.textContent = 'Mentions légales';
+				link.className = 'tb-legal-link';
+				consentLabel.append(document.createTextNode(' — '));
+				consentLabel.append(link);
+			}
+			consentWrap.append(consent, consentLabel);
+			els.formStep.append(consentWrap);
+
+			els.submitBtn = el('button', 'tb-button');
+			els.submitBtn.type = 'button';
+			els.submitBtn.textContent = 'Confirmer la demande';
+			els.submitBtn.addEventListener('click', submit);
+			els.formStep.append(els.submitBtn);
+
+			return els.formStep;
+		}
+
+		function feedbackEl() {
+			els.feedback = el('div', 'tb-feedback');
+			els.feedback.setAttribute('role', 'status');
+			els.feedback.setAttribute('aria-live', 'polite');
+			return els.feedback;
+		}
+
+		function submit() {
+			if (state.submitting) return;
+			if (!state.start) { showError('Choisissez un créneau.'); return; }
+			var data = {
+				service: state.service,
+				start: state.start,
+				customer_name: els.formStep.querySelector('[name=customer_name]').value.trim(),
+				customer_email: els.formStep.querySelector('[name=customer_email]').value.trim(),
+				customer_phone: els.formStep.querySelector('[name=customer_phone]').value.trim(),
+				customer_address: els.formStep.querySelector('[name=customer_address]').value.trim(),
+				notes: els.formStep.querySelector('[name=notes]').value.trim(),
+				consent: els.formStep.querySelector('[name=consent]').checked,
+				website: els.formStep.querySelector('[name=website]').value,
+			};
+			state.submitting = true;
+			els.submitBtn.disabled = true;
+			els.submitBtn.innerHTML = '';
+			els.submitBtn.append(el('span', 'tb-button__spinner'), document.createTextNode('Envoi en cours…'));
+			root.classList.add('tb-loading');
+
+			fetch(rest + 'bookings', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': nonce || '',
+				},
+				body: JSON.stringify(data),
+			})
+				.then(function (r) { return r.json().then(function (body) { return { status: r.status, body: body }; }); })
+				.then(function (res) {
+					state.submitting = false;
+					root.classList.remove('tb-loading');
+					if (res.status >= 200 && res.status < 300) {
+						renderSuccess();
+						return;
+					}
+					resetSubmit();
+					if (res.status === 422) {
+						var errs = (res.body && res.body.data && res.body.data.errors) || {};
+						showError(Object.values(errs).join(' ') || 'Veuillez vérifier les champs du formulaire.');
+						return;
+					}
+					if (res.status === 409) {
+						showError("Désolé, ce créneau vient d'être pris. Choisissez-en un autre.");
+						loadSlots();
+						loadMonth();
+						return;
+					}
+					showError(res.body && res.body.message ? res.body.message : 'Erreur inattendue. Réessayez.');
+				})
+				.catch(function () {
+					state.submitting = false;
+					root.classList.remove('tb-loading');
+					resetSubmit();
+					showError("Impossible d'envoyer la demande. Vérifiez votre connexion.");
+				});
+		}
+
+		function resetSubmit() {
+			els.submitBtn.disabled = false;
+			els.submitBtn.textContent = 'Confirmer la demande';
+		}
+
+		function renderSuccess() {
+			root.innerHTML = '';
+			root.append(headerEl());
+			var ok = el('div', 'tb-success');
+			var iconWrap = el('span'); iconWrap.innerHTML = ICON_CHECK;
+			var msgWrap = el('div');
+			var title = el('strong'); title.textContent = 'Demande envoyée !';
+			var body = el('div'); body.textContent = 'Merci, nous reviendrons vers vous très vite pour confirmer le rendez-vous. Un e-mail récapitulatif vous a été envoyé.';
+			msgWrap.append(title, body);
+			ok.append(iconWrap.firstChild, msgWrap);
+			root.append(ok);
+		}
+
+		function showError(msg) {
+			els.feedback.innerHTML = '';
+			var e = el('div', 'tb-error');
+			var iconWrap = el('span'); iconWrap.innerHTML = ICON_ALERT;
+			var msgEl = el('span'); msgEl.textContent = msg;
+			e.append(iconWrap.firstChild, msgEl);
+			els.feedback.append(e);
+			els.feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+
+		// ----- Helpers ------------------------------------------------------
+
+		function field(name, label, type, required, placeholder) {
+			var wrap = el('div', 'tb-field');
+			var lbl = el('label');
+			lbl.htmlFor = 'tb-input-' + name;
+			lbl.textContent = label;
+			if (required) {
+				var star = el('span', 'tb-required'); star.textContent = '*';
+				lbl.append(star);
+			}
+			var input = type === 'textarea' ? el('textarea') : el('input');
+			if (type !== 'textarea') input.type = type;
+			input.id = 'tb-input-' + name;
+			input.name = name;
+			if (required) input.required = true;
+			if (placeholder) input.placeholder = placeholder;
+
+			if (name === 'customer_email')   input.autocomplete = 'email';
+			if (name === 'customer_phone')   input.autocomplete = 'tel';
+			if (name === 'customer_name')    input.autocomplete = 'name';
+			if (name === 'customer_address') input.autocomplete = 'street-address';
+
+			wrap.append(lbl, input);
+			return wrap;
+		}
+
+		function hint(t) { var p = el('p', 'tb-step__hint'); p.textContent = t; return p; }
+		function el(tag, cls) { var n = document.createElement(tag); if (cls) n.className = cls; return n; }
+		function h3(t) { var n = el('h3'); n.textContent = t; return n; }
+		function pad2(n) { return n < 10 ? '0' + n : String(n); }
+		function todayISO() { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+		function addDaysISO(iso, n) { var p = iso.split('-'); var d = new Date(parseInt(p[0],10), parseInt(p[1],10) - 1, parseInt(p[2],10)); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+		function monthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+		function addMonths(d, n) { return new Date(d.getFullYear(), d.getMonth() + n, 1); }
+		function toIso(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+		function formatTime(iso) {
+			try { return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }); }
+			catch (e) { return iso; }
+		}
+		function formatDuration(min) {
+			if (min < 60) return min + ' min';
+			var h = Math.floor(min / 60); var m = min % 60;
+			return m === 0 ? h + 'h' : h + 'h' + pad2(m);
+		}
+		function percentile(arr, p) {
+			if (!arr.length) return 0;
+			var sorted = arr.slice().sort(function (a, b) { return a - b; });
+			var idx = Math.floor((p / 100) * sorted.length);
+			return sorted[Math.min(idx, sorted.length - 1)];
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', function () {
+		document.querySelectorAll('.tb-widget').forEach(init);
+	});
 })();

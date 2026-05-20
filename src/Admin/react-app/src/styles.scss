@@ -16,7 +16,8 @@
 	--tb-c-warning:        #f59e0b;
 	--tb-c-warning-soft:   #fef3c7;
 
-	--tb-c-bg:             #f8fafc;
+	/* Background : on hérite du gris WP (#f0f0f1) — pas d'override.
+	   Les cards et surfaces restent en blanc pour le contraste. */
 	--tb-c-surface:        #ffffff;
 	--tb-c-surface-alt:    #f1f5f9;
 	--tb-c-border:         #e2e8f0;
@@ -53,7 +54,7 @@
 
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	color: var(--tb-c-text);
-	background: var(--tb-c-bg);
+	background: transparent; /* inherit WP admin gray */
 	margin: var(--tb-space-5) 0 var(--tb-space-10);
 	padding: 0;
 
