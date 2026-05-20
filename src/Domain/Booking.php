@@ -117,6 +117,13 @@ final class Booking
         $this->touch();
     }
 
+    public function clearGoogleEvent(): void
+    {
+        $this->googleEventId = null;
+        $this->googleEventEtag = null;
+        $this->touch();
+    }
+
     public function setDecisionTokenHash(string $hash): void
     {
         $this->decisionTokenHash = $hash;
