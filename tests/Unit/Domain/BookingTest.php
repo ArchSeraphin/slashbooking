@@ -44,9 +44,6 @@ final class BookingTest extends TestCase
         $b = $this->makePending();
         $b->confirm();
         self::assertSame(BookingStatus::CONFIRMED, $b->status());
-
-        $this->expectException(\DomainException::class);
-        $b->confirm();
     }
 
     public function test_reject_only_from_pending(): void
@@ -54,9 +51,6 @@ final class BookingTest extends TestCase
         $b = $this->makePending();
         $b->reject();
         self::assertSame(BookingStatus::REJECTED, $b->status());
-
-        $this->expectException(\DomainException::class);
-        $b->reject();
     }
 
     public function test_cancel_from_pending_or_confirmed(): void
@@ -84,6 +78,30 @@ final class BookingTest extends TestCase
 
         $this->expectException(\DomainException::class);
         $b->markReminderSent(new DateTimeImmutable('2026-05-31T11:00:00', new DateTimeZone('UTC')));
+    }
+
+    public function test_confirm_is_idempotent_when_already_confirmed(): void
+    {
+        $b = $this->makePending();
+        $b->confirm();
+        $b->confirm(); // ne doit pas lever
+        self::assertSame(BookingStatus::CONFIRMED, $b->status());
+    }
+
+    public function test_reject_is_idempotent_when_already_rejected(): void
+    {
+        $b = $this->makePending();
+        $b->reject();
+        $b->reject();
+        self::assertSame(BookingStatus::REJECTED, $b->status());
+    }
+
+    public function test_confirm_throws_from_cancelled(): void
+    {
+        $b = $this->makePending();
+        $b->cancel();
+        $this->expectException(\DomainException::class);
+        $b->confirm();
     }
 
     private function makePending(): Booking
