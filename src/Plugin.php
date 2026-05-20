@@ -139,6 +139,7 @@ final class Plugin
             new Notifications\TextBodyGenerator(),
             new Notifications\IcsBuilder(),
         );
+        $this->set(Notifications\MailDispatcher::class, $dispatcher);
 
         (new Notifications\BookingNotifier(
             $services,

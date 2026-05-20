@@ -121,5 +121,32 @@ final class RestRouter
                 );
             },
         ))->registerRoutes();
+
+        // --- Plan 5 : templates editor + settings ---
+        $mailRepo    = new \Trinity\Booking\Persistence\MailTemplateRepository($wpdb);
+        $tagRegistry = new \Trinity\Booking\Notifications\TagRegistry();
+        $renderer    = new \Trinity\Booking\Notifications\TemplateRenderer($tagRegistry);
+        $dispatcher  = $this->resolveMailDispatcher($mailRepo, $renderer);
+
+        (new \Trinity\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
+        (new \Trinity\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
+        (new \Trinity\Booking\Http\AdminSettingsController())->registerRoutes();
+    }
+
+    private function resolveMailDispatcher(
+        \Trinity\Booking\Persistence\MailTemplateRepository $repo,
+        \Trinity\Booking\Notifications\TemplateRenderer $renderer,
+    ): \Trinity\Booking\Notifications\MailDispatcher {
+        try {
+            return \Trinity\Booking\Plugin::instance()->get(\Trinity\Booking\Notifications\MailDispatcher::class);
+        } catch (\RuntimeException) {
+            // Fallback: build a fresh one (e.g., during tests or before Plugin boot).
+            return new \Trinity\Booking\Notifications\MailDispatcher(
+                $repo,
+                $renderer,
+                new \Trinity\Booking\Notifications\TextBodyGenerator(),
+                new \Trinity\Booking\Notifications\IcsBuilder(),
+            );
+        }
     }
 }
