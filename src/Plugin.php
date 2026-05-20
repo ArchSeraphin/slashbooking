@@ -111,6 +111,8 @@ final class Plugin
             $urls,
         ))->register();
 
+        (new Admin\AdminMenu())->register();
+
         add_action('init', [$this, 'loadTextDomain']);
     }
 
