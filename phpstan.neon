@@ -10,6 +10,7 @@ parameters:
   scanFiles:
     - tests/stubs/wp-cli.stub.php
   reportUnmatchedIgnoredErrors: false
+  treatPhpDocTypesAsCertain: false
   ignoreErrors:
     # $wpdb->prepare wants literal-string; we always concatenate $wpdb->prefix
     # because table names cannot be parameterized. The prefix is trusted.
