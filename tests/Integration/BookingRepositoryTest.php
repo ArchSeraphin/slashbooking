@@ -89,4 +89,29 @@ final class BookingRepositoryTest extends WP_UnitTestCase
         );
         self::assertCount(0, $overlapping);
     }
+
+    public function test_find_by_google_event_id_returns_booking(): void
+    {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->insert($wpdb->prefix . 'tb_bookings', [
+            'public_uid'       => 'uid-' . uniqid(),
+            'service_id'       => $this->serviceId,
+            'status'           => 'confirmed',
+            'starts_at_utc'    => '2026-06-01 09:00:00',
+            'ends_at_utc'      => '2026-06-01 10:30:00',
+            'timezone'         => 'Europe/Paris',
+            'customer_name'    => 'X',
+            'customer_email'   => 'x@example.com',
+            'customer_phone'   => '0600000000',
+            'google_event_id'  => 'gcal_known_1',
+            'created_at'       => '2026-05-20 00:00:00',
+            'updated_at'       => '2026-05-20 00:00:00',
+        ]);
+
+        $found = $this->bookings->findByGoogleEventId('gcal_known_1');
+        self::assertNotNull($found);
+
+        self::assertNull($this->bookings->findByGoogleEventId('gcal_unknown_404'));
+    }
 }

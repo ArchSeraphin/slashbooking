@@ -41,6 +41,19 @@ final class BookingRepository
         return is_array($row) ? $this->fromRow($row) : null;
     }
 
+    public function findByGoogleEventId(string $googleEventId): ?Booking
+    {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $row = $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->table} WHERE google_event_id = %s LIMIT 1",
+                $googleEventId,
+            ),
+            ARRAY_A
+        );
+        return is_array($row) ? $this->fromRow($row) : null;
+    }
+
     public function findByPublicUid(string $uid): ?Booking
     {
         $row = $this->wpdb->get_row(
