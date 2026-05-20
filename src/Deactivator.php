@@ -8,7 +8,11 @@ final class Deactivator
 {
     public static function deactivate(): void
     {
-        // Cron clear viendra dans Plan 2 (reminders).
+        $timestamp = wp_next_scheduled(\Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+        if ($timestamp !== false) {
+            wp_unschedule_event($timestamp, \Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+        }
+
         // Watch channel unsubscribe viendra dans Plan 4.
     }
 }

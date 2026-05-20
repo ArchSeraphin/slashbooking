@@ -89,6 +89,11 @@ final class Plugin
         $shortcode = new PublicFront\Shortcode($services);
         $shortcode->register();
 
+        $reminder = new \Trinity\Booking\Notifications\ReminderScheduler(
+            new \Trinity\Booking\Persistence\BookingRepository($wpdb)
+        );
+        $reminder->register();
+
         add_action('init', [$this, 'loadTextDomain']);
     }
 

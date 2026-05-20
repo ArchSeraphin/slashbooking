@@ -104,6 +104,38 @@ final class BookingRepository
     /**
      * @return list<Booking>
      */
+    public function findRemindersDue(DateTimeImmutable $windowStart, DateTimeImmutable $windowEnd): array
+    {
+        $sql = $this->wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $this->table is internal constant
+            "SELECT * FROM {$this->table}
+             WHERE status = %s
+               AND reminder_sent_at IS NULL
+               AND starts_at_utc >= %s
+               AND starts_at_utc < %s",
+            BookingStatus::CONFIRMED->value,
+            $windowStart->format('Y-m-d H:i:s'),
+            $windowEnd->format('Y-m-d H:i:s'),
+        );
+        $rows = $this->wpdb->get_results($sql, ARRAY_A);
+        if (!is_array($rows)) {
+            return [];
+        }
+        return array_values(array_map(fn (array $r) => $this->fromRow($r), $rows));
+    }
+
+    public function markReminderSent(int $bookingId, DateTimeImmutable $atUtc): void
+    {
+        $this->wpdb->update(
+            $this->table,
+            ['reminder_sent_at' => $atUtc->format('Y-m-d H:i:s')],
+            ['id' => $bookingId],
+        );
+    }
+
+    /**
+     * @return list<Booking>
+     */
     public function findOverlapping(int $serviceId, TimeSlot $slot): array
     {
         $blocking = [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value];

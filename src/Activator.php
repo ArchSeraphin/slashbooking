@@ -16,6 +16,17 @@ final class Activator
         self::ensureDecisionSecret();
         self::seedServices($wpdb);
         Admin\Capabilities::install();
+
+        if (!wp_next_scheduled(\Trinity\Booking\Notifications\ReminderScheduler::HOOK)) {
+            wp_schedule_event(self::tomorrowAt10SiteTz(), 'daily', \Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+        }
+    }
+
+    private static function tomorrowAt10SiteTz(): int
+    {
+        $tz = function_exists('wp_timezone') ? wp_timezone() : new \DateTimeZone('UTC');
+        $when = new \DateTimeImmutable('tomorrow 10:00', $tz);
+        return $when->getTimestamp();
     }
 
     private static function ensureDecisionSecret(): void
