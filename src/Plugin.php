@@ -5,7 +5,7 @@ namespace Trinity\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.1';
+    public const VERSION = '1.0.2';
     public const TEXT_DOMAIN = 'trinity-booking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'trinity-booking/v1';
@@ -136,7 +136,10 @@ final class Plugin
         Privacy\BookingRetentionPurger::register();
 
         $signer = new Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
-        $urls   = new Http\UrlBuilder($signer, rest_url(self::REST_NAMESPACE));
+        // Lazy URL resolver — rest_url() requires $wp_rewrite which is not yet
+        // initialized at plugin file load time. The closure fires later, when
+        // BookingNotifier callbacks actually need to build a URL.
+        $urls = new Http\UrlBuilder($signer, fn (): string => rest_url(self::REST_NAMESPACE));
 
         $dispatcher = new Notifications\MailDispatcher(
             new Persistence\MailTemplateRepository($wpdb),

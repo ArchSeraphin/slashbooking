@@ -3,13 +3,19 @@ declare(strict_types=1);
 
 namespace Trinity\Booking\Http;
 
+use Closure;
 use Trinity\Booking\Booking\DecisionTokenSigner;
 
 final class UrlBuilder
 {
+    /**
+     * @param Closure(): string $restBaseUrl resolves the REST namespace base URL on-demand.
+     *                                       Lazy because rest_url() requires $wp_rewrite initialized,
+     *                                       which is not yet available at plugin file load time.
+     */
     public function __construct(
         private readonly DecisionTokenSigner $signer,
-        private readonly string $restBaseUrl,
+        private readonly Closure $restBaseUrl,
     ) {
     }
 
@@ -17,7 +23,7 @@ final class UrlBuilder
     {
         $payload = 'cancel|' . $publicUid;
         $sig = $this->signer->sign($payload, $expiresAtUnix);
-        return $this->restBaseUrl . '/cancel?' . http_build_query([
+        return ($this->restBaseUrl)() . '/cancel?' . http_build_query([
             'uid' => $publicUid,
             'exp' => $expiresAtUnix,
             'sig' => $sig,
@@ -28,7 +34,7 @@ final class UrlBuilder
     {
         $payload = 'decide|' . $bookingId . '|' . $action;
         $sig = $this->signer->sign($payload, $expiresAtUnix);
-        return $this->restBaseUrl . '/decide?' . http_build_query([
+        return ($this->restBaseUrl)() . '/decide?' . http_build_query([
             'booking' => $bookingId,
             'action'  => $action,
             'exp'     => $expiresAtUnix,

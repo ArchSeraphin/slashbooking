@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.2] — 2026-05-20
+
+### Fixed
+
+- **Activation fatal — 2e occurrence.** `Plugin::register()` appelait `rest_url()` au plugin file load (depuis `wp-settings.php`, avant que `$wp_rewrite` ne soit initialisé) → `Error: Call to a member function using_index_permalinks() on null`. Fix : `UrlBuilder` reçoit maintenant une `Closure` qui résout l'URL paresseusement à la première utilisation (= quand un `BookingNotifier` callback fire). Bug latent depuis Plan 2.
+
+---
+
 ## [1.0.1] — 2026-05-20
 
 ### Fixed

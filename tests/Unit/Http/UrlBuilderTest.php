@@ -15,7 +15,10 @@ final class UrlBuilderTest extends TestCase
     protected function setUp(): void
     {
         $this->signer = new DecisionTokenSigner('a-very-long-test-secret-32bytes-ok');
-        $this->b = new UrlBuilder($this->signer, 'https://t.tld/wp-json/trinity-booking/v1');
+        $this->b = new UrlBuilder(
+            $this->signer,
+            fn (): string => 'https://t.tld/wp-json/trinity-booking/v1',
+        );
     }
 
     public function test_cancel_url_has_uid_exp_sig(): void
