@@ -89,10 +89,27 @@ final class Plugin
         $shortcode = new PublicFront\Shortcode($services);
         $shortcode->register();
 
-        $reminder = new \Trinity\Booking\Notifications\ReminderScheduler(
-            new \Trinity\Booking\Persistence\BookingRepository($wpdb)
-        );
+        $bookings = new Persistence\BookingRepository($wpdb);
+
+        $reminder = new Notifications\ReminderScheduler($bookings);
         $reminder->register();
+
+        $signer = new Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
+        $urls   = new Http\UrlBuilder($signer, rest_url(self::REST_NAMESPACE));
+
+        $dispatcher = new Notifications\MailDispatcher(
+            new Persistence\MailTemplateRepository($wpdb),
+            new Notifications\TemplateRenderer(new Notifications\TagRegistry()),
+            new Notifications\TextBodyGenerator(),
+            new Notifications\IcsBuilder(),
+        );
+
+        (new Notifications\BookingNotifier(
+            $services,
+            $bookings,
+            $dispatcher,
+            $urls,
+        ))->register();
 
         add_action('init', [$this, 'loadTextDomain']);
     }
