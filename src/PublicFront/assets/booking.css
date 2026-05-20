@@ -37,6 +37,15 @@
 	box-sizing: border-box;
 }
 
+/* Mobile width safety net : if the parent (theme content area) is narrower
+   than expected, shrink margins and respect viewport width. */
+@media (max-width: 520px) {
+	.tb-widget {
+		margin: 16px 0;
+		max-width: 100%;
+	}
+}
+
 .tb-widget *,
 .tb-widget *::before,
 .tb-widget *::after { box-sizing: border-box; }
@@ -158,6 +167,10 @@
 	padding: 20px;
 	margin-bottom: 16px;
 	box-shadow: var(--tb-shadow-sm);
+}
+
+@media (max-width: 480px) {
+	.tb-step { padding: 14px; }
 }
 
 .tb-step h3 {
@@ -298,6 +311,10 @@
 	gap: 4px;
 }
 
+@media (max-width: 480px) {
+	.tb-cal__grid, .tb-cal__dows { gap: 2px; }
+}
+
 .tb-cal-day {
 	aspect-ratio: 1;
 	display: flex;
@@ -389,8 +406,21 @@
 }
 
 @media (max-width: 480px) {
-	.tb-cal-day { font-size: 13px; }
+	.tb-cal-day  { font-size: 13px; border-radius: 6px; }
+	.tb-cal__dow { font-size: 10px; padding: 2px 0; }
 	.tb-cal__month { font-size: 15px; }
+	.tb-cal__nav   { width: 32px; height: 32px; }
+	.tb-cal__nav svg { width: 16px; height: 16px; }
+	.tb-cal__legend { gap: 8px 12px; font-size: 11px; }
+}
+
+/* Slot list also needs an overflow safety net on very narrow screens. */
+@media (max-width: 480px) {
+	.tb-slot-list {
+		grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+		gap: 6px;
+	}
+	.tb-slot { padding: 10px 6px; font-size: 14px; }
 }
 
 /* ============================================================

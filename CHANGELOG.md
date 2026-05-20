@@ -6,6 +6,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.8] — 2026-05-20
+
+### Fixed
+
+- **Slots affichaient l'ISO 8601 brut** (`2026-06-18T09:00:00+00:00`) au lieu de l'heure formatée. WordPress `get_locale()` retourne `fr_FR` (underscore) mais `Intl.DateTimeFormat` / `toLocaleTimeString` exigent BCP-47 `fr-FR` (hyphen). Sans conversion, `RangeError` était silencieusement attrapé et le fallback affichait l'ISO. Fix : `locale.replace('_', '-')`.
+- **Calendrier débordait sur mobile.** Padding step réduit (20 → 14 px), gaps de grille réduits (4 → 2 px), cell font-size réduit (14 → 13 px), boutons nav réduits (36 → 32 px), légende compactée. Widget en `max-width: 100%` + marges réduites sous 520 px. Slots list passe à `minmax(88 px)` sous 480 px.
+
+---
+
 ## [1.0.7] — 2026-05-20
 
 ### Added

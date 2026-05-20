@@ -1,6 +1,6 @@
 {
   "name": "trinity-booking-admin",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "description": "Admin SPA for trinity-booking",
   "scripts": {

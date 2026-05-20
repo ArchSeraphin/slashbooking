@@ -17,7 +17,11 @@
 		var rawServiceAttr = (root.dataset.tbService || '').trim();
 		var serviceWhitelist = rawServiceAttr === '' ? [] : rawServiceAttr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 		var nonce = window.TrinityBooking && window.TrinityBooking.nonce;
-		var locale = (window.TrinityBooking && window.TrinityBooking.locale) || 'fr-FR';
+		// WP returns "fr_FR" (underscore); Intl APIs want BCP-47 "fr-FR" (hyphen).
+		// Without this conversion, toLocaleTimeString throws RangeError and we fall
+		// back to printing the raw ISO string in slot buttons.
+		var rawLocale = (window.TrinityBooking && window.TrinityBooking.locale) || 'fr_FR';
+		var locale = rawLocale.replace('_', '-');
 
 		var state = {
 			services: [],         // [{slug, name, duration_min, color}, ...]

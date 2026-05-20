@@ -5,7 +5,7 @@ namespace Trinity\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.7';
+    public const VERSION = '1.0.8';
     public const TEXT_DOMAIN = 'trinity-booking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'trinity-booking/v1';
