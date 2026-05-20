@@ -205,6 +205,138 @@ final class Plugin
             $job->handle($bookingId, $action);
         }, 10, 2);
 
+        // ----- Google sync inbound (Plan 4) -----
+        $busyRepo = new Persistence\BusyBlockRepository($wpdb);
+        $watchMgr = new Google\WatchChannelManager(
+            persist: fn (Domain\GoogleAccount $a) => $accounts->save($a),
+            ttlSeconds: 604_800, // 7 days
+        );
+
+        // Custom 15-minute cron interval. Filter must be present at every boot
+        // (cron itself fires from WP-Cron which calls these filters at runtime).
+        add_filter('cron_schedules', static function (array $s): array {
+            if (!isset($s['tb_fifteen_minutes'])) {
+                $s['tb_fifteen_minutes'] = [
+                    'interval' => 900,
+                    'display'  => 'Every 15 minutes (Trinity Booking)',
+                ];
+            }
+            return $s;
+        });
+
+        // SyncEngine factory closure (each pull builds a new instance with fresh closures).
+        $buildSyncEngine = static function () use ($bookings, $busyRepo, $accounts, $syncLogRepo): Google\SyncEngine {
+            return new Google\SyncEngine(
+                findBookingByEventId: function (string $eventId) use ($bookings): ?int {
+                    $b = $bookings->findByGoogleEventId($eventId);
+                    return $b?->id();
+                },
+                upsertBusyBlock: fn (Domain\BusyBlock $bb) => $busyRepo->upsertFromGoogle($bb),
+                deleteBusyBlock: fn (int $accountId, string $sourceId) => $busyRepo->deleteBySourceId($accountId, $sourceId),
+                persistAccount: fn (Domain\GoogleAccount $a) => $accounts->save($a),
+                log: function (array $entry) use ($syncLogRepo): void {
+                    $syncLogRepo->append(
+                        level: (string) $entry['level'],
+                        direction: (string) $entry['direction'],
+                        entity: (string) $entry['entity'],
+                        entityId: $entry['entity_id'] !== null ? (int) $entry['entity_id'] : null,
+                        googleEventId: $entry['google_event_id'] !== null ? (string) $entry['google_event_id'] : null,
+                        action: (string) $entry['action'],
+                        status: (string) $entry['status'],
+                        payload: is_array($entry['payload'] ?? null) ? $entry['payload'] : [],
+                        errorMessage: $entry['error_message'] !== null ? (string) $entry['error_message'] : null,
+                    );
+                },
+            );
+        };
+
+        // Action Scheduler handler for inbound pulls.
+        // Producers (webhook controller, admin "pull now", cron fallback) call:
+        //   as_schedule_single_action(time() + 5, 'tb/google_pull', [$accountId], 'trinity-booking')
+        // RestRouter constructs its own enqueuePull closure with the same hook name — keeps the
+        // producer-side wiring close to the controllers without dragging Plugin.php into them.
+        add_action('tb/google_pull', static function (int $accountId) use (
+            $accounts,
+            $clientBuilder,
+            $buildSyncEngine,
+            $syncLogRepo
+        ): void {
+            $job = new Google\PullEventJob(
+                findAccount: fn (int $id) => $accounts->findById($id),
+                buildGateway: fn (Domain\GoogleAccount $a) => $clientBuilder->buildGateway($a),
+                pull: fn (Domain\GoogleAccount $a, Google\CalendarGateway $g) => $buildSyncEngine()->pull($a, $g),
+                log: function (array $entry) use ($syncLogRepo): void {
+                    $syncLogRepo->append(
+                        level: (string) $entry['level'],
+                        direction: (string) $entry['direction'],
+                        entity: (string) $entry['entity'],
+                        entityId: $entry['entity_id'] !== null ? (int) $entry['entity_id'] : null,
+                        googleEventId: $entry['google_event_id'] !== null ? (string) $entry['google_event_id'] : null,
+                        action: (string) $entry['action'],
+                        status: (string) $entry['status'],
+                        payload: is_array($entry['payload'] ?? null) ? $entry['payload'] : [],
+                        errorMessage: $entry['error_message'] !== null ? (string) $entry['error_message'] : null,
+                    );
+                },
+            );
+            $job->handle($accountId);
+        }, 10, 1);
+
+        // Daily watch renewal check: renew if expiration < now+1 day.
+        add_action('tb/watch_renew_check', static function () use ($accounts, $clientBuilder, $watchMgr, $syncLogRepo): void {
+            $account = $accounts->findSingle();
+            if ($account === null) {
+                return;
+            }
+            $expiresAt = $account->watchExpiresAt();
+            $now       = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+            $threshold = $now->modify('+1 day');
+            if ($expiresAt !== null && $expiresAt > $threshold) {
+                return; // Still > 24h before expiration.
+            }
+            try {
+                $gateway    = $clientBuilder->buildGateway($account);
+                $webhookUrl = rest_url(Plugin::REST_NAMESPACE . '/google/webhook');
+                $watchMgr->renew($account, $gateway, $webhookUrl);
+                $syncLogRepo->append(
+                    level: 'info',
+                    direction: 'internal',
+                    entity: 'watch',
+                    entityId: $account->id(),
+                    googleEventId: null,
+                    action: 'watch_renewed',
+                    status: 'ok',
+                    payload: ['channelId' => $account->watchChannelId()],
+                    errorMessage: null,
+                );
+            } catch (\Throwable $e) {
+                $syncLogRepo->append(
+                    level: 'error',
+                    direction: 'internal',
+                    entity: 'watch',
+                    entityId: $account->id(),
+                    googleEventId: null,
+                    action: 'watch_renew',
+                    status: 'failed',
+                    payload: [],
+                    errorMessage: $e->getMessage(),
+                );
+            }
+        });
+
+        // 15-min cron fallback: enqueue one pull per account (V1: a single account).
+        add_action('tb/google_pull_all', static function () use ($accounts): void {
+            $account = $accounts->findSingle();
+            if ($account === null) {
+                return;
+            }
+            if (function_exists('as_schedule_single_action')) {
+                as_schedule_single_action(time() + 5, 'tb/google_pull', [(int) $account->id()], 'trinity-booking');
+                return;
+            }
+            do_action('tb/google_pull', (int) $account->id());
+        });
+
         // Admin notice if encryption key falls back to option.
         if ($keyResolver->usingFallback()) {
             add_action('admin_notices', function (): void {
