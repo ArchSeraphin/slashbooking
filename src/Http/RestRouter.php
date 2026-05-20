@@ -62,5 +62,7 @@ final class RestRouter
             persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
         );
         (new DecisionController($signer, $confirmUC, $rejectUC))->registerRoutes();
+
+        (new AdminBookingController($bookings, $confirmUC, $rejectUC, $cancel))->registerRoutes();
     }
 }

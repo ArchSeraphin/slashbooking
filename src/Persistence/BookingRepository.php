@@ -51,6 +51,57 @@ final class BookingRepository
     }
 
     /**
+     * @param array{status?:?string, service_id?:?int, from?:?\DateTimeImmutable, to?:?\DateTimeImmutable} $filters
+     * @return array{items:list<Booking>, total:int, page:int, per_page:int}
+     */
+    public function paginate(array $filters, int $page, int $perPage): array
+    {
+        $page    = max(1, $page);
+        $perPage = max(1, min(100, $perPage));
+        $where   = [];
+        $args    = [];
+
+        if (!empty($filters['status'])) {
+            $where[] = 'status = %s';
+            $args[]  = $filters['status'];
+        }
+        if (!empty($filters['service_id'])) {
+            $where[] = 'service_id = %d';
+            $args[]  = (int) $filters['service_id'];
+        }
+        if (!empty($filters['from'])) {
+            $where[] = 'starts_at_utc >= %s';
+            $args[]  = $filters['from']->format('Y-m-d H:i:s');
+        }
+        if (!empty($filters['to'])) {
+            $where[] = 'starts_at_utc < %s';
+            $args[]  = $filters['to']->format('Y-m-d H:i:s');
+        }
+
+        $whereSql = $where !== [] ? ' WHERE ' . implode(' AND ', $where) : '';
+        $offset   = ($page - 1) * $perPage;
+
+        // phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- table name is internal constant, args are passed via prepare()
+        $totalSql = "SELECT COUNT(*) FROM {$this->table}" . $whereSql;
+        $total    = (int) $this->wpdb->get_var(
+            $args === [] ? $totalSql : $this->wpdb->prepare($totalSql, ...$args)
+        );
+
+        $listSql = "SELECT * FROM {$this->table}" . $whereSql .
+            " ORDER BY starts_at_utc DESC LIMIT %d OFFSET %d";
+        $rows = $this->wpdb->get_results(
+            $this->wpdb->prepare($listSql, ...array_merge($args, [$perPage, $offset])),
+            ARRAY_A
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+        $items = array_values(array_map(fn (array $r) => $this->fromRow($r), $rows));
+        return ['items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $perPage];
+    }
+
+    /**
      * @return list<Booking>
      */
     public function findOverlapping(int $serviceId, TimeSlot $slot): array
