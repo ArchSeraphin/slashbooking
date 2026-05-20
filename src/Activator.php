@@ -15,6 +15,7 @@ final class Activator
 
         self::ensureDecisionSecret();
         self::seedServices($wpdb);
+        Admin\Capabilities::install();
     }
 
     private static function ensureDecisionSecret(): void
