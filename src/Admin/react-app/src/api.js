@@ -72,3 +72,28 @@ export async function fetchSyncLog( {
 	}
 	return apiFetch( { path: `admin/sync-log?${ params }` } );
 }
+
+export async function fetchGoogleDiagnostics() {
+	return apiFetch( { path: 'admin/google/diagnostics' } );
+}
+
+export async function startWatch() {
+	return apiFetch( {
+		path: 'admin/google/watch/start',
+		method: 'POST',
+	} );
+}
+
+export async function stopWatch() {
+	return apiFetch( {
+		path: 'admin/google/watch/stop',
+		method: 'POST',
+	} );
+}
+
+export async function forcePullNow() {
+	return apiFetch( {
+		path: 'admin/google/pull/now',
+		method: 'POST',
+	} );
+}

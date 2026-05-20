@@ -15,6 +15,10 @@ import {
 	disconnectGoogle,
 	fetchGoogleSettings,
 	saveGoogleSettings,
+	fetchGoogleDiagnostics,
+	startWatch,
+	stopWatch,
+	forcePullNow,
 } from './api';
 
 export default function GooglePage() {
@@ -23,6 +27,9 @@ export default function GooglePage() {
 	const [ secret, setSecret ] = useState( '' );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
+	const [ diag, setDiag ] = useState( null );
+	const [ busy, setBusy ] = useState( false );
+	const [ panelMsg, setPanelMsg ] = useState( '' );
 
 	const reload = async () => {
 		setLoading( true );
@@ -41,8 +48,20 @@ export default function GooglePage() {
 		}
 	};
 
+	const refreshDiag = async () => {
+		try {
+			setDiag( await fetchGoogleDiagnostics() );
+		} catch ( e ) {
+			setPanelMsg(
+				__( 'Erreur diagnostics : ', 'trinity-booking' ) +
+					( e.message ?? String( e ) )
+			);
+		}
+	};
+
 	useEffect( () => {
 		reload();
+		refreshDiag();
 	}, [] );
 
 	const connect = async () => {
@@ -81,6 +100,75 @@ export default function GooglePage() {
 			await reload();
 		} catch ( e ) {
 			setError( e.message ?? String( e ) );
+		}
+	};
+
+	const onStartWatch = async () => {
+		setBusy( true );
+		setPanelMsg( '' );
+		try {
+			const r = await startWatch();
+			setPanelMsg(
+				__( 'Watch activé. Channel : ', 'trinity-booking' ) +
+					r.channelId +
+					' (' +
+					__( 'expire', 'trinity-booking' ) +
+					' ' +
+					r.expiresAt +
+					')'
+			);
+			await refreshDiag();
+		} catch ( e ) {
+			setPanelMsg(
+				__( 'Erreur : ', 'trinity-booking' ) +
+					( e.message ?? String( e ) )
+			);
+		} finally {
+			setBusy( false );
+		}
+	};
+
+	const onStopWatch = async () => {
+		if (
+			// eslint-disable-next-line no-alert
+			! window.confirm( __( 'Arrêter le watch ?', 'trinity-booking' ) )
+		) {
+			return;
+		}
+		setBusy( true );
+		setPanelMsg( '' );
+		try {
+			await stopWatch();
+			setPanelMsg( __( 'Watch arrêté.', 'trinity-booking' ) );
+			await refreshDiag();
+		} catch ( e ) {
+			setPanelMsg(
+				__( 'Erreur : ', 'trinity-booking' ) +
+					( e.message ?? String( e ) )
+			);
+		} finally {
+			setBusy( false );
+		}
+	};
+
+	const onPullNow = async () => {
+		setBusy( true );
+		setPanelMsg( '' );
+		try {
+			await forcePullNow();
+			setPanelMsg(
+				__(
+					'Pull enfilé. Vérifie le Journal dans quelques secondes.',
+					'trinity-booking'
+				)
+			);
+		} catch ( e ) {
+			setPanelMsg(
+				__( 'Erreur : ', 'trinity-booking' ) +
+					( e.message ?? String( e ) )
+			);
+		} finally {
+			setBusy( false );
 		}
 	};
 
@@ -189,6 +277,124 @@ export default function GooglePage() {
 									'trinity-booking'
 								) }
 							</Button>
+						</>
+					) }
+				</CardBody>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<h2>
+						{ __(
+							'Synchronisation entrante (Google → WP)',
+							'trinity-booking'
+						) }
+					</h2>
+				</CardHeader>
+				<CardBody>
+					{ diag === null && <Spinner /> }
+					{ diag !== null && diag.connected === false && (
+						<p>
+							{ __(
+								"Connectez d'abord un compte Google ci-dessus.",
+								'trinity-booking'
+							) }
+						</p>
+					) }
+					{ diag !== null && diag.connected === true && (
+						<>
+							<p>
+								<strong>
+									{ __(
+										'Watch channel :',
+										'trinity-booking'
+									) }{ ' ' }
+								</strong>
+								{ diag.watch?.channelId
+									? diag.watch.channelId +
+									  ' (' +
+									  __( 'expire', 'trinity-booking' ) +
+									  ' ' +
+									  diag.watch.expiresAt +
+									  ')'
+									: __( 'aucun', 'trinity-booking' ) }
+							</p>
+							<p>
+								<strong>
+									{ __(
+										'Dernier full sync :',
+										'trinity-booking'
+									) }{ ' ' }
+								</strong>
+								{ diag.lastFullSyncAt ??
+									__( 'jamais', 'trinity-booking' ) }
+							</p>
+							<p>
+								<strong>
+									{ __( 'Sync token :', 'trinity-booking' ) }{ ' ' }
+								</strong>
+								{ diag.syncToken
+									? __(
+											'présent (sync incrémental actif)',
+											'trinity-booking'
+									  )
+									: __(
+											'absent (prochain pull = full sync)',
+											'trinity-booking'
+									  ) }
+							</p>
+							<div
+								style={ {
+									display: 'flex',
+									gap: '8px',
+									flexWrap: 'wrap',
+								} }
+							>
+								{ ! diag.watch?.channelId && (
+									<Button
+										variant="primary"
+										onClick={ onStartWatch }
+										disabled={ busy }
+									>
+										{ __(
+											'Démarrer le watch',
+											'trinity-booking'
+										) }
+									</Button>
+								) }
+								{ diag.watch?.channelId && (
+									<Button
+										variant="secondary"
+										isDestructive
+										onClick={ onStopWatch }
+										disabled={ busy }
+									>
+										{ __(
+											'Arrêter le watch',
+											'trinity-booking'
+										) }
+									</Button>
+								) }
+								<Button
+									variant="tertiary"
+									onClick={ onPullNow }
+									disabled={ busy }
+								>
+									{ __(
+										'Forcer un pull maintenant',
+										'trinity-booking'
+									) }
+								</Button>
+							</div>
+							{ panelMsg && (
+								<Notice
+									status="info"
+									isDismissible={ false }
+									style={ { marginTop: '12px' } }
+								>
+									{ panelMsg }
+								</Notice>
+							) }
 						</>
 					) }
 				</CardBody>
