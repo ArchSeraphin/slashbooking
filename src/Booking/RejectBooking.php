@@ -27,6 +27,11 @@ final class RejectBooking
         }
         $booking->reject();
         ($this->persist)($booking);
+
+        if (function_exists('do_action') && $booking->id() !== null) {
+            do_action('trinity_booking/booking_rejected', $booking->id());
+        }
+
         return $booking;
     }
 }

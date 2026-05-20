@@ -62,6 +62,10 @@ final class CreateBooking
 
         ($this->persist)($booking);
 
+        if (function_exists('do_action') && $booking->id() !== null) {
+            do_action('trinity_booking/booking_created', $booking->id());
+        }
+
         return $booking;
     }
 

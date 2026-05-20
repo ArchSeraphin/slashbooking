@@ -27,6 +27,11 @@ final class CancelBooking
         }
         $booking->cancel();
         ($this->persist)($booking);
+
+        if (function_exists('do_action') && $booking->id() !== null) {
+            do_action('trinity_booking/booking_cancelled', $booking->id());
+        }
+
         return $booking;
     }
 }

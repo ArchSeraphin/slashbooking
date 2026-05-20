@@ -27,6 +27,11 @@ final class ConfirmBooking
         }
         $booking->confirm();
         ($this->persist)($booking);
+
+        if (function_exists('do_action') && $booking->id() !== null) {
+            do_action('trinity_booking/booking_confirmed', $booking->id());
+        }
+
         return $booking;
     }
 }
