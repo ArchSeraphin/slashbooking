@@ -23,7 +23,9 @@ final class Assets
         }
         $dir = $this->plugin->pluginDir();
         $url = plugin_dir_url($this->plugin->pluginFile());
-        $assetFile = $dir . '/assets/dist/admin.asset.php';
+        // wp-scripts derives bundle filename from the entry file:
+        // src/Admin/react-app/src/index.jsx  →  assets/dist/index.jsx.{js,css,asset.php}
+        $assetFile = $dir . '/assets/dist/index.jsx.asset.php';
         if (!is_file($assetFile)) {
             return;
         }
@@ -32,7 +34,7 @@ final class Assets
 
         wp_enqueue_script(
             'trinity-booking-admin',
-            $url . 'assets/dist/admin.js',
+            $url . 'assets/dist/index.jsx.js',
             $asset['dependencies'],
             $asset['version'],
             true,
@@ -40,7 +42,7 @@ final class Assets
 
         wp_enqueue_style(
             'trinity-booking-admin',
-            $url . 'assets/dist/admin.css',
+            $url . 'assets/dist/index.jsx.css',
             ['wp-components'],
             $asset['version'],
         );

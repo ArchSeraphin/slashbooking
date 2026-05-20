@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.3] — 2026-05-20
+
+### Fixed
+
+- **Page admin SPA blanche.** `Assets::enqueue()` cherchait `assets/dist/admin.asset.php` / `admin.js` / `admin.css`, mais `wp-scripts` produit `index.jsx.asset.php` / `index.jsx.js` / `index.jsx.css` (filename dérivé du fichier d'entry `src/Admin/react-app/src/index.jsx`). Le check `is_file()` échouait silencieusement → aucun JS/CSS enqueué → div mount point vide. Bug latent depuis Plan 2.
+
+---
+
 ## [1.0.2] — 2026-05-20
 
 ### Fixed
