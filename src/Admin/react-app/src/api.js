@@ -97,3 +97,70 @@ export async function forcePullNow() {
 		method: 'POST',
 	} );
 }
+
+// --- Plan 5 : templates editor ---
+
+export async function listMailTemplates() {
+	return apiFetch( { path: 'admin/mail-templates' } );
+}
+
+export async function fetchMailTemplate( eventKey ) {
+	return apiFetch( { path: `admin/mail-templates/${ eventKey }` } );
+}
+
+export async function saveMailTemplate( eventKey, { subject, htmlBody, textBody, enabled } ) {
+	return apiFetch( {
+		path: `admin/mail-templates/${ eventKey }`,
+		method: 'POST',
+		data: {
+			subject,
+			html_body: htmlBody,
+			text_body: textBody,
+			enabled,
+		},
+	} );
+}
+
+export async function restoreMailTemplate( eventKey ) {
+	return apiFetch( {
+		path: `admin/mail-templates/${ eventKey }`,
+		method: 'DELETE',
+	} );
+}
+
+export async function previewMailTemplate( eventKey, { subject, htmlBody } ) {
+	return apiFetch( {
+		path: `admin/mail-templates/${ eventKey }/preview`,
+		method: 'POST',
+		data: { subject, html_body: htmlBody },
+	} );
+}
+
+export async function sendTestMailTemplate( eventKey, { subject, htmlBody } ) {
+	return apiFetch( {
+		path: `admin/mail-templates/${ eventKey }/test`,
+		method: 'POST',
+		data: { subject, html_body: htmlBody },
+	} );
+}
+
+export async function listTags() {
+	return apiFetch( { path: 'admin/tags' } );
+}
+
+// --- Plan 5 : settings (legal page, retention) ---
+
+export async function fetchSettings() {
+	return apiFetch( { path: 'admin/settings' } );
+}
+
+export async function saveSettings( { legalPageId, bookingRetentionDays } ) {
+	return apiFetch( {
+		path: 'admin/settings',
+		method: 'POST',
+		data: {
+			legal_page_id: legalPageId,
+			booking_retention_days: bookingRetentionDays,
+		},
+	} );
+}
