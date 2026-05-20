@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.1] — 2026-05-20
+
+### Fixed
+
+- **Activation fatal sur fresh install.** `Plugin::register()` instanciait `DecisionTokenSigner` avec un secret vide avant que `register_activation_hook` n'ait pu seeder l'option `tb_decision_secret` → `InvalidArgumentException: Decision secret must be at least 16 characters`. Fix : `Activator::ensureDecisionSecret()` est maintenant publique et appelée en tête de `Plugin::register()` (idempotent). Bug latent depuis Plan 2.
+
+---
+
 ## [1.0.0] — 2026-05-20
 
 Première release stable. Périmètre V1 fermé selon `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`.

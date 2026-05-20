@@ -88,7 +88,7 @@ final class Activator
         return (new \DateTimeImmutable('first day of next month 03:30', $tz))->getTimestamp();
     }
 
-    private static function ensureDecisionSecret(): void
+    public static function ensureDecisionSecret(): void
     {
         $existing = get_option('tb_decision_secret');
         if (!is_string($existing) || strlen($existing) !== 64) {

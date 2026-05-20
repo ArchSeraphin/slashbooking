@@ -5,7 +5,7 @@ namespace Trinity\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.0';
+    public const VERSION = '1.0.1';
     public const TEXT_DOMAIN = 'trinity-booking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'trinity-booking/v1';
@@ -80,6 +80,11 @@ final class Plugin
 
     private function register(): void
     {
+        // Plugin::register() runs at plugin sandbox scrape, BEFORE the
+        // register_activation_hook fires. Without this idempotent seed, a fresh
+        // install fatals on `new DecisionTokenSigner('')` further down.
+        Activator::ensureDecisionSecret();
+
         $router = new Http\RestRouter();
         $router->register();
         $this->set(Http\RestRouter::class, $router);
