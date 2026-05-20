@@ -14,6 +14,7 @@ enum EventKey: string
 
     public function recipient(): string
     {
+        // phpcs:ignore PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext -- false positive: $this is valid inside an enum method (PHP 8.1+).
         return $this === self::PENDING_ADMIN ? 'admin' : 'client';
     }
 }

@@ -16,6 +16,7 @@ final class TextBodyGenerator
         $html = (string) preg_replace('#</(p|div|h\d|li|tr)>#i', "$0\n\n", $html);
         $html = (string) preg_replace('#<br\s*/?>#i', "\n", $html);
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- this class is WP-free (testable in pure unit), wp_strip_all_tags is intentionally not used.
         $text = strip_tags($html);
 
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
