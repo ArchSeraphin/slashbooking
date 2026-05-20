@@ -75,7 +75,7 @@ final class Booking
     public function confirm(): void
     {
         if ($this->status === BookingStatus::CONFIRMED) {
-            return; // idempotent
+            return;
         }
         $this->mustBe(BookingStatus::PENDING, 'confirm');
         $this->status = BookingStatus::CONFIRMED;
@@ -85,7 +85,7 @@ final class Booking
     public function reject(): void
     {
         if ($this->status === BookingStatus::REJECTED) {
-            return; // idempotent
+            return;
         }
         $this->mustBe(BookingStatus::PENDING, 'reject');
         $this->status = BookingStatus::REJECTED;

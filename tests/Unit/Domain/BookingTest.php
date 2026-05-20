@@ -84,7 +84,7 @@ final class BookingTest extends TestCase
     {
         $b = $this->makePending();
         $b->confirm();
-        $b->confirm(); // ne doit pas lever
+        $b->confirm();
         self::assertSame(BookingStatus::CONFIRMED, $b->status());
     }
 
@@ -102,6 +102,14 @@ final class BookingTest extends TestCase
         $b->cancel();
         $this->expectException(\DomainException::class);
         $b->confirm();
+    }
+
+    public function test_reject_throws_from_cancelled(): void
+    {
+        $b = $this->makePending();
+        $b->cancel();
+        $this->expectException(\DomainException::class);
+        $b->reject();
     }
 
     private function makePending(): Booking
