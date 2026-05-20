@@ -2,17 +2,7 @@ import { TabPanel } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import BookingsPage from './BookingsPage';
 import GooglePage from './GooglePage';
-
-function SyncLogPlaceholder() {
-	return (
-		<p>
-			{ __(
-				'Journal de synchronisation — prochain commit.',
-				'trinity-booking'
-			) }
-		</p>
-	);
-}
+import SyncLogPage from './SyncLogPage';
 
 export default function App() {
 	const initial = window.location.hash.replace( '#/', '' ) || 'bookings';
@@ -41,7 +31,7 @@ export default function App() {
 						return <GooglePage />;
 					}
 					if ( tab.name === 'log' ) {
-						return <SyncLogPlaceholder />;
+						return <SyncLogPage />;
 					}
 					return <BookingsPage />;
 				} }
