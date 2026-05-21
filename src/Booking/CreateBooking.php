@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
 use Closure;
-use Trinity\Booking\Booking\Exceptions\InvalidBookingInput;
-use Trinity\Booking\Booking\Exceptions\SlotUnavailable;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\Exceptions\InvalidBookingInput;
+use Slash\Booking\Booking\Exceptions\SlotUnavailable;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
 
 /**
  * @phpstan-type Command array{
@@ -63,7 +63,7 @@ final class CreateBooking
         ($this->persist)($booking);
 
         if (function_exists('do_action') && $booking->id() !== null) {
-            do_action('trinity_booking/booking_created', $booking->id());
+            do_action('slashbooking/booking_created', $booking->id());
         }
 
         return $booking;

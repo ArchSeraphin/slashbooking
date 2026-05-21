@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
-use Trinity\Booking\Google\Exceptions\EncryptionFailure;
+use Slash\Booking\Google\Exceptions\EncryptionFailure;
 
 final class Encryption
 {

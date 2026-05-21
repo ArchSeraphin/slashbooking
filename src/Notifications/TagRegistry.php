@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 /**
  * @phpstan-type Tag array{name:string, category:string, description:string, raw:bool}

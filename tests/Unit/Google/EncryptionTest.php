@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\Encryption;
-use Trinity\Booking\Google\Exceptions\EncryptionFailure;
+use Slash\Booking\Google\Encryption;
+use Slash\Booking\Google\Exceptions\EncryptionFailure;
 
 final class EncryptionTest extends TestCase
 {

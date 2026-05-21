@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\OAuthState;
+use Slash\Booking\Google\OAuthState;
 
 final class OAuthStateTest extends TestCase
 {

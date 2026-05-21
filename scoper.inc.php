@@ -4,7 +4,7 @@ declare(strict_types=1);
 use Isolated\Symfony\Component\Finder\Finder;
 
 return [
-    'prefix' => 'Trinity\\Booking\\Vendor',
+    'prefix' => 'Slash\\Booking\\Vendor',
 
     'finders' => [
         // 1) Tout le code source du plugin.
@@ -48,7 +48,7 @@ return [
     // Ne PAS prefixer ces namespaces : ils restent globaux.
     'exclude-namespaces' => [
         // WordPress n'a pas de namespace formel, mais on protège les classes globales connues.
-        'Trinity\\Booking',          // notre code à nous, jamais préfixé
+        'Slash\\Booking',          // notre code à nous, jamais préfixé
         'PHPUnit',
         'Composer',
         'Symfony\\Polyfill',         // polyfills doivent rester globaux

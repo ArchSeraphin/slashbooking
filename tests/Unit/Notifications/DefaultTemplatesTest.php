@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\DefaultTemplates;
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\DefaultTemplates;
+use Slash\Booking\Notifications\Events\EventKey;
 
 final class DefaultTemplatesTest extends TestCase
 {

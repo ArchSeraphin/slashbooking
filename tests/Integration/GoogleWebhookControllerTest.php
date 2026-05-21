@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Http\GoogleWebhookController;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Http\GoogleWebhookController;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 use WP_REST_Request;
 
 final class GoogleWebhookControllerTest extends TestCase
@@ -24,7 +24,7 @@ final class GoogleWebhookControllerTest extends TestCase
     {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-        $wpdb->query("DELETE FROM {$wpdb->prefix}tb_google_accounts");
+        $wpdb->query("DELETE FROM {$wpdb->prefix}sb_google_accounts");
 
         $repo = new GoogleAccountRepository($wpdb);
         $a = GoogleAccount::connect(
@@ -50,7 +50,7 @@ final class GoogleWebhookControllerTest extends TestCase
             },
             log: fn () => null,
         );
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/google/webhook');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/google/webhook');
         $req->set_header('X-Goog-Channel-Token', 'wrong');
         $req->set_header('X-Goog-Channel-Id', 'ch_known');
         $req->set_header('X-Goog-Resource-State', 'exists');
@@ -71,7 +71,7 @@ final class GoogleWebhookControllerTest extends TestCase
             },
             log: fn () => null,
         );
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/google/webhook');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/google/webhook');
         $req->set_header('X-Goog-Channel-Token', 'sec_known');
         $req->set_header('X-Goog-Channel-Id', 'ch_known');
         $req->set_header('X-Goog-Resource-State', 'exists');
@@ -92,7 +92,7 @@ final class GoogleWebhookControllerTest extends TestCase
             },
             log: fn () => null,
         );
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/google/webhook');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/google/webhook');
         $req->set_header('X-Goog-Channel-Token', 'sec_known');
         $req->set_header('X-Goog-Channel-Id', 'ch_known');
         $req->set_header('X-Goog-Resource-State', 'sync');

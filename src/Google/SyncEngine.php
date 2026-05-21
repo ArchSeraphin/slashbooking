@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Exceptions\SyncTokenExpired;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Exceptions\SyncTokenExpired;
 
 final class SyncEngine
 {

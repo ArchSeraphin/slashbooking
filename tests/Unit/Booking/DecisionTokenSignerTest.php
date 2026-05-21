@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\DecisionTokenSigner;
 
 final class DecisionTokenSignerTest extends TestCase
 {

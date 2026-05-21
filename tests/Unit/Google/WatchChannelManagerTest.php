@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\WatchChannelManager;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\WatchChannelManager;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class WatchChannelManagerTest extends TestCase
 {
@@ -32,7 +32,7 @@ final class WatchChannelManagerTest extends TestCase
         );
 
         $account = $this->freshAccount();
-        $mgr->start($account, $gateway, 'https://example.test/wp-json/trinity-booking/v1/google/webhook');
+        $mgr->start($account, $gateway, 'https://example.test/wp-json/slashbooking/v1/google/webhook');
 
         self::assertNotNull($account->watchChannelId());
         self::assertNotNull($account->watchTokenSecret());
@@ -40,7 +40,7 @@ final class WatchChannelManagerTest extends TestCase
         self::assertNotNull($saved);
 
         self::assertCount(1, $gateway->startedChannels);
-        self::assertSame('https://example.test/wp-json/trinity-booking/v1/google/webhook', $gateway->startedChannels[0]['address']);
+        self::assertSame('https://example.test/wp-json/slashbooking/v1/google/webhook', $gateway->startedChannels[0]['address']);
         self::assertSame($account->watchTokenSecret(), $gateway->startedChannels[0]['token']);
     }
 

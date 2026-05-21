@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -30,9 +30,9 @@ final class AdminGoogleSettingsController
 
     public function read(): WP_REST_Response
     {
-        $secret = (string) get_option('tb_google_client_secret', '');
+        $secret = (string) get_option('sb_google_client_secret', '');
         return new WP_REST_Response([
-            'client_id'         => (string) get_option('tb_google_client_id', ''),
+            'client_id'         => (string) get_option('sb_google_client_id', ''),
             'has_client_secret' => $secret !== '',
             'redirect_uri'      => rest_url(Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
         ], 200);
@@ -42,9 +42,9 @@ final class AdminGoogleSettingsController
     {
         $clientId = sanitize_text_field((string) $req->get_param('client_id'));
         $secret   = (string) $req->get_param('client_secret');
-        update_option('tb_google_client_id', $clientId, false);
+        update_option('sb_google_client_id', $clientId, false);
         if ($secret !== '') {
-            update_option('tb_google_client_secret', $secret, false);
+            update_option('sb_google_client_secret', $secret, false);
         }
         return new WP_REST_Response(['saved' => true], 200);
     }

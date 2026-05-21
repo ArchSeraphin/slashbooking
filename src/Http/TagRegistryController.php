@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Plugin;
 use WP_REST_Response;
 
 final class TagRegistryController
@@ -44,10 +44,10 @@ final class TagRegistryController
     private function categoryLabel(string $cat): string
     {
         return match ($cat) {
-            'customer'    => __('Client', 'trinity-booking'),
-            'appointment' => __('Rendez-vous', 'trinity-booking'),
-            'actions'     => __('Liens d\'action', 'trinity-booking'),
-            'site'        => __('Site', 'trinity-booking'),
+            'customer'    => __('Client', 'slashbooking'),
+            'appointment' => __('Rendez-vous', 'slashbooking'),
+            'actions'     => __('Liens d\'action', 'slashbooking'),
+            'site'        => __('Site', 'slashbooking'),
             default       => $cat,
         };
     }

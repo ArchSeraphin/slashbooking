@@ -1,8 +1,8 @@
-# trinity-booking — Design
+# slashbooking — Design
 
 **Date :** 2026-05-19
 **Statut :** validé pour passage au plan d'implémentation
-**Slug plugin :** `trinity-booking`
+**Slug plugin :** `slashbooking`
 
 ## 1. Objectif
 
@@ -19,7 +19,7 @@ La V1 est explicitement mono-commercial (un seul Google Calendar) avec une archi
 
 ### Dans la V1
 - 2 services pré-configurés (PV 90 min, IRVE 45 min), durée et règles éditables ; tout nouveau service ajouté via l'admin fonctionne sans code.
-- Page de réservation publique exposée via **bloc Gutenberg** et **shortcode** `[trinity_booking service="pv"]`.
+- Page de réservation publique exposée via **bloc Gutenberg** et **shortcode** `[slashbooking service="pv"]`.
 - Parcours client : choix du service → choix de la date → choix d'un créneau libre → saisie des informations → page de confirmation.
 - Règles de réservation : durée fixe par service, pas de la grille de 15 min, buffer 30 min avant/après (réglable), délai minimum 24 h, horizon 60 jours.
 - Horaires d'ouverture configurables par service : Lun–Ven 9h–18h, Sam 9h–13h par défaut.
@@ -37,7 +37,7 @@ La V1 est explicitement mono-commercial (un seul Google Calendar) avec une archi
 - Pièce jointe `.ics` (RFC 5545) sur l'e-mail de confirmation.
 - Reminder J-1 (cron quotidien à 10h00 du fuseau horaire WordPress configuré).
 - **Dashboard admin** (React + `@wordpress/components`) : liste filtrée des RDV, vue agenda, fiche détail, gestion des services, gestion du compte Google, journal de synchronisation, éditeur de templates.
-- **WP-CLI** : `wp trinity-booking sync`, `wp trinity-booking doctor` (diagnostics OAuth + webhook).
+- **WP-CLI** : `wp slashbooking sync`, `wp slashbooking doctor` (diagnostics OAuth + webhook).
 - **i18n** FR par défaut, EN bonus.
 - **RGPD** : consentement explicite au formulaire, hooks exporters/erasers WP, rétention logs 30 jours.
 
@@ -63,8 +63,8 @@ La V1 est explicitement mono-commercial (un seul Google Calendar) avec une archi
 Découpage strict avec une responsabilité par module. Chaque module a une interface publique étroite et peut être testé isolément.
 
 ```
-trinity-booking/
-├── trinity-booking.php           Bootstrap, activation/désactivation, version
+slashbooking/
+├── slashbooking.php           Bootstrap, activation/désactivation, version
 ├── composer.json
 ├── src/
 │   ├── Plugin.php                Container DI léger, registre des hooks
@@ -132,9 +132,9 @@ trinity-booking/
 
 ## 5. Modèle de données
 
-Toutes les tables sont préfixées `wp_tb_`. Migration via une classe `Migrator` versionnée à l'activation.
+Toutes les tables sont préfixées `wp_sb_`. Migration via une classe `Migrator` versionnée à l'activation.
 
-### `wp_tb_services`
+### `wp_sb_services`
 
 | Colonne | Type | Notes |
 | --- | --- | --- |
@@ -152,7 +152,7 @@ Toutes les tables sont préfixées `wp_tb_`. Migration via une classe `Migrator`
 | `settings` | LONGTEXT | JSON : horaires hebdo, exceptions, capacité |
 | `created_at`, `updated_at` | DATETIME | |
 
-### `wp_tb_bookings`
+### `wp_sb_bookings`
 
 | Colonne | Type | Notes |
 | --- | --- | --- |
@@ -176,7 +176,7 @@ Toutes les tables sont préfixées `wp_tb_`. Migration via une classe `Migrator`
 
 Index : `(status, starts_at_utc)`, `(google_event_id)`, `(public_uid)`.
 
-### `wp_tb_busy_blocks`
+### `wp_sb_busy_blocks`
 
 | Colonne | Type | Notes |
 | --- | --- | --- |
@@ -190,7 +190,7 @@ Index : `(status, starts_at_utc)`, `(google_event_id)`, `(public_uid)`.
 
 Index : `(google_account_id, source_id)`, `(starts_at_utc, ends_at_utc)`.
 
-### `wp_tb_google_accounts`
+### `wp_sb_google_accounts`
 
 | Colonne | Type | Notes |
 | --- | --- | --- |
@@ -209,7 +209,7 @@ Index : `(google_account_id, source_id)`, `(starts_at_utc, ends_at_utc)`.
 
 V1 : une seule ligne attendue. Le schéma est néanmoins multi-compte pour préparer la V2 sans migration destructive.
 
-### `wp_tb_sync_log`
+### `wp_sb_sync_log`
 
 | Colonne | Type | Notes |
 | --- | --- | --- |
@@ -227,7 +227,7 @@ V1 : une seule ligne attendue. Le schéma est néanmoins multi-compte pour prép
 
 Rétention : purge des entrées > 30 jours via cron quotidien.
 
-### `wp_tb_mail_templates`
+### `wp_sb_mail_templates`
 
 | Colonne | Type | Notes |
 | --- | --- | --- |
@@ -246,20 +246,20 @@ Rétention : purge des entrées > 30 jours via cron quotidien.
 ### 6.1 Création d'une réservation (parcours client)
 
 1. Client charge la page contenant le bloc Gutenberg / shortcode → l'éditeur a déjà précisé le service (ex `service="pv"`).
-2. Front appelle `GET /wp-json/trinity-booking/v1/availability?service=pv&from=2026-05-20&to=2026-06-20` → renvoie créneaux libres déjà calculés (horaires – bookings actifs – busy blocks – buffers).
+2. Front appelle `GET /wp-json/slashbooking/v1/availability?service=pv&from=2026-05-20&to=2026-06-20` → renvoie créneaux libres déjà calculés (horaires – bookings actifs – busy blocks – buffers).
 3. Client choisit un créneau, remplit le formulaire (nom, e-mail, téléphone, adresse, notes, consentement RGPD).
-4. Front appelle `POST /wp-json/trinity-booking/v1/bookings` avec nonce + honeypot.
+4. Front appelle `POST /wp-json/slashbooking/v1/bookings` avec nonce + honeypot.
 5. Backend :
    - `CreateBooking` valide entrées + revérifie dispo dans la même transaction (anti-race).
    - Insère booking `status=pending`, génère `public_uid` + `decision_token`.
-   - Push job Action Scheduler : `tb/create_gcal_event` (booking_id).
-   - Push job : `tb/send_mail` x 2 (client "demande reçue", admin "à valider + boutons").
+   - Push job Action Scheduler : `sb/create_gcal_event` (booking_id).
+   - Push job : `sb/send_mail` x 2 (client "demande reçue", admin "à valider + boutons").
 6. Réponse : `{ booking_id, public_uid, redirect_url }` → front affiche page "demande envoyée".
 7. Job `create_gcal_event` exécute : crée l'événement GCal `[À VALIDER] <Service> · <Nom>`, couleur orange (colorId `6`), description avec coordonnées client + lien admin. Stocke `google_event_id` + `etag` sur le booking. Idempotent : si déjà créé, no-op.
 
 ### 6.2 Validation admin (chemin e-mail)
 
-1. Admin reçoit e-mail avec boutons "Confirmer" et "Refuser" pointant vers `GET /wp-json/trinity-booking/v1/decide?booking={id}&action=confirm|reject&exp={unix_ts}&sig={hmac}`.
+1. Admin reçoit e-mail avec boutons "Confirmer" et "Refuser" pointant vers `GET /wp-json/slashbooking/v1/decide?booking={id}&action=confirm|reject&exp={unix_ts}&sig={hmac}`.
 2. `DecisionController` :
    - Vérifie signature HMAC (`hash_hmac('sha256', "$booking|$action|$exp", $secret)`).
    - Vérifie expiration (`exp > now`).
@@ -271,20 +271,20 @@ Rétention : purge des entrées > 30 jours via cron quotidien.
 
 ### 6.3 Validation admin (chemin dashboard)
 
-Dashboard React appelle `POST /wp-json/trinity-booking/v1/admin/bookings/{id}/confirm|reject|cancel` (capability `trinity_booking_manage`, nonce). Mêmes cas d'usage que ci-dessus.
+Dashboard React appelle `POST /wp-json/slashbooking/v1/admin/bookings/{id}/confirm|reject|cancel` (capability `slashbooking_manage`, nonce). Mêmes cas d'usage que ci-dessus.
 
 ### 6.4 Annulation client
 
-E-mail de confirmation contient un lien `GET /wp-json/trinity-booking/v1/cancel?uid={public_uid}&exp={ts}&sig={hmac}` → page de confirmation d'annulation → `CancelBooking` → statut `cancelled`, event GCal supprimé, e-mail "annulation prise en compte" au client + notification admin.
+E-mail de confirmation contient un lien `GET /wp-json/slashbooking/v1/cancel?uid={public_uid}&exp={ts}&sig={hmac}` → page de confirmation d'annulation → `CancelBooking` → statut `cancelled`, event GCal supprimé, e-mail "annulation prise en compte" au client + notification admin.
 
 ### 6.5 Sync entrante Google → WP
 
 1. Admin (ou commercial) crée un événement directement dans Google Calendar.
-2. Google envoie un POST au webhook : `POST /wp-json/trinity-booking/v1/google/webhook` avec en-têtes `X-Goog-Resource-State`, `X-Goog-Channel-Id`, `X-Goog-Channel-Token`.
+2. Google envoie un POST au webhook : `POST /wp-json/slashbooking/v1/google/webhook` avec en-têtes `X-Goog-Resource-State`, `X-Goog-Channel-Id`, `X-Goog-Channel-Token`.
 3. `WebhookController` :
    - Vérifie le `X-Goog-Channel-Token` contre le `watch_token_secret` stocké.
    - Répond `200` immédiatement.
-   - Push job `tb/google_pull` (account_id).
+   - Push job `sb/google_pull` (account_id).
 4. Job `google_pull` :
    - Appelle `events.list` avec `syncToken` courant → récupère les diffs.
    - Pour chaque event modifié :
@@ -296,7 +296,7 @@ E-mail de confirmation contient un lien `GET /wp-json/trinity-booking/v1/cancel?
 
 ### 6.6 Watch channel renewal
 
-- Job `tb/watch_renew` programmé tous les 6 jours (channels Google expirent à 7 jours).
+- Job `sb/watch_renew` programmé tous les 6 jours (channels Google expirent à 7 jours).
 - Crée un nouveau channel, stocke `watch_channel_id` + `watch_resource_id` + `watch_token_secret`, stoppe l'ancien.
 
 ### 6.7 Rappel J-1
@@ -305,7 +305,7 @@ Cron quotidien à 10h00 du fuseau WordPress : sélectionne bookings `status=conf
 
 ## 7. API REST
 
-Namespace `trinity-booking/v1`. Tous les endpoints utilisent le schéma REST WP standard.
+Namespace `slashbooking/v1`. Tous les endpoints utilisent le schéma REST WP standard.
 
 | Méthode | Endpoint | Auth | Description |
 | --- | --- | --- | --- |
@@ -359,13 +359,13 @@ Rate-limiting (anti-bot) : `POST /bookings` ≤ 5 / minute / IP via transient WP
 
 ## 9. Sécurité
 
-- **Capabilities WP custom** : `trinity_booking_manage` (admins par défaut), `trinity_booking_view`.
+- **Capabilities WP custom** : `slashbooking_manage` (admins par défaut), `slashbooking_view`.
 - **Nonces WP** sur toutes les requêtes admin.
-- **HMAC** : secret 32 octets aléatoires généré à l'activation, stocké dans option `tb_decision_secret`. Rotation possible via WP-CLI (`wp trinity-booking rotate-decision-secret`).
-- **Chiffrement OAuth** : refresh tokens chiffrés via `sodium_crypto_secretbox` avec clé dans `wp-config.php` (`define('TRINITY_BOOKING_ENC_KEY', '...')`). Fallback option WP si non définie, avec warning admin.
+- **HMAC** : secret 32 octets aléatoires généré à l'activation, stocké dans option `sb_decision_secret`. Rotation possible via WP-CLI (`wp slashbooking rotate-decision-secret`).
+- **Chiffrement OAuth** : refresh tokens chiffrés via `sodium_crypto_secretbox` avec clé dans `wp-config.php` (`define('SLASHBOOKING_ENC_KEY', '...')`). Fallback option WP si non définie, avec warning admin.
 - **Webhook Google** : header `X-Goog-Channel-Token` vérifié contre le secret stocké à la création du channel. Réponse `200` immédiate sans révéler d'info.
 - **Anti-bot** : honeypot caché + délai minimum côté front (≥ 3 s entre chargement et submit). Pas de reCAPTCHA en V1.
-- **Rate-limit** : transient `tb_rate_<ip>` incrémenté par requête, fenêtre 60 s.
+- **Rate-limit** : transient `sb_rate_<ip>` incrémenté par requête, fenêtre 60 s.
 - **Sanitization/escaping** : `sanitize_text_field`, `sanitize_email`, `wp_kses_post` pour notes admin. Sortie via `esc_html`, `esc_attr`, `esc_url`.
 
 ## 10. RGPD
@@ -390,21 +390,21 @@ Couverture cible : 80 %+ sur `Domain/`, `Availability/`, `Booking/`.
 
 ## 12. Observabilité
 
-- Journal `wp_tb_sync_log` consultable depuis le dashboard (filtre par direction, statut, période).
+- Journal `wp_sb_sync_log` consultable depuis le dashboard (filtre par direction, statut, période).
 - Page "Diagnostics" : état OAuth (token valide, expiration), état watch channel (id, expires_at), dernier `sync_token`, dernier pull, taille des queues Action Scheduler.
-- `wp trinity-booking doctor` : exécute en CLI les mêmes checks + tente une création + suppression d'event de test.
+- `wp slashbooking doctor` : exécute en CLI les mêmes checks + tente une création + suppression d'event de test.
 
 ## 13. Internationalisation
 
-- Text domain : `trinity-booking`.
-- Fichiers : `languages/trinity-booking.pot`, `languages/trinity-booking-fr_FR.{po,mo}`, EN bonus.
+- Text domain : `slashbooking`.
+- Fichiers : `languages/slashbooking.pot`, `languages/slashbooking-fr_FR.{po,mo}`, EN bonus.
 - Tous les libellés (front + admin + e-mails par défaut) passent par `__()`, `_x()`, `_n()`.
 - Formats date/heure via `wp_date()` (respecte fuseau WP + locale).
 
 ## 14. Installation & déploiement
 
 - Plugin distribué en ZIP (pas WP.org en V1).
-- Activation : crée tables, seed services (PV + IRVE), seed templates par défaut, génère `tb_decision_secret`, programme jobs cron.
+- Activation : crée tables, seed services (PV + IRVE), seed templates par défaut, génère `sb_decision_secret`, programme jobs cron.
 - Désactivation : conserve données, désinscrit cron, supprime watch channel.
 - Désinstallation (`uninstall.php`) : suppression des tables + options + transients seulement si option "Effacer les données à la désinstallation" cochée.
 - Composer dump-autoload optimisé en production.
@@ -413,7 +413,7 @@ Couverture cible : 80 %+ sur `Domain/`, `Availability/`, `Booking/`.
 
 | Risque | Mitigation |
 | --- | --- |
-| Conflit de namespaces entre `google/apiclient` et un autre plugin | PHP-Scoper / Mozart → namespace `Trinity\Booking\Vendor\Google\…` |
+| Conflit de namespaces entre `google/apiclient` et un autre plugin | PHP-Scoper / Mozart → namespace `Slash\Booking\Vendor\Google\…` |
 | Webhook Google non-reçu (firewall, DNS, HTTPS) | Cron fallback 15 min + diagnostics CLI |
 | Double-clic admin sur "Confirmer" | Idempotence stricte sur `ConfirmBooking` |
 | Race condition sur dernier créneau | Re-vérification dispo dans transaction `CreateBooking` |

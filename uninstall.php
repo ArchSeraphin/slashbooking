@@ -1,6 +1,6 @@
 <?php
 /**
- * Trinity Booking — Uninstall.
+ * SlashBooking — Uninstall.
  *
  * Currently a no-op. Data wipe is opt-in and handled in a later plan.
  */

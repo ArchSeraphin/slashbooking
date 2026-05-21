@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
-use Trinity\Booking\Activator;
+use Slash\Booking\Activator;
 use WP_UnitTestCase;
 
 final class CapabilitiesTest extends WP_UnitTestCase
@@ -13,7 +13,7 @@ final class CapabilitiesTest extends WP_UnitTestCase
         Activator::activate();
         $role = get_role('administrator');
         self::assertNotNull($role);
-        self::assertTrue($role->has_cap('trinity_booking_manage'));
-        self::assertTrue($role->has_cap('trinity_booking_view'));
+        self::assertTrue($role->has_cap('slashbooking_manage'));
+        self::assertTrue($role->has_cap('slashbooking_view'));
     }
 }

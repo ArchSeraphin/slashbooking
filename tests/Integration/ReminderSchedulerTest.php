@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Notifications\ReminderScheduler;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Notifications\ReminderScheduler;
+use Slash\Booking\Persistence\BookingRepository;
 use WP_UnitTestCase;
 
 final class ReminderSchedulerTest extends WP_UnitTestCase
@@ -39,7 +39,7 @@ final class ReminderSchedulerTest extends WP_UnitTestCase
         $repo->save($b);
 
         $fired = [];
-        add_action('trinity_booking/booking_reminder_due', static function (int $id) use (&$fired): void {
+        add_action('slashbooking/booking_reminder_due', static function (int $id) use (&$fired): void {
             $fired[] = $id;
         });
 
@@ -83,7 +83,7 @@ final class ReminderSchedulerTest extends WP_UnitTestCase
         $repo->save($far);
 
         $fired = [];
-        add_action('trinity_booking/booking_reminder_due', static function (int $id) use (&$fired): void {
+        add_action('slashbooking/booking_reminder_due', static function (int $id) use (&$fired): void {
             $fired[] = $id;
         });
 

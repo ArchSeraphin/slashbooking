@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_REST_Request;
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
+use Slash\Booking\Activator;
 
 final class PublicBookingControllerTest extends WP_UnitTestCase
 {
@@ -18,7 +18,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_get_services_returns_active_list(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/services');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/services');
         $response = rest_do_request($request);
         self::assertSame(200, $response->get_status());
 
@@ -30,7 +30,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_get_availability_returns_slots(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $request->set_query_params([
             'service' => 'pv',
             'from'    => '2026-06-01',
@@ -48,7 +48,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_get_availability_unknown_service_returns_404(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $request->set_query_params([
             'service' => 'inconnu',
             'from'    => '2026-06-01',
@@ -60,7 +60,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_get_availability_invalid_date_returns_400(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $request->set_query_params([
             'service' => 'pv',
             'from'    => 'oops',
@@ -72,7 +72,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_post_booking_happy_path(): void
     {
-        $request = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $request = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $request->set_header('content-type', 'application/json');
         $request->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
             'service' => 'pv',
@@ -93,7 +93,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_post_booking_rejects_missing_consent(): void
     {
-        $request = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $request = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $request->set_header('content-type', 'application/json');
         $request->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
             'service' => 'pv',
@@ -110,7 +110,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_post_booking_honeypot_returns_201_silently(): void
     {
-        $request = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $request = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $request->set_header('content-type', 'application/json');
         $request->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
             'service' => 'pv',
@@ -139,13 +139,13 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
             'customer_address' => 'x',
             'consent' => true,
         ];
-        $r1 = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r1 = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r1->set_header('content-type', 'application/json');
         $r1->set_body(json_encode($body)); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
         $resp1 = rest_do_request($r1);
         self::assertSame(201, $resp1->get_status());
 
-        $r2 = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r2 = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r2->set_header('content-type', 'application/json');
         $r2->set_body(json_encode($body)); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
         $resp2 = rest_do_request($r2);
@@ -154,13 +154,13 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     private function signCancel(string $uid, int $exp): string
     {
-        $secret = get_option('tb_decision_secret');
+        $secret = get_option('sb_decision_secret');
         return hash_hmac('sha256', 'cancel|' . $uid . '|' . $exp, $secret);
     }
 
     public function test_cancel_with_valid_token_returns_200(): void
     {
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r->set_header('content-type', 'application/json');
         $r->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
             'service' => 'pv', 'start' => '2026-06-10T07:00:00+00:00',
@@ -172,7 +172,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
         $exp = time() + 3600;
         $sig = $this->signCancel($uid, $exp);
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/cancel');
         $req->set_query_params(['uid' => $uid, 'exp' => $exp, 'sig' => $sig]);
         $response = rest_do_request($req);
         self::assertSame(200, $response->get_status());
@@ -181,7 +181,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
     public function test_cancel_with_bad_signature_returns_403(): void
     {
         $exp = time() + 3600;
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/cancel');
         $req->set_query_params(['uid' => 'fake', 'exp' => $exp, 'sig' => 'wrong']);
         $response = rest_do_request($req);
         self::assertSame(403, $response->get_status());
@@ -190,12 +190,12 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
     public function test_end_to_end_booking_flow(): void
     {
         // 1. services
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/services');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/services');
         $services = rest_do_request($r)->get_data();
         self::assertNotEmpty($services);
 
         // 2. availability
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $r->set_query_params([
             'service' => 'pv',
             'from'    => '2026-06-15',
@@ -207,7 +207,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         self::assertNotEmpty($slots);
 
         // 3. booking
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r->set_header('content-type', 'application/json');
         $r->set_body(json_encode([ // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode
             'service' => 'pv',
@@ -223,7 +223,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         $uid = $resp->get_data()['public_uid'];
 
         // 4. plus dispo
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $r->set_query_params(['service' => 'pv', 'from' => '2026-06-15', 'to' => '2026-06-16']);
         $av2 = rest_do_request($r);
         $newSlots = $av2->get_data()['slots'];
@@ -233,12 +233,12 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         // 5. cancel via HMAC
         $exp = time() + 3600;
         $sig = $this->signCancel($uid, $exp);
-        $cancelReq = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $cancelReq = new WP_REST_Request('GET', '/slashbooking/v1/cancel');
         $cancelReq->set_query_params(['uid' => $uid, 'exp' => $exp, 'sig' => $sig]);
         self::assertSame(200, rest_do_request($cancelReq)->get_status());
 
         // 6. slot redevient dispo
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $r->set_query_params(['service' => 'pv', 'from' => '2026-06-15', 'to' => '2026-06-16']);
         $av3 = rest_do_request($r);
         $finalStarts = array_column($av3->get_data()['slots'], 'start');
@@ -255,7 +255,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
         $_SERVER['REMOTE_ADDR'] = '198.51.100.42';
         $blocked = false;
         for ($i = 0; $i < 7; $i++) {
-            $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+            $r = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
             $r->set_header('content-type', 'application/json');
             $r->set_body($payload);
             $resp = rest_do_request($r);

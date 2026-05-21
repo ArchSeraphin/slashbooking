@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Availability\SlotGenerator;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\BusyBlockRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Availability\SlotGenerator;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\BusyBlockRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 
 final class RestRouter
 {
@@ -26,8 +26,8 @@ final class RestRouter
             siteTimezone: wp_timezone_string(),
         );
 
-        $createBooking = new \Trinity\Booking\Booking\CreateBooking(
-            slotIsFree: function (\Trinity\Booking\Domain\Service $svc, \Trinity\Booking\Domain\TimeSlot $slot) use ($bookings, $busy): bool {
+        $createBooking = new \Slash\Booking\Booking\CreateBooking(
+            slotIsFree: function (\Slash\Booking\Domain\Service $svc, \Slash\Booking\Domain\TimeSlot $slot) use ($bookings, $busy): bool {
                 $blocking = $bookings->findOverlapping($svc->id ?? 0, $slot);
                 if ($blocking !== []) {
                     return false;
@@ -39,53 +39,53 @@ final class RestRouter
                 }
                 return true;
             },
-            persist: function (\Trinity\Booking\Domain\Booking $b) use ($bookings): void {
+            persist: function (\Slash\Booking\Domain\Booking $b) use ($bookings): void {
                 $bookings->save($b);
             },
         );
 
         (new PublicBookingController($services, $bookings, $busy, $generator, $createBooking))->registerRoutes();
 
-        $signer = new \Trinity\Booking\Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
-        $cancel = new \Trinity\Booking\Booking\CancelBooking(
+        $signer = new \Slash\Booking\Booking\DecisionTokenSigner((string) get_option('sb_decision_secret'));
+        $cancel = new \Slash\Booking\Booking\CancelBooking(
             find: fn (string $uid) => $bookings->findByPublicUid($uid),
-            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+            persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
         );
         (new PublicCancelController($signer, $cancel))->registerRoutes();
 
-        $confirmUC = new \Trinity\Booking\Booking\ConfirmBooking(
+        $confirmUC = new \Slash\Booking\Booking\ConfirmBooking(
             find: fn (int $id) => $bookings->findById($id),
-            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+            persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
         );
-        $rejectUC = new \Trinity\Booking\Booking\RejectBooking(
+        $rejectUC = new \Slash\Booking\Booking\RejectBooking(
             find: fn (int $id) => $bookings->findById($id),
-            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+            persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
         );
         (new DecisionController($signer, $confirmUC, $rejectUC))->registerRoutes();
 
         (new AdminBookingController($bookings, $confirmUC, $rejectUC, $cancel))->registerRoutes();
 
-        $accounts    = new \Trinity\Booking\Persistence\GoogleAccountRepository($wpdb);
-        $keyResolver = new \Trinity\Booking\Google\EncryptionKeyResolver();
-        $encryption  = new \Trinity\Booking\Google\Encryption($keyResolver->resolve());
-        $oauthState  = new \Trinity\Booking\Google\OAuthState((string) get_option('tb_decision_secret'));
-        $oauthClient = new \Trinity\Booking\Google\OAuthClient(
-            clientId: (string) get_option('tb_google_client_id', ''),
-            clientSecret: (string) get_option('tb_google_client_secret', ''),
-            redirectUri: rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
+        $accounts    = new \Slash\Booking\Persistence\GoogleAccountRepository($wpdb);
+        $keyResolver = new \Slash\Booking\Google\EncryptionKeyResolver();
+        $encryption  = new \Slash\Booking\Google\Encryption($keyResolver->resolve());
+        $oauthState  = new \Slash\Booking\Google\OAuthState((string) get_option('sb_decision_secret'));
+        $oauthClient = new \Slash\Booking\Google\OAuthClient(
+            clientId: (string) get_option('sb_google_client_id', ''),
+            clientSecret: (string) get_option('sb_google_client_secret', ''),
+            redirectUri: rest_url(\Slash\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
         );
-        $clientBuilder = new \Trinity\Booking\Google\GoogleClientBuilder($encryption, $accounts);
-        $watchMgr      = new \Trinity\Booking\Google\WatchChannelManager(
-            persist: fn (\Trinity\Booking\Domain\GoogleAccount $a) => $accounts->save($a),
+        $clientBuilder = new \Slash\Booking\Google\GoogleClientBuilder($encryption, $accounts);
+        $watchMgr      = new \Slash\Booking\Google\WatchChannelManager(
+            persist: fn (\Slash\Booking\Domain\GoogleAccount $a) => $accounts->save($a),
             ttlSeconds: 604_800,
         );
         // TODO Task 16: replace inline closure with real Action Scheduler wiring from Plugin.php
         $enqueuePull = static function (int $accountId): void {
             if (function_exists('as_schedule_single_action')) {
-                as_schedule_single_action(time() + 5, 'tb/google_pull', [$accountId], 'trinity-booking');
+                as_schedule_single_action(time() + 5, 'sb/google_pull', [$accountId], 'slashbooking');
                 return;
             }
-            do_action('tb/google_pull', $accountId);
+            do_action('sb/google_pull', $accountId);
         };
 
         (new AdminGoogleController(
@@ -98,7 +98,7 @@ final class RestRouter
             $enqueuePull,
         ))->registerRoutes();
 
-        $syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
+        $syncLog = new \Slash\Booking\Persistence\SyncLogRepository($wpdb);
         (new AdminSyncLogController($syncLog))->registerRoutes();
 
         (new AdminGoogleSettingsController())->registerRoutes();
@@ -123,30 +123,30 @@ final class RestRouter
         ))->registerRoutes();
 
         // --- Plan 5 : templates editor + settings ---
-        $mailRepo    = new \Trinity\Booking\Persistence\MailTemplateRepository($wpdb);
-        $tagRegistry = new \Trinity\Booking\Notifications\TagRegistry();
-        $renderer    = new \Trinity\Booking\Notifications\TemplateRenderer($tagRegistry);
+        $mailRepo    = new \Slash\Booking\Persistence\MailTemplateRepository($wpdb);
+        $tagRegistry = new \Slash\Booking\Notifications\TagRegistry();
+        $renderer    = new \Slash\Booking\Notifications\TemplateRenderer($tagRegistry);
         $dispatcher  = $this->resolveMailDispatcher($mailRepo, $renderer);
 
-        (new \Trinity\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
-        (new \Trinity\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
-        (new \Trinity\Booking\Http\AdminSettingsController())->registerRoutes();
-        (new \Trinity\Booking\Http\AdminServiceController($services))->registerRoutes();
+        (new \Slash\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
+        (new \Slash\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
+        (new \Slash\Booking\Http\AdminSettingsController())->registerRoutes();
+        (new \Slash\Booking\Http\AdminServiceController($services))->registerRoutes();
     }
 
     private function resolveMailDispatcher(
-        \Trinity\Booking\Persistence\MailTemplateRepository $repo,
-        \Trinity\Booking\Notifications\TemplateRenderer $renderer,
-    ): \Trinity\Booking\Notifications\MailDispatcher {
+        \Slash\Booking\Persistence\MailTemplateRepository $repo,
+        \Slash\Booking\Notifications\TemplateRenderer $renderer,
+    ): \Slash\Booking\Notifications\MailDispatcher {
         try {
-            return \Trinity\Booking\Plugin::instance()->get(\Trinity\Booking\Notifications\MailDispatcher::class);
+            return \Slash\Booking\Plugin::instance()->get(\Slash\Booking\Notifications\MailDispatcher::class);
         } catch (\RuntimeException) {
             // Fallback: build a fresh one (e.g., during tests or before Plugin boot).
-            return new \Trinity\Booking\Notifications\MailDispatcher(
+            return new \Slash\Booking\Notifications\MailDispatcher(
                 $repo,
                 $renderer,
-                new \Trinity\Booking\Notifications\TextBodyGenerator(),
-                new \Trinity\Booking\Notifications\IcsBuilder(),
+                new \Slash\Booking\Notifications\TextBodyGenerator(),
+                new \Slash\Booking\Notifications\IcsBuilder(),
             );
         }
     }

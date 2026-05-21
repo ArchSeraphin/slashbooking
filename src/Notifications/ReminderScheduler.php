@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\BookingRepository;
 
 final class ReminderScheduler
 {
-    public const HOOK = 'tb_send_daily_reminders';
+    public const HOOK = 'sb_send_daily_reminders';
 
     public function __construct(private readonly BookingRepository $bookings)
     {
@@ -33,7 +33,7 @@ final class ReminderScheduler
                 continue;
             }
             $this->bookings->markReminderSent($id, $now);
-            do_action('trinity_booking/booking_reminder_due', $id);
+            do_action('slashbooking/booking_reminder_due', $id);
         }
     }
 }

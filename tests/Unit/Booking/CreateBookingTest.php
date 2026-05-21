@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\CreateBooking;
-use Trinity\Booking\Booking\Exceptions\InvalidBookingInput;
-use Trinity\Booking\Booking\Exceptions\SlotUnavailable;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\CreateBooking;
+use Slash\Booking\Booking\Exceptions\InvalidBookingInput;
+use Slash\Booking\Booking\Exceptions\SlotUnavailable;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
 
 final class CreateBookingTest extends TestCase
 {

@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
 
 final class PullEventJob
 {

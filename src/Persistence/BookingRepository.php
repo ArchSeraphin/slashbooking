@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use wpdb;
@@ -18,7 +18,7 @@ final class BookingRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_bookings';
+        $this->table = $wpdb->prefix . 'sb_bookings';
     }
 
     public function save(Booking $booking): void

@@ -1,14 +1,14 @@
-# trinity-booking — Plan 1 : Bootstrap & Fondations publiques
+# slashbooking — Plan 1 : Bootstrap & Fondations publiques
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Mettre en place le squelette du plugin WordPress `trinity-booking` et permettre à un visiteur de réserver un créneau depuis un shortcode — le RDV est enregistré en base avec statut `pending`. Pas encore d'e-mails, ni d'admin, ni de Google.
+**Goal:** Mettre en place le squelette du plugin WordPress `slashbooking` et permettre à un visiteur de réserver un créneau depuis un shortcode — le RDV est enregistré en base avec statut `pending`. Pas encore d'e-mails, ni d'admin, ni de Google.
 
 **Architecture:** Plugin WordPress modulaire PSR-4 (Composer). Couches strictes : `Domain/` (entités pures), `Persistence/` (wrappers `$wpdb`), `Availability/` (calcul de créneaux), `Booking/` (cas d'usage), `Http/` (REST controllers), `PublicFront/` (shortcode + widget JS). Tests PHPUnit + Brain Monkey en unit, wp-phpunit en intégration.
 
 **Tech Stack:** PHP 8.1+, WordPress 6.5+, Composer, PSR-4, PHPUnit 10, Brain Monkey, PHPStan niveau 8, PHPCS WordPress-Extra, FullCalendar 6 (front), JS vanilla.
 
-**Spec source:** `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`
+**Spec source:** `docs/superpowers/specs/2026-05-19-slashbooking-design.md`
 
 ---
 
@@ -16,7 +16,7 @@
 
 Avant d'attaquer les tâches :
 
-1. **PSR-4 dans WordPress** : on évite les anti-patterns WP historiques (fichiers all-in-one). On namespace tout sous `Trinity\Booking\…` et on autoload via Composer. Le fichier d'entrée plugin ne contient quasi rien.
+1. **PSR-4 dans WordPress** : on évite les anti-patterns WP historiques (fichiers all-in-one). On namespace tout sous `Slash\Booking\…` et on autoload via Composer. Le fichier d'entrée plugin ne contient quasi rien.
 
 2. **Tests sans bootstrap WP** : pour les unités du dossier `Domain/`, on ne charge pas WordPress du tout. On utilise [Brain Monkey](https://brain-wp.github.io/BrainMonkey/) seulement pour mocker les fonctions WP (`__()`, `apply_filters`, etc.) là où elles apparaissent. Domain entities sont 100 % PHP pur — pas une seule fonction WP.
 
@@ -24,11 +24,11 @@ Avant d'attaquer les tâches :
 
 4. **Fuseaux** : tout en base est en UTC (`starts_at_utc`, `ends_at_utc`). On convertit à l'affichage avec `wp_date()`. Côté domaine, on travaille avec `DateTimeImmutable` en UTC.
 
-5. **Migrator versionné** : option WP `tb_db_version` stocke la version courante du schéma. À l'activation et à chaque chargement, on compare et on applique les migrations manquantes.
+5. **Migrator versionné** : option WP `sb_db_version` stocke la version courante du schéma. À l'activation et à chaque chargement, on compare et on applique les migrations manquantes.
 
-6. **HMAC pour les URLs publiques sécurisées** : `hash_hmac('sha256', "$booking_id|$action|$exp", $secret)`. Secret généré à l'activation, stocké dans option WP `tb_decision_secret`.
+6. **HMAC pour les URLs publiques sécurisées** : `hash_hmac('sha256', "$booking_id|$action|$exp", $secret)`. Secret généré à l'activation, stocké dans option WP `sb_decision_secret`.
 
-7. **REST namespace** : `trinity-booking/v1`. Tous les endpoints publics utilisent un nonce WP. Les endpoints à HMAC (decide, cancel) vérifient la signature dans le `permission_callback`.
+7. **REST namespace** : `slashbooking/v1`. Tous les endpoints publics utilisent un nonce WP. Les endpoints à HMAC (decide, cancel) vérifient la signature dans le `permission_callback`.
 
 ---
 
@@ -36,7 +36,7 @@ Avant d'attaquer les tâches :
 
 ```
 plugins-booking/
-├── trinity-booking.php                # entry point (~30 lignes)
+├── slashbooking.php                # entry point (~30 lignes)
 ├── composer.json
 ├── composer.lock
 ├── .gitignore
@@ -187,7 +187,7 @@ coverage/
 - [ ] **Step 4: Écrire `README.md`**
 
 ```markdown
-# trinity-booking
+# slashbooking
 
 Plugin WordPress de prise de rendez-vous commerciaux pour services solaires (photovoltaïque) et IRVE (borne de recharge), avec synchronisation bidirectionnelle Google Calendar.
 
@@ -258,12 +258,12 @@ git commit -m "chore: initialize repository skeleton"
   },
   "autoload": {
     "psr-4": {
-      "Trinity\\Booking\\": "src/"
+      "Slash\\Booking\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Trinity\\Booking\\Tests\\": "tests/"
+      "Slash\\Booking\\Tests\\": "tests/"
     }
   },
   "scripts": {
@@ -355,7 +355,7 @@ Create: `tests/Unit/SentinelTest.php`
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit;
+namespace Slash\Booking\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 
@@ -408,8 +408,8 @@ parameters:
 
 ```xml
 <?xml version="1.0"?>
-<ruleset name="trinity-booking">
-    <description>Coding standards for trinity-booking</description>
+<ruleset name="slashbooking">
+    <description>Coding standards for slashbooking</description>
     <file>src</file>
     <file>tests</file>
     <arg name="basepath" value="." />
@@ -430,7 +430,7 @@ parameters:
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="trinity-booking" />
+                <element value="slashbooking" />
             </property>
         </properties>
     </rule>
@@ -513,7 +513,7 @@ git commit -m "chore: add CI workflow for PHP 8.1/8.2/8.3"
 ## Task 6 : Plugin entry file + classe Plugin (DI container léger)
 
 **Files:**
-- Create: `trinity-booking.php`
+- Create: `slashbooking.php`
 - Create: `src/Plugin.php`
 - Create: `uninstall.php`
 
@@ -525,10 +525,10 @@ Create: `tests/Unit/PluginTest.php`
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit;
+namespace Slash\Booking\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 
 final class PluginTest extends TestCase
 {
@@ -539,7 +539,7 @@ final class PluginTest extends TestCase
 
     public function test_text_domain_constant(): void
     {
-        self::assertSame('trinity-booking', Plugin::TEXT_DOMAIN);
+        self::assertSame('slashbooking', Plugin::TEXT_DOMAIN);
     }
 }
 ```
@@ -555,14 +555,14 @@ Expected: échec — classe `Plugin` n'existe pas.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
 final class Plugin
 {
     public const VERSION = '0.1.0-dev';
-    public const TEXT_DOMAIN = 'trinity-booking';
+    public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
-    public const REST_NAMESPACE = 'trinity-booking/v1';
+    public const REST_NAMESPACE = 'slashbooking/v1';
 
     private static ?self $instance = null;
 
@@ -644,12 +644,12 @@ final class Plugin
 Run: `composer test -- --filter PluginTest`
 Expected: 2 tests OK.
 
-- [ ] **Step 5: Écrire l'entry file `trinity-booking.php`**
+- [ ] **Step 5: Écrire l'entry file `slashbooking.php`**
 
 ```php
 <?php
 /**
- * Plugin Name:       Trinity Booking
+ * Plugin Name:       SlashBooking
  * Plugin URI:        https://trinity.example/
  * Description:       Online appointment booking with Google Calendar sync.
  * Version:           0.1.0-dev
@@ -658,7 +658,7 @@ Expected: 2 tests OK.
  * Author:            Trinity
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       trinity-booking
+ * Text Domain:       slashbooking
  * Domain Path:       /languages
  */
 
@@ -672,7 +672,7 @@ if (!is_file($autoload)) {
 }
 require_once $autoload;
 
-\Trinity\Booking\Plugin::boot(__FILE__);
+\Slash\Booking\Plugin::boot(__FILE__);
 ```
 
 - [ ] **Step 6: Écrire `uninstall.php` (placeholder)**
@@ -680,7 +680,7 @@ require_once $autoload;
 ```php
 <?php
 /**
- * Trinity Booking — Uninstall.
+ * SlashBooking — Uninstall.
  *
  * Currently a no-op. Data wipe is opt-in and handled in a later plan.
  */
@@ -690,7 +690,7 @@ defined('WP_UNINSTALL_PLUGIN') || exit;
 - [ ] **Step 7: Commit**
 
 ```bash
-git add trinity-booking.php uninstall.php src/Plugin.php tests/Unit/PluginTest.php
+git add slashbooking.php uninstall.php src/Plugin.php tests/Unit/PluginTest.php
 git commit -m "feat: bootstrap plugin entry and DI container"
 ```
 
@@ -708,10 +708,10 @@ git commit -m "feat: bootstrap plugin entry and DI container"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\BookingStatus;
 
 final class BookingStatusTest extends TestCase
 {
@@ -744,7 +744,7 @@ Expected: classe inconnue.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 enum BookingStatus: string
 {
@@ -792,10 +792,10 @@ git commit -m "feat(domain): add BookingStatus enum with blocksSlot logic"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -855,7 +855,7 @@ Run: `composer test -- --filter TimeSlotTest`
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -936,10 +936,10 @@ Format `weekly_hours` : `array<int, list<array{open:string, close:string}>>` ind
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Domain\Service;
 
 final class ServiceTest extends TestCase
 {
@@ -1012,7 +1012,7 @@ final class ServiceTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use InvalidArgumentException;
 
@@ -1139,12 +1139,12 @@ git commit -m "feat(domain): add Service entity with row factory"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -1248,7 +1248,7 @@ final class BookingTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -1439,7 +1439,7 @@ Pas de test dédié — sera testé via le repository en Plan 3 (sync Google). O
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 final readonly class BusyBlock
 {
@@ -1500,7 +1500,7 @@ if (!is_dir($wp_tests_dir) || !is_file($wp_tests_dir . '/includes/functions.php'
 require_once $wp_tests_dir . '/includes/functions.php';
 
 tests_add_filter('muplugins_loaded', static function (): void {
-    require dirname(__DIR__, 2) . '/trinity-booking.php';
+    require dirname(__DIR__, 2) . '/slashbooking.php';
 });
 
 require $wp_tests_dir . '/includes/bootstrap.php';
@@ -1555,11 +1555,11 @@ Create: `tests/Integration/MigratorTest.php`
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Persistence\Migrator;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\Migrator;
+use Slash\Booking\Plugin;
 
 final class MigratorTest extends WP_UnitTestCase
 {
@@ -1570,12 +1570,12 @@ final class MigratorTest extends WP_UnitTestCase
         $migrator->migrate();
 
         $expected = [
-            $wpdb->prefix . 'tb_services',
-            $wpdb->prefix . 'tb_bookings',
-            $wpdb->prefix . 'tb_busy_blocks',
-            $wpdb->prefix . 'tb_google_accounts',
-            $wpdb->prefix . 'tb_sync_log',
-            $wpdb->prefix . 'tb_mail_templates',
+            $wpdb->prefix . 'sb_services',
+            $wpdb->prefix . 'sb_bookings',
+            $wpdb->prefix . 'sb_busy_blocks',
+            $wpdb->prefix . 'sb_google_accounts',
+            $wpdb->prefix . 'sb_sync_log',
+            $wpdb->prefix . 'sb_mail_templates',
         ];
 
         foreach ($expected as $table) {
@@ -1590,7 +1590,7 @@ final class MigratorTest extends WP_UnitTestCase
         $migrator = new Migrator($wpdb);
         $migrator->migrate();
         $migrator->migrate(); // doit pas planter
-        self::assertSame(Plugin::DB_VERSION, (int) get_option('tb_db_version'));
+        self::assertSame(Plugin::DB_VERSION, (int) get_option('sb_db_version'));
     }
 }
 ```
@@ -1606,9 +1606,9 @@ Expected: `Migrator` n'existe pas.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 use wpdb;
 
 final class Migrator
@@ -1619,7 +1619,7 @@ final class Migrator
 
     public function migrate(): void
     {
-        $currentVersion = (int) get_option('tb_db_version', 0);
+        $currentVersion = (int) get_option('sb_db_version', 0);
         if ($currentVersion >= Plugin::DB_VERSION) {
             return;
         }
@@ -1629,7 +1629,7 @@ final class Migrator
         $prefix  = $this->wpdb->prefix;
 
         $statements = [
-            "CREATE TABLE {$prefix}tb_services (
+            "CREATE TABLE {$prefix}sb_services (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 slug VARCHAR(64) NOT NULL,
                 name VARCHAR(160) NOT NULL,
@@ -1648,7 +1648,7 @@ final class Migrator
                 UNIQUE KEY uk_slug (slug)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_bookings (
+            "CREATE TABLE {$prefix}sb_bookings (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 public_uid CHAR(36) NOT NULL,
                 service_id BIGINT UNSIGNED NOT NULL,
@@ -1676,7 +1676,7 @@ final class Migrator
                 KEY idx_google_event (google_event_id)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_busy_blocks (
+            "CREATE TABLE {$prefix}sb_busy_blocks (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 source VARCHAR(16) NOT NULL,
                 source_id VARCHAR(255) NOT NULL,
@@ -1690,7 +1690,7 @@ final class Migrator
                 KEY idx_range (starts_at_utc, ends_at_utc)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_google_accounts (
+            "CREATE TABLE {$prefix}sb_google_accounts (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 label VARCHAR(120) NOT NULL,
                 calendar_id VARCHAR(200) NOT NULL,
@@ -1708,7 +1708,7 @@ final class Migrator
                 PRIMARY KEY (id)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_sync_log (
+            "CREATE TABLE {$prefix}sb_sync_log (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 ts DATETIME NOT NULL,
                 level VARCHAR(10) NOT NULL,
@@ -1725,7 +1725,7 @@ final class Migrator
                 KEY idx_entity (entity, entity_id)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_mail_templates (
+            "CREATE TABLE {$prefix}sb_mail_templates (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 event_key VARCHAR(64) NOT NULL,
                 subject VARCHAR(255) NOT NULL,
@@ -1743,7 +1743,7 @@ final class Migrator
             dbDelta($sql);
         }
 
-        update_option('tb_db_version', Plugin::DB_VERSION, false);
+        update_option('sb_db_version', Plugin::DB_VERSION, false);
     }
 }
 ```
@@ -1768,7 +1768,7 @@ git commit -m "feat(persistence): add Migrator with 6 plugin tables (db v1)"
 - Create: `src/Activator.php`
 - Create: `src/Deactivator.php`
 - Modify: `src/Plugin.php` (méthode `register()`)
-- Modify: `trinity-booking.php` (hooks)
+- Modify: `slashbooking.php` (hooks)
 
 L'activation : crée les tables, génère le secret HMAC, seed les services par défaut (PV + IRVE), seed les templates par défaut (lignes vides — vraies templates en Plan 2).
 
@@ -1780,38 +1780,38 @@ Create: `tests/Integration/ActivatorTest.php`
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
+use Slash\Booking\Activator;
 
 final class ActivatorTest extends WP_UnitTestCase
 {
     public function test_activate_seeds_services_and_secret(): void
     {
-        delete_option('tb_decision_secret');
+        delete_option('sb_decision_secret');
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_services");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_services");
 
         Activator::activate();
 
-        $secret = get_option('tb_decision_secret');
+        $secret = get_option('sb_decision_secret');
         self::assertIsString($secret);
         self::assertSame(64, strlen($secret)); // 32 octets hex
 
-        $slugs = $wpdb->get_col("SELECT slug FROM {$wpdb->prefix}tb_services ORDER BY sort_order");
+        $slugs = $wpdb->get_col("SELECT slug FROM {$wpdb->prefix}sb_services ORDER BY sort_order");
         self::assertSame(['pv', 'irve'], $slugs);
     }
 
     public function test_activate_is_idempotent(): void
     {
-        $first = get_option('tb_decision_secret');
+        $first = get_option('sb_decision_secret');
         Activator::activate();
-        $second = get_option('tb_decision_secret');
+        $second = get_option('sb_decision_secret');
         self::assertSame($first, $second);
 
         global $wpdb;
-        $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}tb_services");
+        $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}sb_services");
         self::assertSame(2, $count);
     }
 }
@@ -1825,9 +1825,9 @@ final class ActivatorTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
-use Trinity\Booking\Persistence\Migrator;
+use Slash\Booking\Persistence\Migrator;
 
 final class Activator
 {
@@ -1842,9 +1842,9 @@ final class Activator
 
     private static function ensureDecisionSecret(): void
     {
-        $existing = get_option('tb_decision_secret');
+        $existing = get_option('sb_decision_secret');
         if (!is_string($existing) || strlen($existing) !== 64) {
-            update_option('tb_decision_secret', bin2hex(random_bytes(32)), false);
+            update_option('sb_decision_secret', bin2hex(random_bytes(32)), false);
         }
     }
 
@@ -1883,13 +1883,13 @@ final class Activator
 
         foreach ($defaults as $row) {
             $exists = $wpdb->get_var(
-                $wpdb->prepare("SELECT id FROM {$wpdb->prefix}tb_services WHERE slug = %s", $row['slug'])
+                $wpdb->prepare("SELECT id FROM {$wpdb->prefix}sb_services WHERE slug = %s", $row['slug'])
             );
             if ($exists) {
                 continue;
             }
             $wpdb->insert(
-                "{$wpdb->prefix}tb_services",
+                "{$wpdb->prefix}sb_services",
                 [
                     'slug' => $row['slug'],
                     'name' => $row['name'],
@@ -1918,7 +1918,7 @@ final class Activator
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
 final class Deactivator
 {
@@ -1930,15 +1930,15 @@ final class Deactivator
 }
 ```
 
-- [ ] **Step 5: Brancher dans `trinity-booking.php`**
+- [ ] **Step 5: Brancher dans `slashbooking.php`**
 
-Modify le fichier `trinity-booking.php` — ajouter avant le `Plugin::boot(...)` :
+Modify le fichier `slashbooking.php` — ajouter avant le `Plugin::boot(...)` :
 
 ```php
-register_activation_hook(__FILE__, [\Trinity\Booking\Activator::class, 'activate']);
-register_deactivation_hook(__FILE__, [\Trinity\Booking\Deactivator::class, 'deactivate']);
+register_activation_hook(__FILE__, [\Slash\Booking\Activator::class, 'activate']);
+register_deactivation_hook(__FILE__, [\Slash\Booking\Deactivator::class, 'deactivate']);
 
-\Trinity\Booking\Plugin::boot(__FILE__);
+\Slash\Booking\Plugin::boot(__FILE__);
 ```
 
 - [ ] **Step 6: Run → vert**
@@ -1948,7 +1948,7 @@ Run: `composer test:integration -- --filter ActivatorTest`
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/Activator.php src/Deactivator.php trinity-booking.php tests/Integration/ActivatorTest.php
+git add src/Activator.php src/Deactivator.php slashbooking.php tests/Integration/ActivatorTest.php
 git commit -m "feat: add Activator (migrate + seed) and Deactivator hooks"
 ```
 
@@ -1966,11 +1966,11 @@ git commit -m "feat: add Activator (migrate + seed) and Deactivator hooks"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Persistence\ServiceRepository;
 
 final class ServiceRepositoryTest extends WP_UnitTestCase
 {
@@ -2021,9 +2021,9 @@ final class ServiceRepositoryTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Domain\Service;
 use wpdb;
 
 final class ServiceRepository
@@ -2032,7 +2032,7 @@ final class ServiceRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_services';
+        $this->table = $wpdb->prefix . 'sb_services';
     }
 
     public function findById(int $id): ?Service
@@ -2095,14 +2095,14 @@ Méthodes : `save(Booking)`, `findById`, `findByPublicUid`, `findOverlapping(ser
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -2189,11 +2189,11 @@ final class BookingRepositoryTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use wpdb;
@@ -2205,7 +2205,7 @@ final class BookingRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_bookings';
+        $this->table = $wpdb->prefix . 'sb_bookings';
     }
 
     public function save(Booking $booking): void
@@ -2361,10 +2361,10 @@ Pas de test dédié — sera utilisé par `AvailabilityCalculator` (testé en Ta
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use wpdb;
@@ -2375,7 +2375,7 @@ final class BusyBlockRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_busy_blocks';
+        $this->table = $wpdb->prefix . 'sb_busy_blocks';
     }
 
     /**
@@ -2439,11 +2439,11 @@ Génère, pour un `Service` et un intervalle de dates, la liste brute des créne
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Availability;
+namespace Slash\Booking\Tests\Unit\Availability;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Availability\SlotGenerator;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Availability\SlotGenerator;
+use Slash\Booking\Domain\Service;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -2524,10 +2524,10 @@ final class SlotGeneratorTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Availability;
+namespace Slash\Booking\Availability;
 
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;
@@ -2625,11 +2625,11 @@ Reçoit les slots candidats + bookings bloquants + busy blocks, applique les buf
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Availability;
+namespace Slash\Booking\Tests\Unit\Availability;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Availability\AvailabilityCalculator;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Availability\AvailabilityCalculator;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -2675,9 +2675,9 @@ final class AvailabilityCalculatorTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Availability;
+namespace Slash\Booking\Availability;
 
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\TimeSlot;
 
 final class AvailabilityCalculator
 {
@@ -2742,7 +2742,7 @@ git commit -m "feat(availability): add AvailabilityCalculator with buffer-aware 
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking\Exceptions;
+namespace Slash\Booking\Booking\Exceptions;
 
 final class SlotUnavailable extends \DomainException
 {
@@ -2755,7 +2755,7 @@ final class SlotUnavailable extends \DomainException
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking\Exceptions;
+namespace Slash\Booking\Booking\Exceptions;
 
 final class InvalidBookingInput extends \DomainException
 {
@@ -2775,7 +2775,7 @@ final class InvalidBookingInput extends \DomainException
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking\Exceptions;
+namespace Slash\Booking\Booking\Exceptions;
 
 final class BookingNotFound extends \DomainException
 {
@@ -2805,10 +2805,10 @@ Génère/vérifie un token HMAC pour les URLs publiques (cancel client en Plan 1
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\DecisionTokenSigner;
 
 final class DecisionTokenSignerTest extends TestCase
 {
@@ -2857,7 +2857,7 @@ final class DecisionTokenSignerTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
 final class DecisionTokenSigner
 {
@@ -2909,15 +2909,15 @@ Le cas d'usage prend une commande déjà validée syntaxiquement (la sanitizatio
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\CreateBooking;
-use Trinity\Booking\Booking\Exceptions\InvalidBookingInput;
-use Trinity\Booking\Booking\Exceptions\SlotUnavailable;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Booking\CreateBooking;
+use Slash\Booking\Booking\Exceptions\InvalidBookingInput;
+use Slash\Booking\Booking\Exceptions\SlotUnavailable;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Booking;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -3046,13 +3046,13 @@ final class CreateBookingTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
-use Trinity\Booking\Booking\Exceptions\InvalidBookingInput;
-use Trinity\Booking\Booking\Exceptions\SlotUnavailable;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\Exceptions\InvalidBookingInput;
+use Slash\Booking\Booking\Exceptions\SlotUnavailable;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
 use Closure;
 
 /**
@@ -3159,14 +3159,14 @@ L'annulation par le client passe par le lien HMAC dans l'e-mail. En Plan 1 on n'
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\CancelBooking;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\CancelBooking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -3220,10 +3220,10 @@ final class CancelBookingTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
 use Closure;
 
 final class CancelBooking
@@ -3276,9 +3276,9 @@ Le routeur enregistre tous les endpoints REST. Implémenté incrémentalement.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 
 final class RestRouter
 {
@@ -3334,11 +3334,11 @@ git commit -m "feat(http): add RestRouter skeleton wired to rest_api_init"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_REST_Request;
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
+use Slash\Booking\Activator;
 
 final class PublicBookingControllerTest extends WP_UnitTestCase
 {
@@ -3351,7 +3351,7 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 
     public function test_get_services_returns_active_list(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/services');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/services');
         $response = rest_do_request($request);
         self::assertSame(200, $response->get_status());
 
@@ -3371,10 +3371,10 @@ final class PublicBookingControllerTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Persistence\ServiceRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -3425,9 +3425,9 @@ Replace `src/Http/RestRouter.php` :
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 
 final class RestRouter
 {
@@ -3472,7 +3472,7 @@ Append au fichier `PublicBookingControllerTest.php` :
 ```php
     public function test_get_availability_returns_slots(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $request->set_query_params([
             'service' => 'pv',
             'from'    => '2026-06-01',
@@ -3490,7 +3490,7 @@ Append au fichier `PublicBookingControllerTest.php` :
 
     public function test_get_availability_unknown_service_returns_404(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $request->set_query_params([
             'service' => 'inconnu',
             'from'    => '2026-06-01',
@@ -3502,7 +3502,7 @@ Append au fichier `PublicBookingControllerTest.php` :
 
     public function test_get_availability_invalid_date_returns_400(): void
     {
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $request->set_query_params([
             'service' => 'pv',
             'from'    => 'oops',
@@ -3520,11 +3520,11 @@ Append au fichier `PublicBookingControllerTest.php` :
 Add à `src/Http/PublicBookingController.php` :
 
 ```php
-use Trinity\Booking\Availability\AvailabilityCalculator;
-use Trinity\Booking\Availability\SlotGenerator;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\BusyBlockRepository;
+use Slash\Booking\Availability\AvailabilityCalculator;
+use Slash\Booking\Availability\SlotGenerator;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\BusyBlockRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 use WP_Error;
@@ -3568,7 +3568,7 @@ Ajouter la méthode :
     {
         $svc = $this->services->findBySlug((string) $request['service']);
         if ($svc === null) {
-            return new WP_Error('tb_service_not_found', 'Service introuvable', ['status' => 404]);
+            return new WP_Error('sb_service_not_found', 'Service introuvable', ['status' => 404]);
         }
 
         try {
@@ -3576,10 +3576,10 @@ Ajouter la méthode :
             $from = new DateTimeImmutable((string) $request['from'], $tz);
             $to   = new DateTimeImmutable((string) $request['to'], $tz);
         } catch (\Exception $e) {
-            return new WP_Error('tb_invalid_date', 'Date invalide', ['status' => 400]);
+            return new WP_Error('sb_invalid_date', 'Date invalide', ['status' => 400]);
         }
         if ($from >= $to) {
-            return new WP_Error('tb_invalid_date', 'from doit précéder to', ['status' => 400]);
+            return new WP_Error('sb_invalid_date', 'from doit précéder to', ['status' => 400]);
         }
 
         $candidates = $this->slotGenerator->generate($svc, $from, $to);
@@ -3666,7 +3666,7 @@ Append :
 ```php
     public function test_post_booking_happy_path(): void
     {
-        $request = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $request = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $request->set_header('content-type', 'application/json');
         $request->set_body(json_encode([
             'service' => 'pv',
@@ -3687,7 +3687,7 @@ Append :
 
     public function test_post_booking_rejects_missing_consent(): void
     {
-        $request = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $request = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $request->set_header('content-type', 'application/json');
         $request->set_body(json_encode([
             'service' => 'pv',
@@ -3704,7 +3704,7 @@ Append :
 
     public function test_post_booking_honeypot_returns_201_silently(): void
     {
-        $request = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $request = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $request->set_header('content-type', 'application/json');
         $request->set_body(json_encode([
             'service' => 'pv',
@@ -3735,14 +3735,14 @@ Append :
             'customer_address' => 'x',
             'consent' => true,
         ];
-        $r1 = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r1 = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r1->set_header('content-type', 'application/json');
         $r1->set_body(json_encode($body));
         $resp1 = rest_do_request($r1);
         self::assertSame(201, $resp1->get_status());
 
         // 2ème sur le même créneau
-        $r2 = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r2 = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r2->set_header('content-type', 'application/json');
         $r2->set_body(json_encode($body));
         $resp2 = rest_do_request($r2);
@@ -3762,7 +3762,7 @@ Add à `src/Http/PublicBookingController.php` (constructor : injecter `CreateBoo
         private readonly BookingRepository $bookings,
         private readonly BusyBlockRepository $busyBlocks,
         private readonly SlotGenerator $slotGenerator,
-        private readonly \Trinity\Booking\Booking\CreateBooking $createBooking,
+        private readonly \Slash\Booking\Booking\CreateBooking $createBooking,
     ) {
     }
 ```
@@ -3795,14 +3795,14 @@ Ajouter la méthode :
 
         $svc = $this->services->findBySlug((string) ($params['service'] ?? ''));
         if ($svc === null) {
-            return new WP_Error('tb_service_not_found', 'Service introuvable', ['status' => 404]);
+            return new WP_Error('sb_service_not_found', 'Service introuvable', ['status' => 404]);
         }
 
         try {
             $start = new DateTimeImmutable((string) ($params['start'] ?? ''), new DateTimeZone('UTC'));
             $start = $start->setTimezone(new DateTimeZone('UTC'));
         } catch (\Exception $e) {
-            return new WP_Error('tb_invalid_date', 'start invalide', ['status' => 400]);
+            return new WP_Error('sb_invalid_date', 'start invalide', ['status' => 400]);
         }
         $end = $start->modify('+' . $svc->durationMin . ' minutes');
         $slot = new TimeSlot($start, $end);
@@ -3822,10 +3822,10 @@ Ajouter la méthode :
 
         try {
             $booking = $this->createBooking->execute($cmd);
-        } catch (\Trinity\Booking\Booking\Exceptions\InvalidBookingInput $e) {
-            return new WP_Error('tb_invalid_input', 'Champs invalides', ['status' => 422, 'errors' => $e->errors]);
-        } catch (\Trinity\Booking\Booking\Exceptions\SlotUnavailable $e) {
-            return new WP_Error('tb_slot_unavailable', 'Créneau indisponible', ['status' => 409]);
+        } catch (\Slash\Booking\Booking\Exceptions\InvalidBookingInput $e) {
+            return new WP_Error('sb_invalid_input', 'Champs invalides', ['status' => 422, 'errors' => $e->errors]);
+        } catch (\Slash\Booking\Booking\Exceptions\SlotUnavailable $e) {
+            return new WP_Error('sb_slot_unavailable', 'Créneau indisponible', ['status' => 409]);
         }
 
         return new WP_REST_Response([
@@ -3840,8 +3840,8 @@ Ajouter la méthode :
 Dans `src/Http/RestRouter.php` `registerRoutes()` :
 
 ```php
-        $createBooking = new \Trinity\Booking\Booking\CreateBooking(
-            slotIsFree: function (\Trinity\Booking\Domain\Service $svc, \Trinity\Booking\Domain\TimeSlot $slot) use ($bookings, $busy): bool {
+        $createBooking = new \Slash\Booking\Booking\CreateBooking(
+            slotIsFree: function (\Slash\Booking\Domain\Service $svc, \Slash\Booking\Domain\TimeSlot $slot) use ($bookings, $busy): bool {
                 $blocking = $bookings->findOverlapping($svc->id, $slot);
                 if ($blocking !== []) return false;
                 foreach ($busy->findInRange($slot->start, $slot->end) as $bb) {
@@ -3849,7 +3849,7 @@ Dans `src/Http/RestRouter.php` `registerRoutes()` :
                 }
                 return true;
             },
-            persist: function (\Trinity\Booking\Domain\Booking $b) use ($bookings): void {
+            persist: function (\Slash\Booking\Domain\Booking $b) use ($bookings): void {
                 $bookings->save($b);
             },
         );
@@ -3877,7 +3877,7 @@ git commit -m "feat(http): expose POST /bookings with validation and honeypot"
 - Modify: `src/Http/RestRouter.php`
 - Modify: `tests/Integration/PublicBookingControllerTest.php` (ajouter cas)
 
-L'URL signée a la forme `/wp-json/trinity-booking/v1/cancel?uid={uid}&exp={ts}&sig={hmac}`. Payload signé : `"cancel|{uid}"`.
+L'URL signée a la forme `/wp-json/slashbooking/v1/cancel?uid={uid}&exp={ts}&sig={hmac}`. Payload signé : `"cancel|{uid}"`.
 
 - [ ] **Step 1: Test**
 
@@ -3886,14 +3886,14 @@ Ajouter au fichier de test (helper qui forge un token) :
 ```php
     private function signCancel(string $uid, int $exp): string
     {
-        $secret = get_option('tb_decision_secret');
+        $secret = get_option('sb_decision_secret');
         return hash_hmac('sha256', 'cancel|' . $uid . '|' . $exp, $secret);
     }
 
     public function test_cancel_with_valid_token_returns_200(): void
     {
         // Crée un booking
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r->set_header('content-type', 'application/json');
         $r->set_body(json_encode([
             'service' => 'pv', 'start' => '2026-06-10T07:00:00+00:00',
@@ -3905,7 +3905,7 @@ Ajouter au fichier de test (helper qui forge un token) :
 
         $exp = time() + 3600;
         $sig = $this->signCancel($uid, $exp);
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/cancel');
         $req->set_query_params(['uid' => $uid, 'exp' => $exp, 'sig' => $sig]);
         $response = rest_do_request($req);
         self::assertSame(200, $response->get_status());
@@ -3914,7 +3914,7 @@ Ajouter au fichier de test (helper qui forge un token) :
     public function test_cancel_with_bad_signature_returns_403(): void
     {
         $exp = time() + 3600;
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/cancel');
         $req->set_query_params(['uid' => 'fake', 'exp' => $exp, 'sig' => 'wrong']);
         $response = rest_do_request($req);
         self::assertSame(403, $response->get_status());
@@ -3931,12 +3931,12 @@ Ajouter au fichier de test (helper qui forge un token) :
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Booking\CancelBooking;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Booking\CancelBooking;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -3976,13 +3976,13 @@ final class PublicCancelController
         $payload = 'cancel|' . $uid;
 
         if (!$this->signer->verify($payload, $exp, $sig)) {
-            return new WP_Error('tb_invalid_token', 'Lien invalide ou expiré.', ['status' => 403]);
+            return new WP_Error('sb_invalid_token', 'Lien invalide ou expiré.', ['status' => 403]);
         }
 
         try {
             $this->cancel->execute($uid);
         } catch (BookingNotFound $e) {
-            return new WP_Error('tb_not_found', 'Réservation introuvable.', ['status' => 404]);
+            return new WP_Error('sb_not_found', 'Réservation introuvable.', ['status' => 404]);
         }
 
         return new WP_REST_Response(['status' => 'cancelled'], 200);
@@ -3995,10 +3995,10 @@ final class PublicCancelController
 Ajouter dans `registerRoutes()` :
 
 ```php
-        $signer = new \Trinity\Booking\Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
-        $cancel = new \Trinity\Booking\Booking\CancelBooking(
+        $signer = new \Slash\Booking\Booking\DecisionTokenSigner((string) get_option('sb_decision_secret'));
+        $cancel = new \Slash\Booking\Booking\CancelBooking(
             find: fn (string $uid) => $bookings->findByPublicUid($uid),
-            persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+            persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
         );
         (new PublicCancelController($signer, $cancel))->registerRoutes();
 ```
@@ -4016,7 +4016,7 @@ git commit -m "feat(http): expose GET /cancel with HMAC verification"
 
 ---
 
-## Task 28 : PublicFront — `Shortcode` `[trinity_booking]`
+## Task 28 : PublicFront — `Shortcode` `[slashbooking]`
 
 **Files:**
 - Create: `src/PublicFront/Shortcode.php`
@@ -4030,10 +4030,10 @@ git commit -m "feat(http): expose GET /cancel with HMAC verification"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\PublicFront;
+namespace Slash\Booking\PublicFront;
 
-use Trinity\Booking\Persistence\ServiceRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Plugin;
 
 final class Shortcode
 {
@@ -4043,7 +4043,7 @@ final class Shortcode
 
     public function register(): void
     {
-        add_shortcode('trinity_booking', [$this, 'render']);
+        add_shortcode('slashbooking', [$this, 'render']);
         add_action('wp_enqueue_scripts', [$this, 'maybeEnqueue']);
     }
 
@@ -4056,13 +4056,13 @@ final class Shortcode
         $service = isset($attrs['service']) ? sanitize_text_field((string) $attrs['service']) : 'pv';
         $svc = $this->services->findBySlug($service);
         if ($svc === null || !$svc->isActive()) {
-            return '<div class="tb-error">' . esc_html__('Service inconnu', 'trinity-booking') . '</div>';
+            return '<div class="sb-error">' . esc_html__('Service inconnu', 'slashbooking') . '</div>';
         }
 
         $this->markEnqueueNeeded();
 
         return sprintf(
-            '<div class="tb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
+            '<div class="sb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
             esc_attr($svc->slug),
             esc_url_raw(rest_url(Plugin::REST_NAMESPACE . '/')),
         );
@@ -4075,19 +4075,19 @@ final class Shortcode
         }
         $pluginUrl = plugin_dir_url(Plugin::instance()->pluginFile());
         wp_enqueue_style(
-            'trinity-booking-public',
+            'slashbooking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.css',
             [],
             Plugin::VERSION
         );
         wp_enqueue_script(
-            'trinity-booking-public',
+            'slashbooking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.js',
             [],
             Plugin::VERSION,
             true
         );
-        wp_localize_script('trinity-booking-public', 'TrinityBooking', [
+        wp_localize_script('slashbooking-public', 'TrinityBooking', [
             'nonce'  => wp_create_nonce('wp_rest'),
             'locale' => get_locale(),
         ]);
@@ -4095,14 +4095,14 @@ final class Shortcode
 
     private function markEnqueueNeeded(): void
     {
-        if (!isset($GLOBALS['tb_enqueue_needed'])) {
-            $GLOBALS['tb_enqueue_needed'] = true;
+        if (!isset($GLOBALS['sb_enqueue_needed'])) {
+            $GLOBALS['sb_enqueue_needed'] = true;
         }
     }
 
     private function shouldEnqueue(): bool
     {
-        return !empty($GLOBALS['tb_enqueue_needed']);
+        return !empty($GLOBALS['sb_enqueue_needed']);
     }
 }
 ```
@@ -4127,7 +4127,7 @@ Run: `composer stan`
 
 ```bash
 git add src/PublicFront/Shortcode.php src/Plugin.php
-git commit -m "feat(public-front): register [trinity_booking] shortcode"
+git commit -m "feat(public-front): register [slashbooking] shortcode"
 ```
 
 ---
@@ -4143,22 +4143,22 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
 - [ ] **Step 1: Écrire `src/PublicFront/assets/booking.css`**
 
 ```css
-.tb-widget { max-width: 560px; margin: 0 auto; font-family: system-ui, -apple-system, sans-serif; color: #111; }
-.tb-step { padding: 16px 0; }
-.tb-step h3 { margin: 0 0 8px; font-size: 18px; }
-.tb-slot-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-.tb-slot { padding: 10px; border: 1px solid #d4d4d4; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; text-align: center; }
-.tb-slot:hover { border-color: #0ea5e9; }
-.tb-slot.is-selected { background: #0ea5e9; color: #fff; border-color: #0284c7; }
-.tb-field { display: block; margin: 10px 0; }
-.tb-field label { display: block; font-size: 13px; margin-bottom: 4px; }
-.tb-field input, .tb-field textarea { width: 100%; padding: 10px; border: 1px solid #d4d4d4; border-radius: 6px; font: inherit; box-sizing: border-box; }
-.tb-error { color: #b91c1c; margin: 8px 0; }
-.tb-success { color: #047857; margin: 8px 0; }
-.tb-honeypot { position: absolute; left: -9999px; }
-.tb-button { padding: 12px 18px; border: 0; background: #0ea5e9; color: #fff; border-radius: 6px; font: inherit; cursor: pointer; }
-.tb-button:disabled { opacity: .5; cursor: not-allowed; }
-.tb-loading { opacity: .6; pointer-events: none; }
+.sb-widget { max-width: 560px; margin: 0 auto; font-family: system-ui, -apple-system, sans-serif; color: #111; }
+.sb-step { padding: 16px 0; }
+.sb-step h3 { margin: 0 0 8px; font-size: 18px; }
+.sb-slot-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.sb-slot { padding: 10px; border: 1px solid #d4d4d4; background: #fff; border-radius: 6px; cursor: pointer; font-size: 14px; text-align: center; }
+.sb-slot:hover { border-color: #0ea5e9; }
+.sb-slot.is-selected { background: #0ea5e9; color: #fff; border-color: #0284c7; }
+.sb-field { display: block; margin: 10px 0; }
+.sb-field label { display: block; font-size: 13px; margin-bottom: 4px; }
+.sb-field input, .sb-field textarea { width: 100%; padding: 10px; border: 1px solid #d4d4d4; border-radius: 6px; font: inherit; box-sizing: border-box; }
+.sb-error { color: #b91c1c; margin: 8px 0; }
+.sb-success { color: #047857; margin: 8px 0; }
+.sb-honeypot { position: absolute; left: -9999px; }
+.sb-button { padding: 12px 18px; border: 0; background: #0ea5e9; color: #fff; border-radius: 6px; font: inherit; cursor: pointer; }
+.sb-button:disabled { opacity: .5; cursor: not-allowed; }
+.sb-loading { opacity: .6; pointer-events: none; }
 ```
 
 - [ ] **Step 2: Écrire `src/PublicFront/assets/booking.js`**
@@ -4188,7 +4188,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
     }
 
     function stepDate() {
-      var s = el('div', 'tb-step');
+      var s = el('div', 'sb-step');
       s.append(h3('1. Choisissez une date'));
       var input = el('input');
       input.type = 'date';
@@ -4203,18 +4203,18 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
     }
 
     function stepSlots() {
-      var s = el('div', 'tb-step');
-      s.id = 'tb-slots';
+      var s = el('div', 'sb-step');
+      s.id = 'sb-slots';
       s.append(h3('2. Choisissez un créneau'));
-      var list = el('div', 'tb-slot-list');
-      list.id = 'tb-slot-list';
+      var list = el('div', 'sb-slot-list');
+      list.id = 'sb-slot-list';
       s.append(list);
       return s;
     }
 
     function stepForm() {
-      var s = el('div', 'tb-step');
-      s.id = 'tb-form';
+      var s = el('div', 'sb-step');
+      s.id = 'sb-form';
       s.style.display = 'none';
       s.append(h3('3. Vos informations'));
       ['customer_name', 'customer_email', 'customer_phone', 'customer_address'].forEach(function (name) {
@@ -4222,11 +4222,11 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
       });
       // honeypot
       var hp = field('website', 'Website', 'text');
-      hp.classList.add('tb-honeypot');
+      hp.classList.add('sb-honeypot');
       hp.setAttribute('aria-hidden', 'true');
       s.append(hp);
 
-      var consentWrap = el('label', 'tb-field');
+      var consentWrap = el('label', 'sb-field');
       var consent = el('input');
       consent.type = 'checkbox';
       consent.name = 'consent';
@@ -4234,7 +4234,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
       consentWrap.append(consent, ' ', document.createTextNode('J’accepte que mes données soient utilisées pour me recontacter.'));
       s.append(consentWrap);
 
-      var btn = el('button', 'tb-button');
+      var btn = el('button', 'sb-button');
       btn.type = 'button';
       btn.textContent = 'Réserver';
       btn.addEventListener('click', submit);
@@ -4245,7 +4245,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
 
     function feedback() {
       var f = el('div');
-      f.id = 'tb-feedback';
+      f.id = 'sb-feedback';
       return f;
     }
 
@@ -4254,19 +4254,19 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
       list.textContent = '';
       var from = state.date;
       var to = addDays(from, 1);
-      root.classList.add('tb-loading');
+      root.classList.add('sb-loading');
       fetch(rest + 'availability?service=' + encodeURIComponent(service) + '&from=' + from + '&to=' + to, {
         headers: { 'X-WP-Nonce': nonce || '' },
       })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          root.classList.remove('tb-loading');
+          root.classList.remove('sb-loading');
           if (!data.slots || data.slots.length === 0) {
             list.append(text('Aucun créneau disponible ce jour-là.'));
             return;
           }
           data.slots.forEach(function (slot) {
-            var b = el('button', 'tb-slot');
+            var b = el('button', 'sb-slot');
             b.type = 'button';
             b.textContent = formatTime(slot.start);
             b.dataset.start = slot.start;
@@ -4280,7 +4280,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
           });
         })
         .catch(function () {
-          root.classList.remove('tb-loading');
+          root.classList.remove('sb-loading');
           showError('Erreur de chargement des créneaux.');
         });
     }
@@ -4298,7 +4298,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
         consent: form.querySelector('[name=consent]').checked,
         website: form.querySelector('[name=website]').value,
       };
-      root.classList.add('tb-loading');
+      root.classList.add('sb-loading');
       fetch(rest + 'bookings', {
         method: 'POST',
         headers: {
@@ -4311,10 +4311,10 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
           return r.json().then(function (body) { return { status: r.status, body: body }; });
         })
         .then(function (res) {
-          root.classList.remove('tb-loading');
+          root.classList.remove('sb-loading');
           if (res.status >= 200 && res.status < 300) {
             root.innerHTML = '';
-            var ok = el('div', 'tb-success');
+            var ok = el('div', 'sb-success');
             ok.textContent = 'Demande envoyée ! Nous reviendrons vers vous très vite.';
             root.append(ok);
             return;
@@ -4332,7 +4332,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
           showError(res.body && res.body.message ? res.body.message : 'Erreur inconnue.');
         })
         .catch(function () {
-          root.classList.remove('tb-loading');
+          root.classList.remove('sb-loading');
           showError('Impossible d’envoyer la demande.');
         });
     }
@@ -4340,13 +4340,13 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
     function showError(msg) {
       var fb = root.querySelector('#tb-feedback');
       fb.innerHTML = '';
-      var e = el('div', 'tb-error');
+      var e = el('div', 'sb-error');
       e.textContent = msg;
       fb.append(e);
     }
 
     function field(name, label, type) {
-      var wrap = el('label', 'tb-field');
+      var wrap = el('label', 'sb-field');
       var lbl = el('span');
       lbl.textContent = label;
       var input = type === 'textarea' ? el('textarea') : el('input');
@@ -4378,7 +4378,7 @@ Widget vanilla ~150 lignes : 3 étapes (date → créneau → infos), fetch sur 
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.tb-widget').forEach(init);
+    document.querySelectorAll('.sb-widget').forEach(init);
   });
 })();
 ```
@@ -4389,10 +4389,10 @@ Documentation pour l'engineer :
 
 ```
 # Test manuel après cette tâche :
-1. Sur un site WP de dev, activer le plugin trinity-booking
-2. Créer une page, ajouter le shortcode : [trinity_booking service="pv"]
+1. Sur un site WP de dev, activer le plugin slashbooking
+2. Créer une page, ajouter le shortcode : [slashbooking service="pv"]
 3. Ouvrir la page → widget visible, choisir une date, choisir un créneau, remplir, soumettre
-4. Vérifier en SQL : SELECT id, public_uid, status, customer_email FROM wp_tb_bookings ORDER BY id DESC LIMIT 1;
+4. Vérifier en SQL : SELECT id, public_uid, status, customer_email FROM wp_sb_bookings ORDER BY id DESC LIMIT 1;
 5. Refaire la même demande → message "créneau plus dispo"
 ```
 
@@ -4420,12 +4420,12 @@ Append :
     public function test_end_to_end_booking_flow(): void
     {
         // 1. services
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/services');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/services');
         $services = rest_do_request($r)->get_data();
         self::assertNotEmpty($services);
 
         // 2. availability
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/availability');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/availability');
         $r->set_query_params([
             'service' => 'pv',
             'from'    => '2026-06-15',
@@ -4437,7 +4437,7 @@ Append :
         self::assertNotEmpty($slots);
 
         // 3. booking
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
         $r->set_header('content-type', 'application/json');
         $r->set_body(json_encode([
             'service' => 'pv',
@@ -4453,7 +4453,7 @@ Append :
         $uid = $resp->get_data()['public_uid'];
 
         // 4. plus dispo
-        $av2 = rest_do_request($r = new WP_REST_Request('GET', '/trinity-booking/v1/availability'));
+        $av2 = rest_do_request($r = new WP_REST_Request('GET', '/slashbooking/v1/availability'));
         $r->set_query_params(['service' => 'pv', 'from' => '2026-06-15', 'to' => '2026-06-16']);
         $av2 = rest_do_request($r);
         $newSlots = $av2->get_data()['slots'];
@@ -4463,12 +4463,12 @@ Append :
         // 5. cancel via HMAC
         $exp = time() + 3600;
         $sig = $this->signCancel($uid, $exp);
-        $cancelReq = new WP_REST_Request('GET', '/trinity-booking/v1/cancel');
+        $cancelReq = new WP_REST_Request('GET', '/slashbooking/v1/cancel');
         $cancelReq->set_query_params(['uid' => $uid, 'exp' => $exp, 'sig' => $sig]);
         self::assertSame(200, rest_do_request($cancelReq)->get_status());
 
         // 6. slot redevient dispo
-        $av3 = rest_do_request($r = new WP_REST_Request('GET', '/trinity-booking/v1/availability'));
+        $av3 = rest_do_request($r = new WP_REST_Request('GET', '/slashbooking/v1/availability'));
         $r->set_query_params(['service' => 'pv', 'from' => '2026-06-15', 'to' => '2026-06-16']);
         $av3 = rest_do_request($r);
         $finalStarts = array_column($av3->get_data()['slots'], 'start');
@@ -4511,7 +4511,7 @@ Append à `PublicBookingControllerTest.php` :
         $_SERVER['REMOTE_ADDR'] = '198.51.100.42';
         $blocked = false;
         for ($i = 0; $i < 7; $i++) {
-            $r = new WP_REST_Request('POST', '/trinity-booking/v1/bookings');
+            $r = new WP_REST_Request('POST', '/slashbooking/v1/bookings');
             $r->set_header('content-type', 'application/json');
             $r->set_body($payload);
             $resp = rest_do_request($r);
@@ -4529,7 +4529,7 @@ Au début de `PublicBookingController::createBooking()`, après le honeypot, ajo
 
 ```php
         if ($this->isRateLimited()) {
-            return new WP_Error('tb_rate_limited', 'Trop de requêtes', ['status' => 429]);
+            return new WP_Error('sb_rate_limited', 'Trop de requêtes', ['status' => 429]);
         }
 ```
 
@@ -4542,7 +4542,7 @@ Ajouter la méthode :
         if ($ip === '') {
             return false;
         }
-        $key = 'tb_rate_' . md5($ip);
+        $key = 'sb_rate_' . md5($ip);
         $count = (int) get_transient($key);
         if ($count >= 5) {
             return true;
@@ -4625,11 +4625,11 @@ Documentation :
 1. Cloner le plugin dans wp-content/plugins/
 2. composer install --no-dev (ou install puis dump-autoload --no-dev pour la prod)
 3. Activer le plugin dans /wp-admin/plugins.php
-4. Vérifier en SQL : SELECT * FROM wp_tb_services; → 2 lignes (pv, irve)
-5. Créer une page contenant : [trinity_booking service="pv"]
+4. Vérifier en SQL : SELECT * FROM wp_sb_services; → 2 lignes (pv, irve)
+5. Créer une page contenant : [slashbooking service="pv"]
 6. Ouvrir la page (non connecté) → widget visible
 7. Choisir une date demain, créneau → soumettre → "Demande envoyée"
-8. SQL : SELECT * FROM wp_tb_bookings; → 1 ligne status=pending
+8. SQL : SELECT * FROM wp_sb_bookings; → 1 ligne status=pending
 9. Refaire le même créneau → "Désolé, ce créneau vient d'être pris"
 ```
 
@@ -4645,8 +4645,8 @@ Ajouter à `README.md` :
 3. Sur une page, ajouter le shortcode :
 
    ```
-   [trinity_booking service="pv"]
-   [trinity_booking service="irve"]
+   [slashbooking service="pv"]
+   [slashbooking service="irve"]
    ```
 
 4. Les RDV créés depuis le front sont enregistrés en base avec statut `pending`.
@@ -4673,7 +4673,7 @@ Plan 1 est terminé quand **toutes** les conditions sont remplies :
 - [ ] `composer cs` retourne 0 erreur.
 - [ ] Sur une install WP de dev :
   - Activation du plugin crée les 6 tables et les 2 services PV/IRVE.
-  - Le shortcode `[trinity_booking]` rend un formulaire fonctionnel.
+  - Le shortcode `[slashbooking]` rend un formulaire fonctionnel.
   - Un visiteur peut prendre un RDV de bout en bout.
   - Un second visiteur ne peut pas réserver le même créneau (409).
   - Un lien d'annulation HMAC fonctionne (testé via curl ou test E2E).

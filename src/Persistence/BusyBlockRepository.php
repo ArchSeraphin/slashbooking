@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use wpdb;
@@ -15,7 +15,7 @@ final class BusyBlockRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_busy_blocks';
+        $this->table = $wpdb->prefix . 'sb_busy_blocks';
     }
 
     /**

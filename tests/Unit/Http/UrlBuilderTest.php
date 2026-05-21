@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Http;
+namespace Slash\Booking\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Http\UrlBuilder;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Http\UrlBuilder;
 
 final class UrlBuilderTest extends TestCase
 {
@@ -17,7 +17,7 @@ final class UrlBuilderTest extends TestCase
         $this->signer = new DecisionTokenSigner('a-very-long-test-secret-32bytes-ok');
         $this->b = new UrlBuilder(
             $this->signer,
-            fn (): string => 'https://t.tld/wp-json/trinity-booking/v1',
+            fn (): string => 'https://t.tld/wp-json/slashbooking/v1',
         );
     }
 

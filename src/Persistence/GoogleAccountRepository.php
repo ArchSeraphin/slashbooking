@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\GoogleAccount;
 use wpdb;
 
 final class GoogleAccountRepository
@@ -12,7 +12,7 @@ final class GoogleAccountRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_google_accounts';
+        $this->table = $wpdb->prefix . 'sb_google_accounts';
     }
 
     public function save(GoogleAccount $account): void

@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use DateTimeZone;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\Service;
 
 final class EventFormatter
 {

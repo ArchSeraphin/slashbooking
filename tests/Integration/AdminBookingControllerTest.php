@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
@@ -25,7 +25,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
     public function test_list_requires_capability(): void
     {
         wp_set_current_user(0);
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/admin/bookings');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/admin/bookings');
         self::assertSame(401, rest_do_request($r)->get_status());
     }
 
@@ -35,7 +35,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
         wp_set_current_user($userId);
         $this->seed(3);
 
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/admin/bookings');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/admin/bookings');
         $r->set_query_params(['per_page' => 2]);
         $resp = rest_do_request($r);
         self::assertSame(200, $resp->get_status());
@@ -50,7 +50,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
         wp_set_current_user($userId);
         $b = $this->seed(1)[0];
 
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/admin/bookings/' . $b->id() . '/confirm');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/admin/bookings/' . $b->id() . '/confirm');
         $resp = rest_do_request($r);
         self::assertSame(200, $resp->get_status());
 
@@ -65,7 +65,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
         wp_set_current_user($userId);
         $b = $this->seed(1)[0];
 
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/admin/bookings/' . $b->id() . '/cancel');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/admin/bookings/' . $b->id() . '/cancel');
         $resp = rest_do_request($r);
         self::assertSame(200, $resp->get_status());
 

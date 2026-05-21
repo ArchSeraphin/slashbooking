@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Admin;
+namespace Slash\Booking\Admin;
 
 final class AdminMenu
 {
@@ -13,10 +13,10 @@ final class AdminMenu
     public function addMenu(): void
     {
         add_menu_page(
-            page_title: __('Trinity Booking', 'trinity-booking'),
-            menu_title: __('Trinity Booking', 'trinity-booking'),
+            page_title: __('SlashBooking', 'slashbooking'),
+            menu_title: __('SlashBooking', 'slashbooking'),
             capability: Capabilities::VIEW,
-            menu_slug:  'trinity-booking',
+            menu_slug:  'slashbooking',
             callback:   [$this, 'render'],
             icon_url:   'dashicons-calendar-alt',
             position:   25,
@@ -25,7 +25,7 @@ final class AdminMenu
 
     public function render(): void
     {
-        echo '<div class="wrap"><h1>' . esc_html__('Trinity Booking', 'trinity-booking') . '</h1>';
-        echo '<div id="tb-admin-app"></div></div>';
+        echo '<div class="wrap"><h1>' . esc_html__('SlashBooking', 'slashbooking') . '</h1>';
+        echo '<div id="sb-admin-app"></div></div>';
     }
 }

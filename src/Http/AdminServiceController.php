@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Persistence\ServiceRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -44,7 +44,7 @@ final class AdminServiceController
         $slug = (string) $req->get_param('slug');
         $svc = $this->repo->findBySlug($slug);
         if ($svc === null) {
-            return new WP_Error('tb_service_not_found', __('Service introuvable', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_service_not_found', __('Service introuvable', 'slashbooking'), ['status' => 404]);
         }
         return new WP_REST_Response($this->serialize($svc), 200);
     }
@@ -54,7 +54,7 @@ final class AdminServiceController
         $slug = (string) $req->get_param('slug');
         $current = $this->repo->findBySlug($slug);
         if ($current === null) {
-            return new WP_Error('tb_service_not_found', __('Service introuvable', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_service_not_found', __('Service introuvable', 'slashbooking'), ['status' => 404]);
         }
 
         $name             = $this->str($req->get_param('name'), $current->name);
@@ -84,11 +84,11 @@ final class AdminServiceController
                 color: $color,
             );
         } catch (\InvalidArgumentException $e) {
-            return new WP_Error('tb_invalid_service', $e->getMessage(), ['status' => 400]);
+            return new WP_Error('sb_invalid_service', $e->getMessage(), ['status' => 400]);
         }
 
         if (!$this->repo->update($updated)) {
-            return new WP_Error('tb_save_failed', __('Échec de la sauvegarde.', 'trinity-booking'), ['status' => 500]);
+            return new WP_Error('sb_save_failed', __('Échec de la sauvegarde.', 'slashbooking'), ['status' => 500]);
         }
 
         return new WP_REST_Response($this->serialize($updated), 200);

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Availability;
+namespace Slash\Booking\Tests\Unit\Availability;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Availability\SlotGenerator;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Availability\SlotGenerator;
+use Slash\Booking\Domain\Service;
 use DateTimeImmutable;
 use DateTimeZone;
 

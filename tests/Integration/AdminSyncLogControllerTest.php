@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use WP_REST_Request;
-use Trinity\Booking\Persistence\SyncLogRepository;
+use Slash\Booking\Persistence\SyncLogRepository;
 
 final class AdminSyncLogControllerTest extends TestCase
 {
@@ -15,10 +15,10 @@ final class AdminSyncLogControllerTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit.');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_sync_log");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_sync_log");
 
         wp_set_current_user(1);
-        wp_get_current_user()->add_cap('trinity_booking_manage');
+        wp_get_current_user()->add_cap('slashbooking_manage');
     }
 
     public function test_list_returns_paginated_log(): void
@@ -30,7 +30,7 @@ final class AdminSyncLogControllerTest extends TestCase
             $repo->append('info', 'wp_to_g', 'booking', $i, 'evt_' . $i, 'create', 'ok', [], null);
         }
 
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/sync-log');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/sync-log');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
         $req->set_query_params(['per_page' => 2, 'page' => 1]);
         $res = rest_do_request($req);

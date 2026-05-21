@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\BusyBlock;
 
 final class BusyBlockTest extends TestCase
 {

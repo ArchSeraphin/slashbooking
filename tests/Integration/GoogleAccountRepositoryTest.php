@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class GoogleAccountRepositoryTest extends TestCase
 {
@@ -17,7 +17,7 @@ final class GoogleAccountRepositoryTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit (run via composer test:integration).');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_google_accounts");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_google_accounts");
     }
 
     public function test_save_then_find_single_returns_account(): void

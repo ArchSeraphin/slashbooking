@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\SyncEngine;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\SyncEngine;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class SyncEngineTest extends TestCase
 {

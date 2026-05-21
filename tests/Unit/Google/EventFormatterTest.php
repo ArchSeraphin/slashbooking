@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Google\EventFormatter;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Google\EventFormatter;
 
 final class EventFormatterTest extends TestCase
 {

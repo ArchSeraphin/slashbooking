@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use WP_REST_Request;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class AdminGoogleControllerTest extends TestCase
 {
@@ -18,19 +18,19 @@ final class AdminGoogleControllerTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit.');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_google_accounts");
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_sync_log");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_google_accounts");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_sync_log");
 
-        update_option('tb_decision_secret', str_repeat('a', 64), false);
-        update_option('tb_google_client_id', 'cid');
-        update_option('tb_google_client_secret', 'csecret');
+        update_option('sb_decision_secret', str_repeat('a', 64), false);
+        update_option('sb_google_client_id', 'cid');
+        update_option('sb_google_client_secret', 'csecret');
 
         $this->httpStub = [];
         add_filter('pre_http_request', [$this, 'interceptHttp'], 10, 3);
 
         wp_set_current_user(1);
         $user = wp_get_current_user();
-        $user->add_cap('trinity_booking_manage');
+        $user->add_cap('slashbooking_manage');
     }
 
     protected function tearDown(): void
@@ -61,7 +61,7 @@ final class AdminGoogleControllerTest extends TestCase
     public function test_start_returns_auth_url_with_state(): void
     {
         do_action('rest_api_init');
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/admin/google/oauth/start');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/admin/google/oauth/start');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
 
         $res = rest_do_request($req);
@@ -77,9 +77,9 @@ final class AdminGoogleControllerTest extends TestCase
         do_action('rest_api_init');
         global $wpdb;
 
-        $state = (new \Trinity\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
+        $state = (new \Slash\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
 
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $req->set_query_params(['code' => 'auth-CODE', 'state' => $state]);
 
         $res = rest_do_request($req);
@@ -95,7 +95,7 @@ final class AdminGoogleControllerTest extends TestCase
     public function test_callback_rejects_invalid_state(): void
     {
         do_action('rest_api_init');
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $req->set_query_params(['code' => 'auth-CODE', 'state' => 'garbage']);
         $res = rest_do_request($req);
         self::assertSame(403, $res->get_status());
@@ -105,12 +105,12 @@ final class AdminGoogleControllerTest extends TestCase
     {
         do_action('rest_api_init');
 
-        $state = (new \Trinity\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
-        $cb = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $state = (new \Slash\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
+        $cb = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $cb->set_query_params(['code' => 'c', 'state' => $state]);
         rest_do_request($cb);
 
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/status');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/status');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
         $res = rest_do_request($req);
         $data = $res->get_data();
@@ -122,12 +122,12 @@ final class AdminGoogleControllerTest extends TestCase
     {
         do_action('rest_api_init');
 
-        $state = (new \Trinity\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
-        $cb = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $state = (new \Slash\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
+        $cb = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $cb->set_query_params(['code' => 'c', 'state' => $state]);
         rest_do_request($cb);
 
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/admin/google/disconnect');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/admin/google/disconnect');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
         $res = rest_do_request($req);
         self::assertSame(200, $res->get_status());

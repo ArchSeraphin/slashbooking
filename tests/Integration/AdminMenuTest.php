@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
-use Trinity\Booking\Activator;
-use Trinity\Booking\Admin\AdminMenu;
+use Slash\Booking\Activator;
+use Slash\Booking\Admin\AdminMenu;
 use WP_UnitTestCase;
 
 final class AdminMenuTest extends WP_UnitTestCase
@@ -21,6 +21,6 @@ final class AdminMenuTest extends WP_UnitTestCase
 
         global $menu;
         $slugs = array_column($menu ?? [], 2);
-        self::assertContains('trinity-booking', $slugs);
+        self::assertContains('slashbooking', $slugs);
     }
 }

@@ -16,11 +16,11 @@
 		var rest = root.dataset.tbRest;
 		var rawServiceAttr = (root.dataset.tbService || '').trim();
 		var serviceWhitelist = rawServiceAttr === '' ? [] : rawServiceAttr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-		var nonce = window.TrinityBooking && window.TrinityBooking.nonce;
+		var nonce = window.SlashBooking && window.SlashBooking.nonce;
 		// WP returns "fr_FR" (underscore); Intl APIs want BCP-47 "fr-FR" (hyphen).
 		// Without this conversion, toLocaleTimeString throws RangeError and we fall
 		// back to printing the raw ISO string in slot buttons.
-		var rawLocale = (window.TrinityBooking && window.TrinityBooking.locale) || 'fr_FR';
+		var rawLocale = (window.SlashBooking && window.SlashBooking.locale) || 'fr_FR';
 		var locale = rawLocale.replace('_', '-');
 
 		var state = {
@@ -92,7 +92,7 @@
 		}
 
 		function headerEl() {
-			var h = el('div', 'tb-widget__header');
+			var h = el('div', 'sb-widget__header');
 			h.append(
 				trustItem(ICON_SHIELD, 'Données sécurisées'),
 				trustItem(ICON_CLOCK,  'Réponse sous 24 h')
@@ -101,14 +101,14 @@
 		}
 
 		function trustItem(icon, label) {
-			var w = el('span', 'tb-widget__trust');
+			var w = el('span', 'sb-widget__trust');
 			var i = el('span'); i.innerHTML = icon;
 			w.append(i.firstChild, document.createTextNode(label));
 			return w;
 		}
 
 		function stepsEl() {
-			els.steps = el('div', 'tb-steps');
+			els.steps = el('div', 'sb-steps');
 			els.steps.setAttribute('role', 'progressbar');
 			var labels = needsProjectStep()
 				? ['Projet', 'Date', 'Heure', 'Coordonnées']
@@ -116,14 +116,14 @@
 			els.steps.setAttribute('aria-valuemin', '1');
 			els.steps.setAttribute('aria-valuemax', String(labels.length));
 			labels.forEach(function (lbl, i) {
-				var item = el('div', 'tb-steps__item');
-				var dot = el('span', 'tb-steps__dot');
+				var item = el('div', 'sb-steps__item');
+				var dot = el('span', 'sb-steps__dot');
 				dot.textContent = String(i + 1);
-				var l = el('span', 'tb-steps__label');
+				var l = el('span', 'sb-steps__label');
 				l.textContent = lbl;
 				item.append(dot, l);
 				els.steps.append(item);
-				if (i < labels.length - 1) els.steps.append(el('span', 'tb-steps__line'));
+				if (i < labels.length - 1) els.steps.append(el('span', 'sb-steps__line'));
 			});
 			return els.steps;
 		}
@@ -138,12 +138,12 @@
 
 		function updateSteps() {
 			if (!els.steps) return;
-			var items = els.steps.querySelectorAll('.tb-steps__item');
+			var items = els.steps.querySelectorAll('.sb-steps__item');
 			var curr = currentStepIndex();
 			items.forEach(function (item, i) {
-				item.classList.remove('tb-steps__item--active', 'tb-steps__item--done');
-				if (i < curr) item.classList.add('tb-steps__item--done');
-				if (i === curr) item.classList.add('tb-steps__item--active');
+				item.classList.remove('sb-steps__item--active', 'sb-steps__item--done');
+				if (i < curr) item.classList.add('sb-steps__item--done');
+				if (i === curr) item.classList.add('sb-steps__item--active');
 			});
 			els.steps.setAttribute('aria-valuenow', String(curr + 1));
 		}
@@ -151,20 +151,20 @@
 		// ----- Step : Project (service picker) ------------------------------
 
 		function projectStepEl() {
-			els.projectStep = el('div', 'tb-step');
+			els.projectStep = el('div', 'sb-step');
 			els.projectStep.append(h3('Choix du projet'));
 			els.projectStep.append(hint('Sélectionnez la nature du rendez-vous — la durée s\'adapte automatiquement.'));
 
-			var grid = el('div', 'tb-services');
+			var grid = el('div', 'sb-services');
 			state.services.forEach(function (svc) {
-				var b = el('button', 'tb-service-pill');
+				var b = el('button', 'sb-service-pill');
 				b.type = 'button';
 				b.dataset.slug = svc.slug;
 				if (state.service === svc.slug) b.classList.add('is-selected');
 
-				var name = el('span', 'tb-service-pill__name');
+				var name = el('span', 'sb-service-pill__name');
 				name.textContent = svc.name;
-				var dur = el('span', 'tb-service-pill__duration');
+				var dur = el('span', 'sb-service-pill__duration');
 				dur.textContent = '(' + formatDuration(svc.duration_min) + ')';
 				b.append(name, dur);
 
@@ -191,15 +191,15 @@
 		// ----- Step : Date (calendar) ---------------------------------------
 
 		function dateStepEl() {
-			els.dateStep = el('div', 'tb-step');
+			els.dateStep = el('div', 'sb-step');
 			els.dateStep.append(h3('Choisissez une date'));
 			els.dateStep.append(hint('Cliquez sur un jour disponible (vert) pour voir les créneaux.'));
 
-			els.cal = el('div', 'tb-cal');
+			els.cal = el('div', 'sb-cal');
 
 			// Header : month label + nav
-			var header = el('div', 'tb-cal__header');
-			els.prevBtn = el('button', 'tb-cal__nav');
+			var header = el('div', 'sb-cal__header');
+			els.prevBtn = el('button', 'sb-cal__nav');
 			els.prevBtn.type = 'button';
 			els.prevBtn.innerHTML = ICON_CHEV_L;
 			els.prevBtn.setAttribute('aria-label', 'Mois précédent');
@@ -209,7 +209,7 @@
 				loadMonth();
 			});
 
-			els.nextBtn = el('button', 'tb-cal__nav');
+			els.nextBtn = el('button', 'sb-cal__nav');
 			els.nextBtn.type = 'button';
 			els.nextBtn.innerHTML = ICON_CHEV_R;
 			els.nextBtn.setAttribute('aria-label', 'Mois suivant');
@@ -219,23 +219,23 @@
 				loadMonth();
 			});
 
-			els.monthLabel = el('div', 'tb-cal__month');
+			els.monthLabel = el('div', 'sb-cal__month');
 
 			header.append(els.prevBtn, els.monthLabel, els.nextBtn);
 
 			// Weekday row
-			var dows = el('div', 'tb-cal__dows');
+			var dows = el('div', 'sb-cal__dows');
 			WEEKDAYS.forEach(function (w) {
-				var d = el('div', 'tb-cal__dow');
+				var d = el('div', 'sb-cal__dow');
 				d.textContent = w;
 				dows.append(d);
 			});
 
 			// Grid
-			els.grid = el('div', 'tb-cal__grid');
+			els.grid = el('div', 'sb-cal__grid');
 
 			// Legend
-			var legend = el('div', 'tb-cal__legend');
+			var legend = el('div', 'sb-cal__legend');
 			legend.append(
 				legendItem('available',  'Disponible'),
 				legendItem('partial',    'Partiel'),
@@ -251,8 +251,8 @@
 		}
 
 		function legendItem(state, label) {
-			var w = el('span', 'tb-cal__legend-item');
-			var sw = el('span', 'tb-cal__legend-swatch tb-cal-day--' + state);
+			var w = el('span', 'sb-cal__legend-item');
+			var sw = el('span', 'sb-cal__legend-swatch tb-cal-day--' + state);
 			var t = el('span'); t.textContent = label;
 			w.append(sw, t);
 			return w;
@@ -274,21 +274,21 @@
 
 			// Pad with previous-month blanks
 			for (var i = 0; i < offset; i++) {
-				els.grid.append(el('div', 'tb-cal-day tb-cal-day--blank'));
+				els.grid.append(el('div', 'sb-cal-day tb-cal-day--blank'));
 			}
 
 			for (var d = 1; d <= lastDay.getDate(); d++) {
 				var iso = state.month.getFullYear() + '-' + pad2(state.month.getMonth() + 1) + '-' + pad2(d);
-				var btn = el('button', 'tb-cal-day');
+				var btn = el('button', 'sb-cal-day');
 				btn.type = 'button';
 				btn.dataset.date = iso;
 				btn.textContent = String(d);
 
 				if (iso < leadIso || iso > horizonIso) {
-					btn.classList.add('tb-cal-day--closed');
+					btn.classList.add('sb-cal-day--closed');
 					btn.disabled = true;
 				} else {
-					btn.classList.add('tb-cal-day--loading');
+					btn.classList.add('sb-cal-day--loading');
 				}
 				if (state.date === iso) btn.classList.add('is-selected');
 
@@ -296,7 +296,7 @@
 					var cell = ev.currentTarget;
 					var iso = cell.dataset.date;
 					if (cell.disabled) return;
-					if (cell.classList.contains('tb-cal-day--full') || cell.classList.contains('tb-cal-day--closed')) return;
+					if (cell.classList.contains('sb-cal-day--full') || cell.classList.contains('sb-cal-day--closed')) return;
 					Array.from(els.grid.children).forEach(function (c) { c.classList.remove('is-selected'); });
 					cell.classList.add('is-selected');
 					state.date = iso;
@@ -311,16 +311,16 @@
 
 		function refreshCalendar() {
 			if (!els.grid) return;
-			Array.from(els.grid.querySelectorAll('.tb-cal-day')).forEach(function (cell) {
-				if (cell.classList.contains('tb-cal-day--blank') || cell.disabled) return;
+			Array.from(els.grid.querySelectorAll('.sb-cal-day')).forEach(function (cell) {
+				if (cell.classList.contains('sb-cal-day--blank') || cell.disabled) return;
 				var iso = cell.dataset.date;
 				var info = state.dayStates[iso];
-				cell.classList.remove('tb-cal-day--loading', 'tb-cal-day--available', 'tb-cal-day--partial', 'tb-cal-day--full');
+				cell.classList.remove('sb-cal-day--loading', 'sb-cal-day--available', 'sb-cal-day--partial', 'sb-cal-day--full');
 				if (!info) {
-					cell.classList.add('tb-cal-day--loading');
+					cell.classList.add('sb-cal-day--loading');
 					return;
 				}
-				cell.classList.add('tb-cal-day--' + info.state);
+				cell.classList.add('sb-cal-day--' + info.state);
 				if (info.state === 'full' || info.state === 'closed') {
 					cell.disabled = true;
 				}
@@ -355,8 +355,8 @@
 						state.dayStates[d] = { state: st, count: c };
 					});
 					// Mark days with no slots (in horizon) as full.
-					Array.from(els.grid.querySelectorAll('.tb-cal-day')).forEach(function (cell) {
-						if (cell.classList.contains('tb-cal-day--blank') || cell.disabled) return;
+					Array.from(els.grid.querySelectorAll('.sb-cal-day')).forEach(function (cell) {
+						if (cell.classList.contains('sb-cal-day--blank') || cell.disabled) return;
 						var iso = cell.dataset.date;
 						if (!state.dayStates[iso]) {
 							state.dayStates[iso] = { state: 'full', count: 0 };
@@ -372,11 +372,11 @@
 		// ----- Step : Slots -------------------------------------------------
 
 		function slotsStepEl() {
-			els.slotsStep = el('div', 'tb-step');
+			els.slotsStep = el('div', 'sb-step');
 			els.slotsStep.style.display = 'none';
 			els.slotsStep.append(h3('Choisissez un créneau'));
 			els.slotsStep.append(hint('Les horaires sont affichés en heure locale.'));
-			els.slotList = el('div', 'tb-slot-list');
+			els.slotList = el('div', 'sb-slot-list');
 			els.slotList.setAttribute('role', 'list');
 			els.slotsStep.append(els.slotList);
 			return els.slotsStep;
@@ -386,28 +386,28 @@
 			els.slotsStep.style.display = '';
 			els.formStep.style.display = 'none';
 			els.slotList.textContent = '';
-			var loading = el('div', 'tb-slot-empty');
+			var loading = el('div', 'sb-slot-empty');
 			loading.textContent = 'Chargement des créneaux…';
 			els.slotList.append(loading);
 
 			var from = state.date;
 			var to = addDaysISO(from, 1);
-			root.classList.add('tb-loading');
+			root.classList.add('sb-loading');
 			fetch(rest + 'availability?service=' + encodeURIComponent(state.service) + '&from=' + from + '&to=' + to, {
 				headers: { 'X-WP-Nonce': nonce || '' },
 			})
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
-					root.classList.remove('tb-loading');
+					root.classList.remove('sb-loading');
 					els.slotList.textContent = '';
 					if (!data.slots || data.slots.length === 0) {
-						var empty = el('div', 'tb-slot-empty');
+						var empty = el('div', 'sb-slot-empty');
 						empty.textContent = 'Aucun créneau disponible ce jour-là. Essayez une autre date.';
 						els.slotList.append(empty);
 						return;
 					}
 					data.slots.forEach(function (slot) {
-						var b = el('button', 'tb-slot');
+						var b = el('button', 'sb-slot');
 						b.type = 'button';
 						b.textContent = formatTime(slot.start);
 						b.dataset.start = slot.start;
@@ -425,7 +425,7 @@
 					});
 				})
 				.catch(function () {
-					root.classList.remove('tb-loading');
+					root.classList.remove('sb-loading');
 					els.slotList.textContent = '';
 					showError('Erreur de chargement des créneaux. Réessayez dans un instant.');
 				});
@@ -434,7 +434,7 @@
 		// ----- Step : Form --------------------------------------------------
 
 		function formStepEl() {
-			els.formStep = el('div', 'tb-step');
+			els.formStep = el('div', 'sb-step');
 			els.formStep.style.display = 'none';
 			els.formStep.append(h3('Vos coordonnées'));
 			els.formStep.append(hint('Nous vous contacterons pour confirmer le rendez-vous.'));
@@ -448,39 +448,39 @@
 			);
 
 			var hp = field('website', 'Website', 'text', false, '');
-			hp.classList.add('tb-honeypot');
+			hp.classList.add('sb-honeypot');
 			hp.setAttribute('aria-hidden', 'true');
 			hp.querySelector('input').setAttribute('tabindex', '-1');
 			hp.querySelector('input').setAttribute('autocomplete', 'off');
 			els.formStep.append(hp);
 
-			var consentWrap = el('div', 'tb-field tb-field--consent');
+			var consentWrap = el('div', 'sb-field tb-field--consent');
 			var consent = el('input');
 			consent.type = 'checkbox';
-			consent.id = 'tb-consent';
+			consent.id = 'sb-consent';
 			consent.name = 'consent';
 			consent.required = true;
 			var consentLabel = el('label');
-			consentLabel.htmlFor = 'tb-consent';
+			consentLabel.htmlFor = 'sb-consent';
 			consentLabel.append(document.createTextNode(
 				"J'accepte que mes données soient utilisées pour me recontacter dans le cadre de ma demande de rendez-vous."
 			));
 
-			var legalUrl = (window.TrinityBooking && window.TrinityBooking.legalUrl) || '';
+			var legalUrl = (window.SlashBooking && window.SlashBooking.legalUrl) || '';
 			if (legalUrl) {
 				var link = document.createElement('a');
 				link.href = legalUrl;
 				link.target = '_blank';
 				link.rel = 'noopener';
 				link.textContent = 'Mentions légales';
-				link.className = 'tb-legal-link';
+				link.className = 'sb-legal-link';
 				consentLabel.append(document.createTextNode(' — '));
 				consentLabel.append(link);
 			}
 			consentWrap.append(consent, consentLabel);
 			els.formStep.append(consentWrap);
 
-			els.submitBtn = el('button', 'tb-button');
+			els.submitBtn = el('button', 'sb-button');
 			els.submitBtn.type = 'button';
 			els.submitBtn.textContent = 'Confirmer la demande';
 			els.submitBtn.addEventListener('click', submit);
@@ -490,7 +490,7 @@
 		}
 
 		function feedbackEl() {
-			els.feedback = el('div', 'tb-feedback');
+			els.feedback = el('div', 'sb-feedback');
 			els.feedback.setAttribute('role', 'status');
 			els.feedback.setAttribute('aria-live', 'polite');
 			return els.feedback;
@@ -513,8 +513,8 @@
 			state.submitting = true;
 			els.submitBtn.disabled = true;
 			els.submitBtn.innerHTML = '';
-			els.submitBtn.append(el('span', 'tb-button__spinner'), document.createTextNode('Envoi en cours…'));
-			root.classList.add('tb-loading');
+			els.submitBtn.append(el('span', 'sb-button__spinner'), document.createTextNode('Envoi en cours…'));
+			root.classList.add('sb-loading');
 
 			fetch(rest + 'bookings', {
 				method: 'POST',
@@ -527,7 +527,7 @@
 				.then(function (r) { return r.json().then(function (body) { return { status: r.status, body: body }; }); })
 				.then(function (res) {
 					state.submitting = false;
-					root.classList.remove('tb-loading');
+					root.classList.remove('sb-loading');
 					if (res.status >= 200 && res.status < 300) {
 						renderSuccess();
 						return;
@@ -548,7 +548,7 @@
 				})
 				.catch(function () {
 					state.submitting = false;
-					root.classList.remove('tb-loading');
+					root.classList.remove('sb-loading');
 					resetSubmit();
 					showError("Impossible d'envoyer la demande. Vérifiez votre connexion.");
 				});
@@ -562,7 +562,7 @@
 		function renderSuccess() {
 			root.innerHTML = '';
 			root.append(headerEl());
-			var ok = el('div', 'tb-success');
+			var ok = el('div', 'sb-success');
 			var iconWrap = el('span'); iconWrap.innerHTML = ICON_CHECK;
 			var msgWrap = el('div');
 			var title = el('strong'); title.textContent = 'Demande envoyée !';
@@ -574,7 +574,7 @@
 
 		function showError(msg) {
 			els.feedback.innerHTML = '';
-			var e = el('div', 'tb-error');
+			var e = el('div', 'sb-error');
 			var iconWrap = el('span'); iconWrap.innerHTML = ICON_ALERT;
 			var msgEl = el('span'); msgEl.textContent = msg;
 			e.append(iconWrap.firstChild, msgEl);
@@ -585,17 +585,17 @@
 		// ----- Helpers ------------------------------------------------------
 
 		function field(name, label, type, required, placeholder) {
-			var wrap = el('div', 'tb-field');
+			var wrap = el('div', 'sb-field');
 			var lbl = el('label');
-			lbl.htmlFor = 'tb-input-' + name;
+			lbl.htmlFor = 'sb-input-' + name;
 			lbl.textContent = label;
 			if (required) {
-				var star = el('span', 'tb-required'); star.textContent = '*';
+				var star = el('span', 'sb-required'); star.textContent = '*';
 				lbl.append(star);
 			}
 			var input = type === 'textarea' ? el('textarea') : el('input');
 			if (type !== 'textarea') input.type = type;
-			input.id = 'tb-input-' + name;
+			input.id = 'sb-input-' + name;
 			input.name = name;
 			if (required) input.required = true;
 			if (placeholder) input.placeholder = placeholder;
@@ -609,7 +609,7 @@
 			return wrap;
 		}
 
-		function hint(t) { var p = el('p', 'tb-step__hint'); p.textContent = t; return p; }
+		function hint(t) { var p = el('p', 'sb-step__hint'); p.textContent = t; return p; }
 		function el(tag, cls) { var n = document.createElement(tag); if (cls) n.className = cls; return n; }
 		function h3(t) { var n = el('h3'); n.textContent = t; return n; }
 		function pad2(n) { return n < 10 ? '0' + n : String(n); }
@@ -636,6 +636,6 @@
 	}
 
 	document.addEventListener('DOMContentLoaded', function () {
-		document.querySelectorAll('.tb-widget').forEach(init);
+		document.querySelectorAll('.sb-widget').forEach(init);
 	});
 })();

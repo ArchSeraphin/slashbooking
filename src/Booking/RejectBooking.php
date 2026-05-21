@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
 use Closure;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
 
 final class RejectBooking
 {
@@ -29,7 +29,7 @@ final class RejectBooking
         ($this->persist)($booking);
 
         if (function_exists('do_action') && $booking->id() !== null) {
-            do_action('trinity_booking/booking_rejected', $booking->id());
+            do_action('slashbooking/booking_rejected', $booking->id());
         }
 
         return $booking;

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Privacy\BookingRetentionPurger;
+use Slash\Booking\Privacy\BookingRetentionPurger;
 
 final class BookingRetentionPurgerTest extends TestCase
 {

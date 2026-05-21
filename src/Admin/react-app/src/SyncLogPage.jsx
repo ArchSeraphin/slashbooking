@@ -56,14 +56,14 @@ export default function SyncLogPage() {
 
 	return (
 		<div>
-			<h2>{ __( 'Journal de synchronisation', 'trinity-booking' ) }</h2>
+			<h2>{ __( 'Journal de synchronisation', 'slashbooking' ) }</h2>
 			{ error && (
 				<Notice status="error" isDismissible={ false }>
 					{ error }
 				</Notice>
 			) }
 			<SelectControl
-				label={ __( 'Statut', 'trinity-booking' ) }
+				label={ __( 'Statut', 'slashbooking' ) }
 				value={ status }
 				options={ STATUS_FILTERS }
 				onChange={ ( v ) => {
@@ -74,12 +74,12 @@ export default function SyncLogPage() {
 			<table className="wp-list-table widefat striped">
 				<thead>
 					<tr>
-						<th>{ __( 'Date', 'trinity-booking' ) }</th>
-						<th>{ __( 'Direction', 'trinity-booking' ) }</th>
-						<th>{ __( 'Entité', 'trinity-booking' ) }</th>
-						<th>{ __( 'Action', 'trinity-booking' ) }</th>
-						<th>{ __( 'Statut', 'trinity-booking' ) }</th>
-						<th>{ __( 'Erreur', 'trinity-booking' ) }</th>
+						<th>{ __( 'Date', 'slashbooking' ) }</th>
+						<th>{ __( 'Direction', 'slashbooking' ) }</th>
+						<th>{ __( 'Entité', 'slashbooking' ) }</th>
+						<th>{ __( 'Action', 'slashbooking' ) }</th>
+						<th>{ __( 'Statut', 'slashbooking' ) }</th>
+						<th>{ __( 'Erreur', 'slashbooking' ) }</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -97,7 +97,7 @@ export default function SyncLogPage() {
 					) ) }
 				</tbody>
 			</table>
-			<div className="tb-pagination">
+			<div className="sb-pagination">
 				<Button
 					disabled={ page <= 1 }
 					onClick={ () => setPage( page - 1 ) }

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
-use Trinity\Booking\Activator;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Persistence\MailTemplateRepository;
 use WP_UnitTestCase;
 
 final class MailTemplateRepositoryTest extends WP_UnitTestCase

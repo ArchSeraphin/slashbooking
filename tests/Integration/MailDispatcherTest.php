@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Notifications\Events\BookingContext;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Notifications\IcsBuilder;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Notifications\TextBodyGenerator;
-use Trinity\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\IcsBuilder;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Notifications\TextBodyGenerator;
+use Slash\Booking\Persistence\MailTemplateRepository;
 use WP_UnitTestCase;
 
 final class MailDispatcherTest extends WP_UnitTestCase

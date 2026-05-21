@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -15,7 +15,7 @@ final class SyncLogRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_sync_log';
+        $this->table = $wpdb->prefix . 'sb_sync_log';
     }
 
     /**

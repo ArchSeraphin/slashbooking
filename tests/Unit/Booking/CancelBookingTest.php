@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\CancelBooking;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\CancelBooking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 

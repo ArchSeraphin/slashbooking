@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Persistence\Migrator;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\Migrator;
+use Slash\Booking\Plugin;
 
 final class MigratorTest extends WP_UnitTestCase
 {
@@ -16,12 +16,12 @@ final class MigratorTest extends WP_UnitTestCase
         $migrator->migrate();
 
         $expected = [
-            $wpdb->prefix . 'tb_services',
-            $wpdb->prefix . 'tb_bookings',
-            $wpdb->prefix . 'tb_busy_blocks',
-            $wpdb->prefix . 'tb_google_accounts',
-            $wpdb->prefix . 'tb_sync_log',
-            $wpdb->prefix . 'tb_mail_templates',
+            $wpdb->prefix . 'sb_services',
+            $wpdb->prefix . 'sb_bookings',
+            $wpdb->prefix . 'sb_busy_blocks',
+            $wpdb->prefix . 'sb_google_accounts',
+            $wpdb->prefix . 'sb_sync_log',
+            $wpdb->prefix . 'sb_mail_templates',
         ];
 
         foreach ($expected as $table) {
@@ -37,6 +37,6 @@ final class MigratorTest extends WP_UnitTestCase
         $migrator = new Migrator($wpdb);
         $migrator->migrate();
         $migrator->migrate(); // doit pas planter
-        self::assertSame(Plugin::DB_VERSION, (int) get_option('tb_db_version'));
+        self::assertSame(Plugin::DB_VERSION, (int) get_option('sb_db_version'));
     }
 }

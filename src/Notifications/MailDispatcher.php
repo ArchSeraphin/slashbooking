@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 use Throwable;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Notifications\Events\BookingContext;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Privacy\EmailMasker;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Privacy\EmailMasker;
 
 final class MailDispatcher
 {
@@ -36,7 +36,7 @@ final class MailDispatcher
                 ? $this->renderer->render($tpl['text_body'], $data)
                 : $this->text->fromHtml($html);
 
-            $boundary = 'tb-' . bin2hex(random_bytes(8));
+            $boundary = 'sb-' . bin2hex(random_bytes(8));
             $headers = [
                 'From: ' . $this->fromHeader(),
                 'Reply-To: ' . $this->replyTo($recipient, $context),
@@ -68,12 +68,12 @@ final class MailDispatcher
 
             if (!$sent) {
                 // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional: mail dispatch failure must be logged; no WP equivalent for server-side error logging.
-                error_log(sprintf('[trinity-booking] wp_mail failed for event=%s to=%s', $event->value, EmailMasker::mask($recipient)));
+                error_log(sprintf('[slashbooking] wp_mail failed for event=%s to=%s', $event->value, EmailMasker::mask($recipient)));
             }
             return (bool) $sent;
         } catch (Throwable $e) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional: fail-safe catch block; error_log is the only safe logging channel available without WP context.
-            error_log(sprintf('[trinity-booking] MailDispatcher exception (to=%s): %s', EmailMasker::mask($recipient), $e->getMessage()));
+            error_log(sprintf('[slashbooking] MailDispatcher exception (to=%s): %s', EmailMasker::mask($recipient), $e->getMessage()));
             return false;
         }
     }
@@ -114,14 +114,14 @@ final class MailDispatcher
     private function writeIcsTempFile(Booking $b, string $summary): string
     {
         $ics = $this->ics->build(
-            uid: $b->publicUid() . '@trinity-booking',
+            uid: $b->publicUid() . '@slashbooking',
             summary: $summary,
             description: '',
             startUtc: $b->slot()->start,
             endUtc:   $b->slot()->end,
         );
         $dir  = function_exists('get_temp_dir') ? get_temp_dir() : sys_get_temp_dir();
-        $path = rtrim($dir, '/\\') . '/' . 'tb-' . $b->publicUid() . '.ics';
+        $path = rtrim($dir, '/\\') . '/' . 'sb-' . $b->publicUid() . '.ics';
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- temp ICS file for transient email attachment; WP_Filesystem is not available in mail dispatch context and not appropriate for ephemeral temp files.
         file_put_contents($path, $ics);
         return $path;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 

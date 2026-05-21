@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Cli;
+namespace Slash\Booking\Cli;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Closure;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\GoogleClientBuilder;
-use Trinity\Booking\Google\PullResult;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\GoogleClientBuilder;
+use Slash\Booking\Google\PullResult;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class DoctorCommand
 {
@@ -29,7 +29,7 @@ final class DoctorCommand
      *
      * ## EXAMPLES
      *
-     *     wp trinity-booking doctor
+     *     wp slashbooking doctor
      *
      * @when after_wp_load
      *
@@ -38,7 +38,7 @@ final class DoctorCommand
      */
     public function __invoke(array $args, array $assoc): void
     {
-        \WP_CLI::log('🩺 trinity-booking doctor');
+        \WP_CLI::log('🩺 slashbooking doctor');
         \WP_CLI::log('—————————————————');
 
         $account = $this->accounts->findSingle();
@@ -67,7 +67,7 @@ final class DoctorCommand
         \WP_CLI::success('Google client built (token refresh OK if needed).');
 
         $probe = [
-            'summary'     => '[trinity-booking doctor probe — safe to delete]',
+            'summary'     => '[slashbooking doctor probe — safe to delete]',
             'description' => 'Self-test event. Will be deleted immediately.',
             'start'       => ['dateTime' => $now->modify('+1 hour')->format('Y-m-d\TH:i:sP'), 'timeZone' => 'UTC'],
             'end'         => ['dateTime' => $now->modify('+2 hours')->format('Y-m-d\TH:i:sP'), 'timeZone' => 'UTC'],

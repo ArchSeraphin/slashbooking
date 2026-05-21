@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use Closure;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 

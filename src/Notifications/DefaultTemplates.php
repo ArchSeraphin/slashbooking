@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\Events\EventKey;
 
 final class DefaultTemplates
 {
@@ -14,27 +14,27 @@ final class DefaultTemplates
     {
         return [
             EventKey::PENDING_CLIENT->value => [
-                'subject'   => __('Votre demande de RDV — en attente de validation', 'trinity-booking'),
+                'subject'   => __('Votre demande de RDV — en attente de validation', 'slashbooking'),
                 'html_body' => self::pendingClient(),
             ],
             EventKey::PENDING_ADMIN->value => [
-                'subject'   => __('Nouvelle demande de RDV : {{service_name}} — {{customer_name}}', 'trinity-booking'),
+                'subject'   => __('Nouvelle demande de RDV : {{service_name}} — {{customer_name}}', 'slashbooking'),
                 'html_body' => self::pendingAdmin(),
             ],
             EventKey::CONFIRMED_CLIENT->value => [
-                'subject'   => __('RDV confirmé — {{appointment_date}} à {{appointment_time}}', 'trinity-booking'),
+                'subject'   => __('RDV confirmé — {{appointment_date}} à {{appointment_time}}', 'slashbooking'),
                 'html_body' => self::confirmedClient(),
             ],
             EventKey::REJECTED_CLIENT->value => [
-                'subject'   => __("Votre demande de RDV n'a pas pu être confirmée", 'trinity-booking'),
+                'subject'   => __("Votre demande de RDV n'a pas pu être confirmée", 'slashbooking'),
                 'html_body' => self::rejectedClient(),
             ],
             EventKey::CANCELLED_CLIENT->value => [
-                'subject'   => __('Annulation de votre RDV confirmée', 'trinity-booking'),
+                'subject'   => __('Annulation de votre RDV confirmée', 'slashbooking'),
                 'html_body' => self::cancelledClient(),
             ],
             EventKey::REMINDER_CLIENT->value => [
-                'subject'   => __('Rappel : RDV demain à {{appointment_time}}', 'trinity-booking'),
+                'subject'   => __('Rappel : RDV demain à {{appointment_time}}', 'slashbooking'),
                 'html_body' => self::reminderClient(),
             ],
         ];

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Notifications\DefaultTemplates;
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\DefaultTemplates;
+use Slash\Booking\Notifications\Events\EventKey;
 use wpdb;
 
 /**
@@ -24,7 +24,7 @@ final class MailTemplateRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_mail_templates';
+        $this->table = $wpdb->prefix . 'sb_mail_templates';
     }
 
     /**

@@ -1,4 +1,4 @@
-# trinity-booking — Plan 4 : Webhook Google + pull GCal → WP
+# slashbooking — Plan 4 : Webhook Google + pull GCal → WP
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -6,18 +6,18 @@
 
 **Architecture:**
 
-- **`Google/`** — trois nouveaux fichiers : `WatchChannelManager` (création / arrêt / renouvellement du watch via `events.watch`), `SyncEngine` (logique pull = `events.list` + `syncToken` incrémental + upsert/delete BusyBlock + détection reflection), `PullEventJob` (handler Action Scheduler `tb/google_pull`).
+- **`Google/`** — trois nouveaux fichiers : `WatchChannelManager` (création / arrêt / renouvellement du watch via `events.watch`), `SyncEngine` (logique pull = `events.list` + `syncToken` incrémental + upsert/delete BusyBlock + détection reflection), `PullEventJob` (handler Action Scheduler `sb/google_pull`).
 - **`Http/`** — un nouveau controller `GoogleWebhookController` (POST `/google/webhook`, public, vérif HMAC sur `X-Goog-Channel-Token`).
 - **`Persistence/BusyBlockRepository`** — étendu : `upsertFromGoogle`, `deleteBySourceId`, `findBySourceId`. `GoogleAccountRepository::toRow()` complété (les colonnes `watch_resource_id`, `watch_token_secret`, `last_full_sync_at` n'étaient pas persistées — bug latent du Plan 3 à fixer).
 - **`Domain/GoogleAccount`** — étendu : `attachWatch / clearWatch / verifyWatchToken / updateSyncToken / markFullSyncedAt`.
 - **`Domain/BusyBlock`** — étendu : factory `fromGoogleEvent` + nouveau ctor pour upsert (avec `lastSyncedAt`).
 - **`CalendarGateway`** — interface étendue avec `listEvents`, `watchChannel`, `stopChannel`. Impls réelle + fake mises à jour.
-- **Cron** : `tb/watch_renew_check` (quotidien, recreate watch channel si expiration < 24h) + `tb/google_pull_all` (15 min, fallback no-op si watch fonctionne).
+- **Cron** : `sb/watch_renew_check` (quotidien, recreate watch channel si expiration < 24h) + `sb/google_pull_all` (15 min, fallback no-op si watch fonctionne).
 - **Outillage** : **upgrade PHPStan 1.x → 2.x** en tâche 1 (préreq tooling). Doctor étendu (watch status). SPA `GooglePage` montre statut watch + dernier sync.
 
 **Tech Stack:** PHP 8.1+, WordPress 6.5+, `google/apiclient` v2.x (`Calendar::events->list`, `events->watch`, `channels->stop`), Action Scheduler v3.x, PHPStan 2.x (upgrade), PHPUnit 10 + Brain Monkey.
 
-**Spec source:** `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`, sections 5 (`wp_tb_busy_blocks`, `wp_tb_google_accounts`), 6.5 (sync entrante), 6.6 (watch renewal), 7 (REST `/google/webhook`), 9 (vérification `X-Goog-Channel-Token`), 12 (Diagnostics), 15 (mitigation webhook non-reçu = cron fallback).
+**Spec source:** `docs/superpowers/specs/2026-05-19-slashbooking-design.md`, sections 5 (`wp_sb_busy_blocks`, `wp_sb_google_accounts`), 6.5 (sync entrante), 6.6 (watch renewal), 7 (REST `/google/webhook`), 9 (vérification `X-Goog-Channel-Token`), 12 (Diagnostics), 15 (mitigation webhook non-reçu = cron fallback).
 
 ---
 
@@ -40,13 +40,13 @@ Lire avant d'attaquer les tâches.
 
 6. **Vérification du `X-Goog-Channel-Token`.** Quand on crée le watch channel, on génère un secret aléatoire 32 octets (hex), on le passe à Google dans le champ `token`. Google nous le renvoie à chaque notification dans le header `X-Goog-Channel-Token`. On compare en `hash_equals()` avec le secret stocké (`watch_token_secret`). Si non-match → 401 silencieux, on n'enfile pas de job.
 
-7. **Debounce du pull.** Google peut envoyer plusieurs webhooks rapprochés (un seul utilisateur qui drag-and-drop = 3 notifs). On enfile le job `tb/google_pull` via `as_schedule_single_action(time()+5, 'tb/google_pull', [$accountId], 'trinity-booking')`. Les `single_action` Action Scheduler avec mêmes args + même hook + délai court tendent à être dédupliqués naturellement (AS regroupe les claims). En V1 : pas de lock applicatif — un éventuel double-pull est idempotent (mêmes upserts via UNIQUE KEY). Si le doublonnage gêne en prod (logs verbeux), envisager un transient `tb_pull_lock_{accountId}` TTL 60 s en V2 — repoussé.
+7. **Debounce du pull.** Google peut envoyer plusieurs webhooks rapprochés (un seul utilisateur qui drag-and-drop = 3 notifs). On enfile le job `sb/google_pull` via `as_schedule_single_action(time()+5, 'sb/google_pull', [$accountId], 'slashbooking')`. Les `single_action` Action Scheduler avec mêmes args + même hook + délai court tendent à être dédupliqués naturellement (AS regroupe les claims). En V1 : pas de lock applicatif — un éventuel double-pull est idempotent (mêmes upserts via UNIQUE KEY). Si le doublonnage gêne en prod (logs verbeux), envisager un transient `sb_pull_lock_{accountId}` TTL 60 s en V2 — repoussé.
 
 8. **Idempotence du pull.** Chaque event Google a un `id` stable. Upsert via `UNIQUE KEY (source, source_id)` (déjà migré Plan 1). Pas de doublon possible. `last_synced_at` mis à jour à chaque pass — utile pour debug + cleanup futur.
 
-9. **Cron fallback `tb/google_pull_all`.** Toutes les 15 min, parcourt tous les `GoogleAccount` (V1 : un seul) et lance `SyncEngine::pull`. No-op si le watch fonctionne déjà (le `syncToken` est à jour, Google ne renvoie aucun event). Couvre le cas firewall / DNS / HTTPS chez l'utilisateur (cf. §15 spec).
+9. **Cron fallback `sb/google_pull_all`.** Toutes les 15 min, parcourt tous les `GoogleAccount` (V1 : un seul) et lance `SyncEngine::pull`. No-op si le watch fonctionne déjà (le `syncToken` est à jour, Google ne renvoie aucun event). Couvre le cas firewall / DNS / HTTPS chez l'utilisateur (cf. §15 spec).
 
-10. **Cron renouvellement `tb/watch_renew_check`.** Quotidien : si `watch_expires_at < now+1day` ET compte connecté, on `stopChannel(old)` puis `watchChannel(new)`. Cadence quotidienne plutôt que tous les 6 jours strict : ça nous donne 6 fenêtres de rattrapage avant l'expiration réelle (la spec §6.6 nomme ce cron `tb/watch_renew` ; on a renommé en `_check` car il décide de renouveler ou pas — c'est volontaire).
+10. **Cron renouvellement `sb/watch_renew_check`.** Quotidien : si `watch_expires_at < now+1day` ET compte connecté, on `stopChannel(old)` puis `watchChannel(new)`. Cadence quotidienne plutôt que tous les 6 jours strict : ça nous donne 6 fenêtres de rattrapage avant l'expiration réelle (la spec §6.6 nomme ce cron `sb/watch_renew` ; on a renommé en `_check` car il décide de renouveler ou pas — c'est volontaire).
 
 11. **Webhook URL.** `rest_url(Plugin::REST_NAMESPACE . '/google/webhook')`. Doit être HTTPS public (Google rejette `http://` et les IPs privées). En dev local : tunnel ngrok / Cloudflare Tunnel — documenté README. Le doctor signale si l'URL résout sur un domaine non-HTTPS.
 
@@ -71,7 +71,7 @@ plugins-booking/
 ├── README.md                                    # MODIFY — document webhook URL + tunnel HTTPS + watch renewal
 ├── src/
 │   ├── Plugin.php                               # MODIFY — wire SyncEngine, watch manager, Action Scheduler handler, cron callbacks
-│   ├── Activator.php                            # MODIFY — schedule tb/watch_renew_check + tb/google_pull_all
+│   ├── Activator.php                            # MODIFY — schedule sb/watch_renew_check + sb/google_pull_all
 │   ├── Deactivator.php                          # MODIFY — unschedule new crons + stop watch channel
 │   ├── Domain/
 │   │   ├── BusyBlock.php                        # MODIFY — add fromGoogleEvent factory + lastSyncedAt + ctor with id-less
@@ -81,7 +81,7 @@ plugins-booking/
 │   │   ├── GoogleApiCalendarGateway.php         # MODIFY — impl new methods
 │   │   ├── WatchChannelManager.php              # NEW — start/stop/renew watch + persist secret
 │   │   ├── SyncEngine.php                       # NEW — pull events.list + upsert busy blocks + reflect detection
-│   │   ├── PullEventJob.php                     # NEW — Action Scheduler handler `tb/google_pull`
+│   │   ├── PullEventJob.php                     # NEW — Action Scheduler handler `sb/google_pull`
 │   │   └── Exceptions/
 │   │       └── SyncTokenExpired.php             # NEW — 410 Gone marker
 │   ├── Persistence/
@@ -218,7 +218,7 @@ Ajout des 3 méthodes nécessaires au pull et au watch. **Interface seulement** 
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 /**
  * @phpstan-type EventPayload array{
@@ -329,7 +329,7 @@ git commit -m "feat(google): extend CalendarGateway with listEvents + watch + st
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google\Exceptions;
+namespace Slash\Booking\Google\Exceptions;
 
 /**
  * Marker exception : 410 Gone on events.list — server told us the syncToken is too old / invalid.
@@ -352,7 +352,7 @@ Ajouter en haut du fichier les nouveaux imports :
 use Google\Service\Calendar\Channel as CalendarChannel;
 use Google\Service\Calendar\Events as CalendarEvents;
 use Google\Service\Calendar\Event as CalendarEvent;
-use Trinity\Booking\Google\Exceptions\SyncTokenExpired;
+use Slash\Booking\Google\Exceptions\SyncTokenExpired;
 ```
 
 Ajouter les trois méthodes avant la méthode `call` privée :
@@ -493,12 +493,12 @@ git commit -m "feat(google): implement listEvents + watchChannel + stopChannel v
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Support;
+namespace Slash\Booking\Tests\Unit\Support;
 
-use Trinity\Booking\Google\CalendarGateway;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
-use Trinity\Booking\Google\Exceptions\SyncTokenExpired;
+use Slash\Booking\Google\CalendarGateway;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Google\Exceptions\SyncTokenExpired;
 
 final class FakeCalendarGateway implements CalendarGateway
 {
@@ -659,13 +659,13 @@ git commit -m "test(google): extend FakeCalendarGateway with list/watch/stop met
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\TimeSlot;
 
 final class BusyBlockTest extends TestCase
 {
@@ -707,7 +707,7 @@ Attendu : `Method BusyBlock::fromGoogleEvent does not exist` (ou `property lastS
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -785,13 +785,13 @@ git commit -m "feat(domain): BusyBlock::fromGoogleEvent factory + lastSyncedAt"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Persistence\BusyBlockRepository;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Persistence\BusyBlockRepository;
 
 final class BusyBlockRepositoryTest extends TestCase
 {
@@ -881,10 +881,10 @@ Réécrire le fichier complet :
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use wpdb;
@@ -895,7 +895,7 @@ final class BusyBlockRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_busy_blocks';
+        $this->table = $wpdb->prefix . 'sb_busy_blocks';
     }
 
     /**
@@ -1042,12 +1042,12 @@ git commit -m "feat(persistence): BusyBlockRepository upsert/delete/find by Goog
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\GoogleAccount;
 
 final class GoogleAccountTest extends TestCase
 {
@@ -1226,10 +1226,10 @@ Ajouter (au minimum) cette méthode :
 public function test_save_persists_watch_and_sync_state(): void
 {
     global $wpdb;
-    $repo = new \Trinity\Booking\Persistence\GoogleAccountRepository($wpdb);
+    $repo = new \Slash\Booking\Persistence\GoogleAccountRepository($wpdb);
     $utc  = new \DateTimeZone('UTC');
 
-    $a = \Trinity\Booking\Domain\GoogleAccount::connect(
+    $a = \Slash\Booking\Domain\GoogleAccount::connect(
         label: 'X',
         calendarId: 'primary',
         refreshTokenEnc: 'r',
@@ -1330,11 +1330,11 @@ Dans `tests/Integration/BookingRepositoryTest.php`, ajouter :
 public function test_find_by_google_event_id_returns_booking(): void
 {
     global $wpdb;
-    $repo = new \Trinity\Booking\Persistence\BookingRepository($wpdb);
+    $repo = new \Slash\Booking\Persistence\BookingRepository($wpdb);
 
     // Use an existing fixture from earlier tests OR insert a booking row with google_event_id set.
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-    $wpdb->insert($wpdb->prefix . 'tb_bookings', [
+    $wpdb->insert($wpdb->prefix . 'sb_bookings', [
         'public_uid'       => 'uid-' . uniqid(),
         'service_id'       => 1,
         'status'           => 'confirmed',
@@ -1366,7 +1366,7 @@ composer test:integration -- --filter BookingRepositoryTest::test_find_by_google
 Trouver `findById()` et insérer juste après :
 
 ```php
-    public function findByGoogleEventId(string $googleEventId): ?\Trinity\Booking\Domain\Booking
+    public function findByGoogleEventId(string $googleEventId): ?\Slash\Booking\Domain\Booking
     {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $row = $this->wpdb->get_row(
@@ -1412,14 +1412,14 @@ git commit -m "feat(persistence): BookingRepository::findByGoogleEventId for ref
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\WatchChannelManager;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\WatchChannelManager;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class WatchChannelManagerTest extends TestCase
 {
@@ -1444,7 +1444,7 @@ final class WatchChannelManagerTest extends TestCase
         );
 
         $account = $this->freshAccount();
-        $mgr->start($account, $gateway, 'https://example.test/wp-json/trinity-booking/v1/google/webhook');
+        $mgr->start($account, $gateway, 'https://example.test/wp-json/slashbooking/v1/google/webhook');
 
         self::assertNotNull($account->watchChannelId());
         self::assertNotNull($account->watchTokenSecret());
@@ -1452,7 +1452,7 @@ final class WatchChannelManagerTest extends TestCase
         self::assertNotNull($saved);
 
         self::assertCount(1, $gateway->startedChannels);
-        self::assertSame('https://example.test/wp-json/trinity-booking/v1/google/webhook', $gateway->startedChannels[0]['address']);
+        self::assertSame('https://example.test/wp-json/slashbooking/v1/google/webhook', $gateway->startedChannels[0]['address']);
         self::assertSame($account->watchTokenSecret(), $gateway->startedChannels[0]['token']);
     }
 
@@ -1507,12 +1507,12 @@ composer test -- --filter WatchChannelManagerTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\GoogleAccount;
 
 final class WatchChannelManager
 {
@@ -1619,15 +1619,15 @@ C'est le cœur du Plan 4. Pas de WP ici (sauf en wiring) — uniquement closures
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\SyncEngine;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\SyncEngine;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class SyncEngineTest extends TestCase
 {
@@ -1812,14 +1812,14 @@ composer test -- --filter SyncEngineTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Exceptions\SyncTokenExpired;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Exceptions\SyncTokenExpired;
 
 final class SyncEngine
 {
@@ -1970,7 +1970,7 @@ Créer `src/Google/PullResult.php` :
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 final class PullResult
 {
@@ -1996,7 +1996,7 @@ git commit -m "feat(google): SyncEngine pulls events.list + upserts busy blocks 
 
 ---
 
-## Task 12 : `Google\PullEventJob` — Action Scheduler handler `tb/google_pull`
+## Task 12 : `Google\PullEventJob` — Action Scheduler handler `sb/google_pull`
 
 Wrapper léger qui orchestre `WatchChannelManager` n'est pas nécessaire ; le job orchestre `GoogleClientBuilder` (pour le token refresh) + `SyncEngine::pull`.
 
@@ -2012,15 +2012,15 @@ Wrapper léger qui orchestre `WatchChannelManager` n'est pas nécessaire ; le jo
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\PullEventJob;
-use Trinity\Booking\Google\PullResult;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\PullEventJob;
+use Slash\Booking\Google\PullResult;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class PullEventJobTest extends TestCase
 {
@@ -2076,13 +2076,13 @@ composer test -- --filter PullEventJobTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
 
 final class PullEventJob
 {
@@ -2175,14 +2175,14 @@ Endpoint public Google. Vérifie `X-Goog-Channel-Token`. Réponse 200 immédiate
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Http\GoogleWebhookController;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Http\GoogleWebhookController;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 use WP_REST_Request;
 
 final class GoogleWebhookControllerTest extends TestCase
@@ -2199,7 +2199,7 @@ final class GoogleWebhookControllerTest extends TestCase
         global $wpdb;
         // Clean slate
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-        $wpdb->query("DELETE FROM {$wpdb->prefix}tb_google_accounts");
+        $wpdb->query("DELETE FROM {$wpdb->prefix}sb_google_accounts");
 
         $repo = new GoogleAccountRepository($wpdb);
         $a = GoogleAccount::connect(
@@ -2225,7 +2225,7 @@ final class GoogleWebhookControllerTest extends TestCase
             },
             log: fn () => null,
         );
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/google/webhook');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/google/webhook');
         $req->set_header('X-Goog-Channel-Token', 'wrong');
         $req->set_header('X-Goog-Channel-Id', 'ch_known');
         $req->set_header('X-Goog-Resource-State', 'exists');
@@ -2246,7 +2246,7 @@ final class GoogleWebhookControllerTest extends TestCase
             },
             log: fn () => null,
         );
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/google/webhook');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/google/webhook');
         $req->set_header('X-Goog-Channel-Token', 'sec_known');
         $req->set_header('X-Goog-Channel-Id', 'ch_known');
         $req->set_header('X-Goog-Resource-State', 'exists');
@@ -2267,7 +2267,7 @@ final class GoogleWebhookControllerTest extends TestCase
             },
             log: fn () => null,
         );
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/google/webhook');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/google/webhook');
         $req->set_header('X-Goog-Channel-Token', 'sec_known');
         $req->set_header('X-Goog-Channel-Id', 'ch_known');
         $req->set_header('X-Goog-Resource-State', 'sync'); // Initial sync ack — no pull needed.
@@ -2291,11 +2291,11 @@ composer test:integration -- --filter GoogleWebhookControllerTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use Closure;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -2440,25 +2440,25 @@ Repérer le pattern d'enregistrement de routes (méthode `registerRoutes`).
 Après les routes existantes, ajouter :
 
 ```php
-        register_rest_route(\Trinity\Booking\Plugin::REST_NAMESPACE, '/admin/google/watch/start', [
+        register_rest_route(\Slash\Booking\Plugin::REST_NAMESPACE, '/admin/google/watch/start', [
             'methods'             => 'POST',
             'callback'            => [$this, 'watchStart'],
-            'permission_callback' => fn () => current_user_can('trinity_booking_manage'),
+            'permission_callback' => fn () => current_user_can('slashbooking_manage'),
         ]);
-        register_rest_route(\Trinity\Booking\Plugin::REST_NAMESPACE, '/admin/google/watch/stop', [
+        register_rest_route(\Slash\Booking\Plugin::REST_NAMESPACE, '/admin/google/watch/stop', [
             'methods'             => 'POST',
             'callback'            => [$this, 'watchStop'],
-            'permission_callback' => fn () => current_user_can('trinity_booking_manage'),
+            'permission_callback' => fn () => current_user_can('slashbooking_manage'),
         ]);
-        register_rest_route(\Trinity\Booking\Plugin::REST_NAMESPACE, '/admin/google/pull/now', [
+        register_rest_route(\Slash\Booking\Plugin::REST_NAMESPACE, '/admin/google/pull/now', [
             'methods'             => 'POST',
             'callback'            => [$this, 'pullNow'],
-            'permission_callback' => fn () => current_user_can('trinity_booking_manage'),
+            'permission_callback' => fn () => current_user_can('slashbooking_manage'),
         ]);
-        register_rest_route(\Trinity\Booking\Plugin::REST_NAMESPACE, '/admin/google/diagnostics', [
+        register_rest_route(\Slash\Booking\Plugin::REST_NAMESPACE, '/admin/google/diagnostics', [
             'methods'             => 'GET',
             'callback'            => [$this, 'diagnostics'],
-            'permission_callback' => fn () => current_user_can('trinity_booking_manage'),
+            'permission_callback' => fn () => current_user_can('slashbooking_manage'),
         ]);
 ```
 
@@ -2468,12 +2468,12 @@ Modifier le ctor de `AdminGoogleController` pour accepter (en s'inspirant du cto
 
 ```php
 public function __construct(
-    private readonly \Trinity\Booking\Persistence\GoogleAccountRepository $accounts,
-    private readonly \Trinity\Booking\Google\OAuthClient $oauthClient,
-    private readonly \Trinity\Booking\Google\OAuthState $oauthState,
-    private readonly \Trinity\Booking\Google\Encryption $encryption,
-    private readonly \Trinity\Booking\Google\WatchChannelManager $watchManager,
-    private readonly \Trinity\Booking\Google\GoogleClientBuilder $clientBuilder,
+    private readonly \Slash\Booking\Persistence\GoogleAccountRepository $accounts,
+    private readonly \Slash\Booking\Google\OAuthClient $oauthClient,
+    private readonly \Slash\Booking\Google\OAuthState $oauthState,
+    private readonly \Slash\Booking\Google\Encryption $encryption,
+    private readonly \Slash\Booking\Google\WatchChannelManager $watchManager,
+    private readonly \Slash\Booking\Google\GoogleClientBuilder $clientBuilder,
     private readonly \Closure $enqueuePull,
 ) {
 }
@@ -2494,7 +2494,7 @@ Ajouter dans `AdminGoogleController` :
         }
         try {
             $gateway = $this->clientBuilder->buildGateway($account);
-            $webhookUrl = rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/google/webhook');
+            $webhookUrl = rest_url(\Slash\Booking\Plugin::REST_NAMESPACE . '/google/webhook');
             $this->watchManager->start($account, $gateway, $webhookUrl);
         } catch (\Throwable $e) {
             return new \WP_REST_Response(['ok' => false, 'error' => $e->getMessage()], 500);
@@ -2561,7 +2561,7 @@ Dans `tests/Integration/AdminGoogleControllerTest.php`, ajouter (en s'inspirant 
 public function test_diagnostics_returns_disconnected_if_no_account(): void
 {
     wp_set_current_user(self::factory()->user->create(['role' => 'administrator']));
-    $req = new \WP_REST_Request('GET', '/trinity-booking/v1/admin/google/diagnostics');
+    $req = new \WP_REST_Request('GET', '/slashbooking/v1/admin/google/diagnostics');
     $resp = rest_do_request($req);
     self::assertSame(200, $resp->get_status());
     self::assertSame(['connected' => false], $resp->get_data());
@@ -2589,10 +2589,10 @@ git commit -m "feat(http): AdminGoogleController watch start/stop + pull/now + d
 ## Task 15 : Wiring complet dans `Plugin.php` (webhook, pull job, crons)
 
 C'est la tâche d'assemblage. On enregistre :
-- Le callback Action Scheduler `tb/google_pull` qui exécute `PullEventJob`.
+- Le callback Action Scheduler `sb/google_pull` qui exécute `PullEventJob`.
 - Le webhook controller dans `RestRouter` (cf. Task 18).
-- Le cron quotidien `tb/watch_renew_check` qui renouvelle si proche expiration.
-- Le cron 15 min `tb/google_pull_all` qui enfile un pull par compte.
+- Le cron quotidien `sb/watch_renew_check` qui renouvelle si proche expiration.
+- Le cron 15 min `sb/google_pull_all` qui enfile un pull par compte.
 
 **Files:**
 - Modify: `src/Plugin.php`
@@ -2606,11 +2606,11 @@ Repérer la zone "Plan 3 Google sync" (lignes ~114-216). On va y ajouter le wiri
 Pas d'import nominal nécessaire — tout est utilisé via FQCN dans `register()`. Mais si tu préfères des `use` propres, ajouter en début de fichier après le namespace :
 
 ```php
-use Trinity\Booking\Google\PullEventJob;
-use Trinity\Booking\Google\PullResult;
-use Trinity\Booking\Google\SyncEngine;
-use Trinity\Booking\Google\WatchChannelManager;
-use Trinity\Booking\Persistence\BusyBlockRepository;
+use Slash\Booking\Google\PullEventJob;
+use Slash\Booking\Google\PullResult;
+use Slash\Booking\Google\SyncEngine;
+use Slash\Booking\Google\WatchChannelManager;
+use Slash\Booking\Persistence\BusyBlockRepository;
 ```
 
 - [ ] **Step 3 : Ajouter le wiring Plan 4 après le bloc Plan 3 existant**
@@ -2654,15 +2654,15 @@ Juste avant `(new Admin\AdminMenu())->register();` dans `register()`, insérer :
         // Enqueue helper (used by webhook + cron fallback + admin "pull now").
         $enqueuePull = static function (int $accountId): void {
             if (function_exists('as_schedule_single_action')) {
-                as_schedule_single_action(time() + 5, 'tb/google_pull', [$accountId], 'trinity-booking');
+                as_schedule_single_action(time() + 5, 'sb/google_pull', [$accountId], 'slashbooking');
                 return;
             }
             // Fallback: run synchronously (test / no AS loaded).
-            do_action('tb/google_pull', $accountId);
+            do_action('sb/google_pull', $accountId);
         };
 
         // Action Scheduler handler.
-        add_action('tb/google_pull', static function (int $accountId) use (
+        add_action('sb/google_pull', static function (int $accountId) use (
             $accounts,
             $clientBuilder,
             $buildSyncEngine,
@@ -2690,7 +2690,7 @@ Juste avant `(new Admin\AdminMenu())->register();` dans `register()`, insérer :
         }, 10, 1);
 
         // Daily watch renewal check.
-        add_action('tb/watch_renew_check', static function () use ($accounts, $clientBuilder, $watchMgr, $syncLogRepo): void {
+        add_action('sb/watch_renew_check', static function () use ($accounts, $clientBuilder, $watchMgr, $syncLogRepo): void {
             $account = $accounts->findSingle();
             if ($account === null) {
                 return;
@@ -2720,7 +2720,7 @@ Juste avant `(new Admin\AdminMenu())->register();` dans `register()`, insérer :
         });
 
         // 15-min cron fallback: enqueue pull for each account.
-        add_action('tb/google_pull_all', static function () use ($accounts, $enqueuePull): void {
+        add_action('sb/google_pull_all', static function () use ($accounts, $enqueuePull): void {
             $account = $accounts->findSingle();
             if ($account === null) {
                 return;
@@ -2750,14 +2750,14 @@ PHPStan peut râler sur l'objet anonyme + `class-string` typed container. Si oui
 ```php
 <?php
 declare(strict_types=1);
-namespace Trinity\Booking\Support;
+namespace Slash\Booking\Support;
 final class ClosureBox
 {
     public function __construct(public readonly \Closure $callable) {}
 }
 ```
 
-Et l'utiliser : `$this->set(\Trinity\Booking\Support\ClosureBox::class, new ClosureBox($enqueuePull));`. Le `RestRouter` récupère via `$plugin->get(ClosureBox::class)->callable`.
+Et l'utiliser : `$this->set(\Slash\Booking\Support\ClosureBox::class, new ClosureBox($enqueuePull));`. Le `RestRouter` récupère via `$plugin->get(ClosureBox::class)->callable`.
 
 - [ ] **Step 5 : Commit**
 
@@ -2782,27 +2782,27 @@ Repérer la création de `AdminGoogleController` (lignes ~68-77). On va lui pass
 Remplacer la portion Plan 3 + ajouter Plan 4 :
 
 ```php
-        $accounts    = new \Trinity\Booking\Persistence\GoogleAccountRepository($wpdb);
-        $keyResolver = new \Trinity\Booking\Google\EncryptionKeyResolver();
-        $encryption  = new \Trinity\Booking\Google\Encryption($keyResolver->resolve());
-        $oauthState  = new \Trinity\Booking\Google\OAuthState((string) get_option('tb_decision_secret'));
-        $oauthClient = new \Trinity\Booking\Google\OAuthClient(
-            clientId: (string) get_option('tb_google_client_id', ''),
-            clientSecret: (string) get_option('tb_google_client_secret', ''),
-            redirectUri: rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
+        $accounts    = new \Slash\Booking\Persistence\GoogleAccountRepository($wpdb);
+        $keyResolver = new \Slash\Booking\Google\EncryptionKeyResolver();
+        $encryption  = new \Slash\Booking\Google\Encryption($keyResolver->resolve());
+        $oauthState  = new \Slash\Booking\Google\OAuthState((string) get_option('sb_decision_secret'));
+        $oauthClient = new \Slash\Booking\Google\OAuthClient(
+            clientId: (string) get_option('sb_google_client_id', ''),
+            clientSecret: (string) get_option('sb_google_client_secret', ''),
+            redirectUri: rest_url(\Slash\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
         );
 
-        $clientBuilder = new \Trinity\Booking\Google\GoogleClientBuilder($encryption, $accounts);
-        $watchMgr      = new \Trinity\Booking\Google\WatchChannelManager(
-            persist: fn (\Trinity\Booking\Domain\GoogleAccount $a) => $accounts->save($a),
+        $clientBuilder = new \Slash\Booking\Google\GoogleClientBuilder($encryption, $accounts);
+        $watchMgr      = new \Slash\Booking\Google\WatchChannelManager(
+            persist: fn (\Slash\Booking\Domain\GoogleAccount $a) => $accounts->save($a),
             ttlSeconds: 604_800,
         );
         $enqueuePull = static function (int $accountId): void {
             if (function_exists('as_schedule_single_action')) {
-                as_schedule_single_action(time() + 5, 'tb/google_pull', [$accountId], 'trinity-booking');
+                as_schedule_single_action(time() + 5, 'sb/google_pull', [$accountId], 'slashbooking');
                 return;
             }
-            do_action('tb/google_pull', $accountId);
+            do_action('sb/google_pull', $accountId);
         };
 
         (new AdminGoogleController(
@@ -2815,7 +2815,7 @@ Remplacer la portion Plan 3 + ajouter Plan 4 :
             $enqueuePull,
         ))->registerRoutes();
 
-        $syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
+        $syncLog = new \Slash\Booking\Persistence\SyncLogRepository($wpdb);
         (new AdminSyncLogController($syncLog))->registerRoutes();
 
         (new AdminGoogleSettingsController())->registerRoutes();
@@ -2840,7 +2840,7 @@ Remplacer la portion Plan 3 + ajouter Plan 4 :
         ))->registerRoutes();
 ```
 
-Note : on duplique la création de `$enqueuePull` ici et dans `Plugin.php`. C'est OK — Plugin.php câble le **handler** Action Scheduler (`add_action('tb/google_pull')`), RestRouter câble le **producteur** (webhook + admin). Tous deux pointent vers le même hook AS. Si tu veux éviter la duplication : créer `Google\PullDispatcher` avec une méthode statique `enqueue(int $accountId)`. Optionnel — pour Plan 4 on reste sur la duplication.
+Note : on duplique la création de `$enqueuePull` ici et dans `Plugin.php`. C'est OK — Plugin.php câble le **handler** Action Scheduler (`add_action('sb/google_pull')`), RestRouter câble le **producteur** (webhook + admin). Tous deux pointent vers le même hook AS. Si tu veux éviter la duplication : créer `Google\PullDispatcher` avec une méthode statique `enqueue(int $accountId)`. Optionnel — pour Plan 4 on reste sur la duplication.
 
 - [ ] **Step 3 : Lancer la suite**
 
@@ -2868,19 +2868,19 @@ git commit -m "feat(http): RestRouter wires webhook + admin watch/pull endpoints
 - [ ] **Step 1 : Ajouter dans `Activator::activate()`** (juste après le `wp_schedule_event` du SyncLogPurger)
 
 ```php
-        if (!wp_next_scheduled('tb/watch_renew_check')) {
-            wp_schedule_event(self::tomorrowAt4SiteTz(), 'daily', 'tb/watch_renew_check');
+        if (!wp_next_scheduled('sb/watch_renew_check')) {
+            wp_schedule_event(self::tomorrowAt4SiteTz(), 'daily', 'sb/watch_renew_check');
         }
 
         // 15-minute cron interval — register if not present.
         add_filter('cron_schedules', static function (array $s): array {
-            if (!isset($s['tb_fifteen_minutes'])) {
-                $s['tb_fifteen_minutes'] = ['interval' => 900, 'display' => 'Every 15 minutes (Trinity Booking)'];
+            if (!isset($s['sb_fifteen_minutes'])) {
+                $s['sb_fifteen_minutes'] = ['interval' => 900, 'display' => 'Every 15 minutes (SlashBooking)'];
             }
             return $s;
         });
-        if (!wp_next_scheduled('tb/google_pull_all')) {
-            wp_schedule_event(time() + 900, 'tb_fifteen_minutes', 'tb/google_pull_all');
+        if (!wp_next_scheduled('sb/google_pull_all')) {
+            wp_schedule_event(time() + 900, 'sb_fifteen_minutes', 'sb/google_pull_all');
         }
 ```
 
@@ -2894,12 +2894,12 @@ Et ajouter la méthode utilitaire :
     }
 ```
 
-Note : la `cron_schedules` filter doit être enregistrée **avant** que WP cherche `tb_fifteen_minutes`. À l'activation c'est le cas car on filtre + schedule dans la foulée. Mais il faut **aussi** ré-enregistrer ce filter à chaque boot du plugin sinon WP ne reconnaît plus l'intervalle. Ajouter dans `Plugin::register()` :
+Note : la `cron_schedules` filter doit être enregistrée **avant** que WP cherche `sb_fifteen_minutes`. À l'activation c'est le cas car on filtre + schedule dans la foulée. Mais il faut **aussi** ré-enregistrer ce filter à chaque boot du plugin sinon WP ne reconnaît plus l'intervalle. Ajouter dans `Plugin::register()` :
 
 ```php
         add_filter('cron_schedules', static function (array $s): array {
-            if (!isset($s['tb_fifteen_minutes'])) {
-                $s['tb_fifteen_minutes'] = ['interval' => 900, 'display' => 'Every 15 minutes (Trinity Booking)'];
+            if (!isset($s['sb_fifteen_minutes'])) {
+                $s['sb_fifteen_minutes'] = ['interval' => 900, 'display' => 'Every 15 minutes (SlashBooking)'];
             }
             return $s;
         });
@@ -2912,17 +2912,17 @@ Note : la `cron_schedules` filter doit être enregistrée **avant** que WP cherc
 
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
 final class Deactivator
 {
     public static function deactivate(): void
     {
         foreach ([
-            \Trinity\Booking\Notifications\ReminderScheduler::HOOK,
-            \Trinity\Booking\Google\SyncLogPurger::HOOK,
-            'tb/watch_renew_check',
-            'tb/google_pull_all',
+            \Slash\Booking\Notifications\ReminderScheduler::HOOK,
+            \Slash\Booking\Google\SyncLogPurger::HOOK,
+            'sb/watch_renew_check',
+            'sb/google_pull_all',
         ] as $hook) {
             $ts = wp_next_scheduled($hook);
             if ($ts !== false) {
@@ -2936,7 +2936,7 @@ final class Deactivator
         // within 7 days. We log a soft note via error_log if available.
         if (function_exists('error_log')) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log('[trinity-booking] Deactivated. Active Google watch channel (if any) will expire within 7 days.');
+            error_log('[slashbooking] Deactivated. Active Google watch channel (if any) will expire within 7 days.');
         }
     }
 }
@@ -2954,12 +2954,12 @@ composer test && composer test:integration && composer stan && composer cs
 
 ```bash
 git add src/Activator.php src/Deactivator.php src/Plugin.php
-git commit -m "feat(activator): schedule tb/watch_renew_check + tb/google_pull_all crons"
+git commit -m "feat(activator): schedule sb/watch_renew_check + sb/google_pull_all crons"
 ```
 
 ---
 
-## Task 18 : Étendre `wp trinity-booking doctor` — watch status + last sync
+## Task 18 : Étendre `wp slashbooking doctor` — watch status + last sync
 
 **Files:**
 - Modify: `src/Cli/DoctorCommand.php`
@@ -2973,7 +2973,7 @@ Modifier le ctor pour accepter aussi `BusyBlockRepository` + une closure `pullNo
 public function __construct(
     private readonly GoogleAccountRepository $accounts,
     private readonly GoogleClientBuilder $clientBuilder,
-    private readonly \Trinity\Booking\Persistence\BusyBlockRepository $busy,
+    private readonly \Slash\Booking\Persistence\BusyBlockRepository $busy,
     private readonly \Closure $pullNow, // function(GoogleAccount): PullResult
 ) {
 }
@@ -2996,7 +2996,7 @@ public function __construct(
 
         \WP_CLI::log('Performing test pull…');
         try {
-            /** @var \Trinity\Booking\Google\PullResult $result */
+            /** @var \Slash\Booking\Google\PullResult $result */
             $result = ($this->pullNow)($account);
             \WP_CLI::success(sprintf(
                 'Pull OK: %d upserted / %d deleted / %d reflection-ignored',
@@ -3016,7 +3016,7 @@ Remplacer :
 ```php
         if (defined('WP_CLI') && WP_CLI) {
             /** @phpstan-ignore-next-line Class.NotFound (WP_CLI conditionally available) */
-            \WP_CLI::add_command('trinity-booking doctor', new Cli\DoctorCommand(
+            \WP_CLI::add_command('slashbooking doctor', new Cli\DoctorCommand(
                 $accounts,
                 $clientBuilder,
             ));
@@ -3032,7 +3032,7 @@ par :
                 return $buildSyncEngine()->pull($account, $gateway);
             };
             /** @phpstan-ignore-next-line Class.NotFound (WP_CLI conditionally available) */
-            \WP_CLI::add_command('trinity-booking doctor', new Cli\DoctorCommand(
+            \WP_CLI::add_command('slashbooking doctor', new Cli\DoctorCommand(
                 $accounts,
                 $clientBuilder,
                 $busyRepo,
@@ -3180,40 +3180,40 @@ JSX (à insérer dans le rendu) :
 
 ```jsx
 <Panel>
-	<PanelBody title={ __( 'Synchronisation entrante (Google → WP)', 'trinity-booking' ) } initialOpen>
+	<PanelBody title={ __( 'Synchronisation entrante (Google → WP)', 'slashbooking' ) } initialOpen>
 		{ diag === null && <Spinner /> }
 		{ diag !== null && diag.connected === false && (
-			<p>{ __( 'Connectez d\'abord un compte Google ci-dessus.', 'trinity-booking' ) }</p>
+			<p>{ __( 'Connectez d\'abord un compte Google ci-dessus.', 'slashbooking' ) }</p>
 		) }
 		{ diag !== null && diag.connected === true && (
 			<>
 				<p>
-					<strong>{ __( 'Watch channel : ', 'trinity-booking' ) }</strong>
+					<strong>{ __( 'Watch channel : ', 'slashbooking' ) }</strong>
 					{ diag.watch.channelId
 						? `${ diag.watch.channelId } (expire ${ diag.watch.expiresAt })`
-						: __( 'aucun', 'trinity-booking' ) }
+						: __( 'aucun', 'slashbooking' ) }
 				</p>
 				<p>
-					<strong>{ __( 'Dernier full sync : ', 'trinity-booking' ) }</strong>
-					{ diag.lastFullSyncAt ?? __( 'jamais', 'trinity-booking' ) }
+					<strong>{ __( 'Dernier full sync : ', 'slashbooking' ) }</strong>
+					{ diag.lastFullSyncAt ?? __( 'jamais', 'slashbooking' ) }
 				</p>
 				<p>
-					<strong>{ __( 'Sync token : ', 'trinity-booking' ) }</strong>
-					{ diag.syncToken ? __( 'présent (sync incrémental actif)', 'trinity-booking' ) : __( 'absent (prochain pull = full sync)', 'trinity-booking' ) }
+					<strong>{ __( 'Sync token : ', 'slashbooking' ) }</strong>
+					{ diag.syncToken ? __( 'présent (sync incrémental actif)', 'slashbooking' ) : __( 'absent (prochain pull = full sync)', 'slashbooking' ) }
 				</p>
 				<HStack>
 					{ ! diag.watch.channelId && (
 						<Button variant="primary" onClick={ onStartWatch } disabled={ busy }>
-							{ __( 'Démarrer le watch', 'trinity-booking' ) }
+							{ __( 'Démarrer le watch', 'slashbooking' ) }
 						</Button>
 					) }
 					{ diag.watch.channelId && (
 						<Button variant="secondary" isDestructive onClick={ onStopWatch } disabled={ busy }>
-							{ __( 'Arrêter le watch', 'trinity-booking' ) }
+							{ __( 'Arrêter le watch', 'slashbooking' ) }
 						</Button>
 					) }
 					<Button variant="tertiary" onClick={ onPullNow } disabled={ busy }>
-						{ __( 'Forcer un pull maintenant', 'trinity-booking' ) }
+						{ __( 'Forcer un pull maintenant', 'slashbooking' ) }
 					</Button>
 				</HStack>
 				{ msg && <Notice status="info" isDismissible={ false }>{ msg }</Notice> }
@@ -3285,7 +3285,7 @@ Re-lire la section 6.5 et 6.6 du spec et cocher mentalement :
 
 - [ ] Webhook reçoit POST + vérifie X-Goog-Channel-Token (Task 13) ✓
 - [ ] Réponse 200 immédiate (Task 13) ✓
-- [ ] Job tb/google_pull enfilé (Task 12 + 15) ✓
+- [ ] Job sb/google_pull enfilé (Task 12 + 15) ✓
 - [ ] events.list avec syncToken (Task 11) ✓
 - [ ] Reflection ignored (Task 9 + 11) ✓
 - [ ] Upsert BusyBlock pour event externe (Task 6 + 11) ✓
@@ -3325,11 +3325,11 @@ Un événement créé directement dans Google Calendar devient automatiquement u
 ### Mécanisme
 
 1. **Watch channel.** Une fois connecté, l'admin ouvre l'onglet **Google** et clique **Démarrer le watch**. Un channel push notifications est créé chez Google (TTL 7 jours). À chaque modif de calendrier, Google POST notre webhook public.
-2. **Webhook.** `POST /wp-json/trinity-booking/v1/google/webhook`. Vérification HMAC du header `X-Goog-Channel-Token` → enfile un job `tb/google_pull` debounced (5 s).
-3. **Pull job.** Action Scheduler exécute `tb/google_pull` qui appelle `events.list?syncToken=…` pour récupérer les diffs incrémentaux. Upsert / delete des `BusyBlock` selon `status` de l'event.
-4. **Reflection.** Quand notre push (Plan 3) crée un event GCal, Google nous re-notifie. On l'ignore (lookup `google_event_id` dans `wp_tb_bookings`).
-5. **Renewal.** Cron quotidien `tb/watch_renew_check` : si le channel expire dans < 24h, on le renouvelle.
-6. **Fallback.** Cron `tb/google_pull_all` toutes les 15 min : exécute un pull même si le webhook n'a rien reçu (firewall, DNS, etc.).
+2. **Webhook.** `POST /wp-json/slashbooking/v1/google/webhook`. Vérification HMAC du header `X-Goog-Channel-Token` → enfile un job `sb/google_pull` debounced (5 s).
+3. **Pull job.** Action Scheduler exécute `sb/google_pull` qui appelle `events.list?syncToken=…` pour récupérer les diffs incrémentaux. Upsert / delete des `BusyBlock` selon `status` de l'event.
+4. **Reflection.** Quand notre push (Plan 3) crée un event GCal, Google nous re-notifie. On l'ignore (lookup `google_event_id` dans `wp_sb_bookings`).
+5. **Renewal.** Cron quotidien `sb/watch_renew_check` : si le channel expire dans < 24h, on le renouvelle.
+6. **Fallback.** Cron `sb/google_pull_all` toutes les 15 min : exécute un pull même si le webhook n'a rien reçu (firewall, DNS, etc.).
 
 ### Pré-requis Google Cloud
 
@@ -3338,9 +3338,9 @@ Un événement créé directement dans Google Calendar devient automatiquement u
 
 ### Diagnostics
 
-- **WP admin → Trinity Booking → Google** : statut watch (channel id, expires_at), dernier full sync, présence du sync token, boutons "Démarrer/Arrêter watch" et "Forcer un pull".
-- **WP-CLI** : `wp trinity-booking doctor` — vérifie OAuth, watch, et lance un pull de test.
-- **Journal** : Trinity Booking → Journal, filtre `direction=g_to_wp` ou `entity=watch`.
+- **WP admin → SlashBooking → Google** : statut watch (channel id, expires_at), dernier full sync, présence du sync token, boutons "Démarrer/Arrêter watch" et "Forcer un pull".
+- **WP-CLI** : `wp slashbooking doctor` — vérifie OAuth, watch, et lance un pull de test.
+- **Journal** : SlashBooking → Journal, filtre `direction=g_to_wp` ou `entity=watch`.
 
 ### Désactivation propre
 
@@ -3409,10 +3409,10 @@ git commit --allow-empty -m "docs: mark Plan 4 complete"
 - Tous tests unit + integration verts (skip propre si wp-phpunit absent).
 - PHPCS : 0 erreur.
 - `npm run build` produit l'`admin.{js,css,asset.php}` sans erreur.
-- Manuel : créer un event directement dans Google Calendar → un `BusyBlock` apparaît dans la table `wp_tb_busy_blocks` ; le webhook log `webhook_received` puis `pull` ok dans `wp_tb_sync_log`.
-- Manuel : `wp trinity-booking doctor` affiche le statut watch + "Pull OK: N upserted / M deleted".
+- Manuel : créer un event directement dans Google Calendar → un `BusyBlock` apparaît dans la table `wp_sb_busy_blocks` ; le webhook log `webhook_received` puis `pull` ok dans `wp_sb_sync_log`.
+- Manuel : `wp slashbooking doctor` affiche le statut watch + "Pull OK: N upserted / M deleted".
 - Manuel : depuis l'onglet Google, "Démarrer watch" puis "Arrêter watch" fonctionnent.
-- Manuel : forcer l'expiration `UPDATE wp_tb_google_accounts SET watch_expires_at = DATE_SUB(NOW(), INTERVAL 1 DAY)` puis trigger cron → channel renouvelé.
+- Manuel : forcer l'expiration `UPDATE wp_sb_google_accounts SET watch_expires_at = DATE_SUB(NOW(), INTERVAL 1 DAY)` puis trigger cron → channel renouvelé.
 - README documente la procédure tunnel HTTPS + désactivation propre.
 
 ---
@@ -3433,8 +3433,8 @@ Activer le plugin, configurer OAuth (Plan 3), démarrer le watch depuis l'onglet
 
 **Spec coverage :**
 
-- §5 (`wp_tb_busy_blocks` index `(google_account_id, source_id)`, `last_synced_at`) → Task 6 ✓
-- §5 (`wp_tb_google_accounts.watch_resource_id / watch_token_secret / last_full_sync_at`) → fix latent Plan 3 en Task 8 ✓
+- §5 (`wp_sb_busy_blocks` index `(google_account_id, source_id)`, `last_synced_at`) → Task 6 ✓
+- §5 (`wp_sb_google_accounts.watch_resource_id / watch_token_secret / last_full_sync_at`) → fix latent Plan 3 en Task 8 ✓
 - §6.5.2 (header `X-Goog-Channel-Token` vérifié) → Task 13 ✓
 - §6.5.3 (réponse 200 immédiate + push job) → Task 13 ✓
 - §6.5.4 (events.list + syncToken, upsert BusyBlock, ignore reflection, delete sur cancelled) → Tasks 11, 6, 9 ✓
@@ -3453,18 +3453,18 @@ Activer le plugin, configurer OAuth (Plan 3), démarrer le watch depuis l'onglet
 - `CalendarGateway::listEvents/watchChannel/stopChannel` — signatures identiques dans interface (Task 2), `GoogleApiCalendarGateway` (Task 3), `FakeCalendarGateway` (Task 4), consommateurs (Tasks 10, 11, 14).
 - `BusyBlock::fromGoogleEvent(int $googleAccountId, string $eventId, DateTimeImmutable $start, DateTimeImmutable $end, string $summary, ?DateTimeImmutable $syncedAt = null)` — utilisé identiquement par SyncEngine (Task 11) et tests (Tasks 5, 6).
 - `GoogleAccount::attachWatch(channelId, resourceId, tokenSecret, expiresAt)` — utilisé par WatchChannelManager::start (Task 10) et tests Domain (Task 7).
-- `PullEventJob::handle(int $accountId)` (et non `int $bookingId` comme PushEventJob) — pris comme `tb/google_pull` arg.
-- `tb/google_pull` (singulier, account id) vs `tb/google_pull_all` (cron, sans args) — distinction nette.
+- `PullEventJob::handle(int $accountId)` (et non `int $bookingId` comme PushEventJob) — pris comme `sb/google_pull` arg.
+- `sb/google_pull` (singulier, account id) vs `sb/google_pull_all` (cron, sans args) — distinction nette.
 - `SyncEngine::pull(GoogleAccount, CalendarGateway): PullResult` — signature unique.
 - `WatchChannelManager` ctor `(Closure $persist, int $ttlSeconds)` — utilisé identiquement dans tests (Task 10) et Plugin.php (Task 15) / RestRouter (Task 16).
 - `enqueuePull(int $accountId): void` — même type Closure dans `GoogleWebhookController`, `AdminGoogleController::pullNow`, `Plugin::register` (cron handler), et le helper static dans `RestRouter`.
 
 **Hooks WP nommés :**
 
-- `tb/google_pull` (Action Scheduler async, args: `[accountId]`) — producteur : webhook + admin pull/now + cron 15 min ; handler : `Plugin::register` add_action.
-- `tb/google_pull_all` (cron 15 min, sans args) — handler : `Plugin::register` add_action ; enfile `tb/google_pull` par compte.
-- `tb/watch_renew_check` (cron quotidien, sans args) — handler : `Plugin::register` add_action ; renouvelle si `watch_expires_at < now+1day`.
-- `cron_schedules` (filter) — enregistre l'intervalle `tb_fifteen_minutes` ; appelé à l'activation **et** à chaque boot du plugin.
+- `sb/google_pull` (Action Scheduler async, args: `[accountId]`) — producteur : webhook + admin pull/now + cron 15 min ; handler : `Plugin::register` add_action.
+- `sb/google_pull_all` (cron 15 min, sans args) — handler : `Plugin::register` add_action ; enfile `sb/google_pull` par compte.
+- `sb/watch_renew_check` (cron quotidien, sans args) — handler : `Plugin::register` add_action ; renouvelle si `watch_expires_at < now+1day`.
+- `cron_schedules` (filter) — enregistre l'intervalle `sb_fifteen_minutes` ; appelé à l'activation **et** à chaque boot du plugin.
 
 **Préreq tooling :**
 

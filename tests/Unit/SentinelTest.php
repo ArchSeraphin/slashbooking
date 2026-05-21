@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit;
+namespace Slash\Booking\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 

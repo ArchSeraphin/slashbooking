@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 final class EncryptionKeyResolver
 {
-    public const CONSTANT = 'TRINITY_BOOKING_ENC_KEY';
-    public const OPTION   = 'tb_enc_key';
+    public const CONSTANT = 'SLASHBOOKING_ENC_KEY';
+    public const OPTION   = 'sb_enc_key';
 
     public function resolve(): string
     {

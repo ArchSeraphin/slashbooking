@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Privacy\BookingExporter;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Privacy\BookingExporter;
 
 final class BookingExporterTest extends TestCase
 {
@@ -24,7 +24,7 @@ final class BookingExporterTest extends TestCase
 
         $this->assertTrue($result['done']);
         $this->assertCount(1, $result['data']);
-        $this->assertSame('trinity-booking', $result['data'][0]['group_id']);
+        $this->assertSame('slashbooking', $result['data'][0]['group_id']);
         $this->assertSame((string) $booking->id(), $result['data'][0]['item_id']);
         $fields = array_column($result['data'][0]['data'], 'value', 'name');
         $this->assertSame('Alice Martin', $fields['Nom']);

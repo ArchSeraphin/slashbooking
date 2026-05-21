@@ -1,4 +1,4 @@
-# trinity-booking — Plan 2 : Notifications e-mail & validation admin
+# slashbooking — Plan 2 : Notifications e-mail & validation admin
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -7,13 +7,13 @@
 **Architecture:** On greffe sur les fondations du Plan 1. Trois nouveaux modules :
 - `Notifications/` — render de templates `{{tags}}`, génération `.ics`, dispatch via `wp_mail`, registre de templates persistés.
 - `Admin/` — capabilities custom, menu WP, enqueue d'une SPA React (`@wordpress/scripts`), bootstrap minimal du dashboard (liste des bookings + actions).
-- Nouveaux use cases `ConfirmBooking` / `RejectBooking` qui se branchent sur les e-mails via un `BookingNotifier` listening aux hooks internes (`trinity_booking/booking_created`, `confirmed`, `rejected`, `cancelled`, `reminder_due`).
+- Nouveaux use cases `ConfirmBooking` / `RejectBooking` qui se branchent sur les e-mails via un `BookingNotifier` listening aux hooks internes (`slashbooking/booking_created`, `confirmed`, `rejected`, `cancelled`, `reminder_due`).
 
 Les e-mails sont déclenchés **synchronement** côté V1 (pas d'Action Scheduler dans ce plan — on s'appuie sur `wp_mail` et un cron WP classique pour le rappel J-1). Action Scheduler sera intégré en Plan 3 quand on poussera vers Google Calendar.
 
 **Tech Stack:** Mêmes outils que Plan 1 + `@wordpress/scripts` (webpack préconfiguré WP), `@wordpress/components`, `@wordpress/api-fetch`, React 18 (fourni par WP 6.5+).
 
-**Spec source:** `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`, sections 6.2, 6.3, 6.7, 7, 8, 9.
+**Spec source:** `docs/superpowers/specs/2026-05-19-slashbooking-design.md`, sections 6.2, 6.3, 6.7, 7, 8, 9.
 
 ---
 
@@ -33,13 +33,13 @@ Lire avant d'attaquer les tâches.
 
 6. **Idempotence des transitions.** `confirm()` est appelable sur un booking déjà `confirmed` → no-op (return early), pas d'exception. Idem pour `reject()`. **Mais** depuis un statut incompatible (`cancelled` → `confirm`), on renvoie une page d'erreur dédiée, pas un 500.
 
-7. **Capabilities WP custom.** Deux nouvelles caps : `trinity_booking_manage` (admin par défaut, peut tout faire) et `trinity_booking_view` (lecture). Seed à l'activation, retrait à la désinstallation. Le check se fait dans `permission_callback` des routes admin.
+7. **Capabilities WP custom.** Deux nouvelles caps : `slashbooking_manage` (admin par défaut, peut tout faire) et `slashbooking_view` (lecture). Seed à l'activation, retrait à la désinstallation. Le check se fait dans `permission_callback` des routes admin.
 
 8. **React Admin SPA.** On utilise `@wordpress/scripts` qui fournit webpack + Babel + ESLint pré-configurés. Source dans `src/Admin/react-app/`. Build vers `assets/dist/admin.{js,css}`. Enqueue depuis `Admin\Assets`. WP injecte React/ReactDOM globalement → on les déclare en `dependencies` du wp_register_script (`'wp-element'`).
 
 9. **Tests d'e-mails sans envoyer.** En unit on teste `TemplateRenderer`, `IcsBuilder`, `TagRegistry` sans toucher WP. En intégration on **intercepte** `wp_mail` via `add_filter('pre_wp_mail', ...)` (filtre WP 6.5+) et on inspecte le payload.
 
-10. **Reminder J-1.** WP-Cron quotidien `tb_send_daily_reminders` à 10h00 fuseau site. Sélectionne `confirmed` dont `starts_at_utc` ∈ [now+23h, now+25h] avec `reminder_sent_at IS NULL`. Marque envoyé avant l'envoi (anti-doublon en cas de re-déclenchement cron).
+10. **Reminder J-1.** WP-Cron quotidien `sb_send_daily_reminders` à 10h00 fuseau site. Sélectionne `confirmed` dont `starts_at_utc` ∈ [now+23h, now+25h] avec `reminder_sent_at IS NULL`. Marque envoyé avant l'envoi (anti-doublon en cas de re-déclenchement cron).
 
 ---
 
@@ -49,7 +49,7 @@ Lire avant d'attaquer les tâches.
 plugins-booking/
 ├── package.json                                # NEW — @wordpress/scripts build
 ├── package-lock.json                           # NEW — committed
-├── trinity-booking.php                          # MODIFY — load services
+├── slashbooking.php                          # MODIFY — load services
 ├── src/
 │   ├── Plugin.php                               # MODIFY — wire new services + register actions
 │   ├── Activator.php                            # MODIFY — seed caps + templates
@@ -172,13 +172,13 @@ Attendu : 3 tests rouges (DomainException jetée par idempotence ou méthode hel
 - [ ] **Step 3 : Si la méthode helper `pendingBooking()` n'existe pas dans le test, l'ajouter**
 
 ```php
-private function pendingBooking(): \Trinity\Booking\Domain\Booking
+private function pendingBooking(): \Slash\Booking\Domain\Booking
 {
-    $slot = new \Trinity\Booking\Domain\TimeSlot(
+    $slot = new \Slash\Booking\Domain\TimeSlot(
         new \DateTimeImmutable('2026-06-01T08:00:00Z', new \DateTimeZone('UTC')),
         new \DateTimeImmutable('2026-06-01T09:30:00Z', new \DateTimeZone('UTC')),
     );
-    return \Trinity\Booking\Domain\Booking::createPending(
+    return \Slash\Booking\Domain\Booking::createPending(
         serviceId: 1, slot: $slot, timezone: 'Europe/Paris',
         customerName: 'Jean', customerEmail: 'j@x.fr',
         customerPhone: '0600', customerAddress: 'x',
@@ -239,16 +239,16 @@ git commit -m "feat(domain): make Booking::confirm/reject idempotent"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\ConfirmBooking;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\ConfirmBooking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 
 final class ConfirmBookingTest extends TestCase
 {
@@ -322,11 +322,11 @@ composer test -- --filter ConfirmBookingTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
 use Closure;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
 
 final class ConfirmBooking
 {
@@ -387,16 +387,16 @@ git commit -m "feat(booking): add ConfirmBooking use case"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Booking;
+namespace Slash\Booking\Tests\Unit\Booking;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Booking\RejectBooking;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Booking\RejectBooking;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
 
 final class RejectBookingTest extends TestCase
 {
@@ -462,11 +462,11 @@ composer test -- --filter RejectBookingTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Booking;
+namespace Slash\Booking\Booking;
 
 use Closure;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Domain\Booking;
 
 final class RejectBooking
 {
@@ -515,10 +515,10 @@ git commit -m "feat(booking): add RejectBooking use case"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\Events\EventKey;
 
 final class EventKeyTest extends TestCase
 {
@@ -552,7 +552,7 @@ final class EventKeyTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications\Events;
+namespace Slash\Booking\Notifications\Events;
 
 enum EventKey: string
 {
@@ -594,10 +594,10 @@ Source of truth pour la liste des tags `{{...}}`, leurs catégories, leurs descr
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TagRegistry;
 
 final class TagRegistryTest extends TestCase
 {
@@ -641,7 +641,7 @@ final class TagRegistryTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 /**
  * @phpstan-type Tag array{name:string, category:string, description:string, raw:bool}
@@ -741,11 +741,11 @@ git commit -m "feat(notifications): add TagRegistry with categories and raw flag
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
 
 final class TemplateRendererTest extends TestCase
 {
@@ -805,7 +805,7 @@ final class TemplateRendererTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 final class TemplateRenderer
 {
@@ -862,10 +862,10 @@ Fallback texte pour les MUAs sans HTML. Si le template a une version texte custo
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\TextBodyGenerator;
+use Slash\Booking\Notifications\TextBodyGenerator;
 
 final class TextBodyGeneratorTest extends TestCase
 {
@@ -905,7 +905,7 @@ final class TextBodyGeneratorTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 final class TextBodyGenerator
 {
@@ -959,19 +959,19 @@ git commit -m "feat(notifications): add TextBodyGenerator for plain-text fallbac
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\IcsBuilder;
+use Slash\Booking\Notifications\IcsBuilder;
 
 final class IcsBuilderTest extends TestCase
 {
     public function test_builds_minimal_vevent(): void
     {
         $ics = (new IcsBuilder())->build(
-            uid: 'abc-123@trinity-booking',
+            uid: 'abc-123@slashbooking',
             summary: 'RDV Photovoltaïque',
             description: 'Jean, 1 rue X',
             startUtc: new DateTimeImmutable('2026-06-01T12:00:00Z', new DateTimeZone('UTC')),
@@ -981,7 +981,7 @@ final class IcsBuilderTest extends TestCase
         self::assertStringContainsString("BEGIN:VCALENDAR\r\n", $ics);
         self::assertStringContainsString("VERSION:2.0\r\n", $ics);
         self::assertStringContainsString("BEGIN:VEVENT\r\n", $ics);
-        self::assertStringContainsString("UID:abc-123@trinity-booking\r\n", $ics);
+        self::assertStringContainsString("UID:abc-123@slashbooking\r\n", $ics);
         self::assertStringContainsString("DTSTART:20260601T120000Z\r\n", $ics);
         self::assertStringContainsString("DTEND:20260601T133000Z\r\n", $ics);
         self::assertStringContainsString("SUMMARY:RDV Photovoltaïque\r\n", $ics);
@@ -1012,7 +1012,7 @@ final class IcsBuilderTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 use DateTimeImmutable;
 
@@ -1031,7 +1031,7 @@ final class IcsBuilder
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//Trinity Booking//FR',
+            'PRODID:-//SlashBooking//FR',
             'CALSCALE:GREGORIAN',
             'METHOD:REQUEST',
             'BEGIN:VEVENT',
@@ -1085,11 +1085,11 @@ Templates par défaut bundlés, retournés depuis du PHP pour être livrés avec
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Notifications\DefaultTemplates;
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\DefaultTemplates;
+use Slash\Booking\Notifications\Events\EventKey;
 
 final class DefaultTemplatesTest extends TestCase
 {
@@ -1129,9 +1129,9 @@ final class DefaultTemplatesTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\Events\EventKey;
 
 final class DefaultTemplates
 {
@@ -1142,27 +1142,27 @@ final class DefaultTemplates
     {
         return [
             EventKey::PENDING_CLIENT->value => [
-                'subject'   => __('Votre demande de RDV — en attente de validation', 'trinity-booking'),
+                'subject'   => __('Votre demande de RDV — en attente de validation', 'slashbooking'),
                 'html_body' => self::pendingClient(),
             ],
             EventKey::PENDING_ADMIN->value => [
-                'subject'   => __('Nouvelle demande de RDV : {{service_name}} — {{customer_name}}', 'trinity-booking'),
+                'subject'   => __('Nouvelle demande de RDV : {{service_name}} — {{customer_name}}', 'slashbooking'),
                 'html_body' => self::pendingAdmin(),
             ],
             EventKey::CONFIRMED_CLIENT->value => [
-                'subject'   => __('RDV confirmé — {{appointment_date}} à {{appointment_time}}', 'trinity-booking'),
+                'subject'   => __('RDV confirmé — {{appointment_date}} à {{appointment_time}}', 'slashbooking'),
                 'html_body' => self::confirmedClient(),
             ],
             EventKey::REJECTED_CLIENT->value => [
-                'subject'   => __('Votre demande de RDV n\'a pas pu être confirmée', 'trinity-booking'),
+                'subject'   => __('Votre demande de RDV n\'a pas pu être confirmée', 'slashbooking'),
                 'html_body' => self::rejectedClient(),
             ],
             EventKey::CANCELLED_CLIENT->value => [
-                'subject'   => __('Annulation de votre RDV confirmée', 'trinity-booking'),
+                'subject'   => __('Annulation de votre RDV confirmée', 'slashbooking'),
                 'html_body' => self::cancelledClient(),
             ],
             EventKey::REMINDER_CLIENT->value => [
-                'subject'   => __('Rappel : RDV demain à {{appointment_time}}', 'trinity-booking'),
+                'subject'   => __('Rappel : RDV demain à {{appointment_time}}', 'slashbooking'),
                 'html_body' => self::reminderClient(),
             ],
         ];
@@ -1259,7 +1259,7 @@ git commit -m "feat(notifications): bundle 6 default HTML email templates"
 - Create: `src/Persistence/MailTemplateRepository.php`
 - Create: `tests/Integration/MailTemplateRepositoryTest.php`
 
-Repository CRUD sur la table `wp_tb_mail_templates`. Méthode clé `getOrDefault($eventKey)` → retourne template custom si présent et `enabled`, sinon défaut bundlé.
+Repository CRUD sur la table `wp_sb_mail_templates`. Méthode clé `getOrDefault($eventKey)` → retourne template custom si présent et `enabled`, sinon défaut bundlé.
 
 - [ ] **Step 1 : Test d'intégration**
 
@@ -1267,11 +1267,11 @@ Repository CRUD sur la table `wp_tb_mail_templates`. Méthode clé `getOrDefault
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
-use Trinity\Booking\Activator;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Activator;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Notifications\Events\EventKey;
 use WP_UnitTestCase;
 
 final class MailTemplateRepositoryTest extends WP_UnitTestCase
@@ -1342,10 +1342,10 @@ composer test:integration -- --filter MailTemplateRepositoryTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Notifications\DefaultTemplates;
-use Trinity\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\DefaultTemplates;
+use Slash\Booking\Notifications\Events\EventKey;
 use wpdb;
 
 /**
@@ -1365,7 +1365,7 @@ final class MailTemplateRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_mail_templates';
+        $this->table = $wpdb->prefix . 'sb_mail_templates';
     }
 
     /**
@@ -1466,15 +1466,15 @@ DTO qui transforme un `Booking` + `Service` en `array<string, scalar>` consommab
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Notifications;
+namespace Slash\Booking\Tests\Unit\Notifications;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Notifications\Events\BookingContext;
 
 final class BookingContextTest extends TestCase
 {
@@ -1552,11 +1552,11 @@ final class BookingContextTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications\Events;
+namespace Slash\Booking\Notifications\Events;
 
 use DateTimeZone;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
 
 /**
  * @phpstan-type Extra array{
@@ -1660,11 +1660,11 @@ Centralise la construction des URLs `cancel`, `confirm`, `reject`, `ics` avec si
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Http;
+namespace Slash\Booking\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Http\UrlBuilder;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Http\UrlBuilder;
 
 final class UrlBuilderTest extends TestCase
 {
@@ -1673,7 +1673,7 @@ final class UrlBuilderTest extends TestCase
     protected function setUp(): void
     {
         $signer = new DecisionTokenSigner('a-very-long-test-secret-32bytes-ok');
-        $this->b = new UrlBuilder($signer, 'https://t.tld/wp-json/trinity-booking/v1');
+        $this->b = new UrlBuilder($signer, 'https://t.tld/wp-json/slashbooking/v1');
     }
 
     public function test_cancel_url_has_uid_exp_sig(): void
@@ -1704,9 +1704,9 @@ final class UrlBuilderTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\DecisionTokenSigner;
 
 final class UrlBuilder
 {
@@ -1765,22 +1765,22 @@ Orchestrateur d'envoi : prend un `EventKey` + `BookingContext` + (optionnel) boo
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Notifications\Events\BookingContext;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\IcsBuilder;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Notifications\TextBodyGenerator;
-use Trinity\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\IcsBuilder;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Notifications\TextBodyGenerator;
+use Slash\Booking\Persistence\MailTemplateRepository;
 use WP_UnitTestCase;
 
 final class MailDispatcherTest extends WP_UnitTestCase
@@ -1883,13 +1883,13 @@ final class MailDispatcherTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 use Throwable;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Notifications\Events\BookingContext;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Persistence\MailTemplateRepository;
 
 final class MailDispatcher
 {
@@ -1917,7 +1917,7 @@ final class MailDispatcher
                 ? $this->renderer->render($tpl['text_body'], $data)
                 : $this->text->fromHtml($html);
 
-            $boundary = 'tb-' . bin2hex(random_bytes(8));
+            $boundary = 'sb-' . bin2hex(random_bytes(8));
             $headers = [
                 'From: ' . $this->fromHeader(),
                 'Reply-To: ' . $this->replyTo($recipient, $context),
@@ -1946,11 +1946,11 @@ final class MailDispatcher
             }
 
             if (!$sent) {
-                error_log(sprintf('[trinity-booking] wp_mail failed for event=%s to=%s', $event->value, $recipient));
+                error_log(sprintf('[slashbooking] wp_mail failed for event=%s to=%s', $event->value, $recipient));
             }
             return (bool) $sent;
         } catch (Throwable $e) {
-            error_log('[trinity-booking] MailDispatcher exception: ' . $e->getMessage());
+            error_log('[slashbooking] MailDispatcher exception: ' . $e->getMessage());
             return false;
         }
     }
@@ -1971,14 +1971,14 @@ final class MailDispatcher
     private function writeIcsTempFile(Booking $b, string $summary): string
     {
         $ics = $this->ics->build(
-            uid: $b->publicUid() . '@trinity-booking',
+            uid: $b->publicUid() . '@slashbooking',
             summary: $summary,
             description: '',
             startUtc: $b->slot()->start,
             endUtc:   $b->slot()->end,
         );
         $dir  = function_exists('get_temp_dir') ? get_temp_dir() : sys_get_temp_dir();
-        $path = rtrim($dir, '/\\') . '/' . 'tb-' . $b->publicUid() . '.ics';
+        $path = rtrim($dir, '/\\') . '/' . 'sb-' . $b->publicUid() . '.ics';
         file_put_contents($path, $ics);
         return $path;
     }
@@ -2003,11 +2003,11 @@ git commit -m "feat(notifications): MailDispatcher renders template, attaches IC
 - Create: `tests/Integration/BookingNotifierTest.php`
 
 Le `BookingNotifier` s'abonne à 5 hooks WP internes :
-- `trinity_booking/booking_created` → envoie `pending.client` + `pending.admin`
-- `trinity_booking/booking_confirmed` → envoie `confirmed.client` avec `.ics`
-- `trinity_booking/booking_rejected` → envoie `rejected.client`
-- `trinity_booking/booking_cancelled` → envoie `cancelled.client`
-- `trinity_booking/booking_reminder_due` → envoie `reminder.client`
+- `slashbooking/booking_created` → envoie `pending.client` + `pending.admin`
+- `slashbooking/booking_confirmed` → envoie `confirmed.client` avec `.ics`
+- `slashbooking/booking_rejected` → envoie `rejected.client`
+- `slashbooking/booking_cancelled` → envoie `cancelled.client`
+- `slashbooking/booking_reminder_due` → envoie `reminder.client`
 
 Chaque hook reçoit l'`int $bookingId`. Le notifier charge booking + service depuis les repos, construit le contexte, dispatche.
 
@@ -2017,24 +2017,24 @@ Chaque hook reçoit l'`int $bookingId`. Le notifier charge booking + service dep
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Notifications\BookingNotifier;
-use Trinity\Booking\Notifications\IcsBuilder;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Notifications\TextBodyGenerator;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Http\UrlBuilder;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Notifications\BookingNotifier;
+use Slash\Booking\Notifications\IcsBuilder;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Notifications\TextBodyGenerator;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Http\UrlBuilder;
 use WP_UnitTestCase;
 
 final class BookingNotifierTest extends WP_UnitTestCase
@@ -2055,8 +2055,8 @@ final class BookingNotifierTest extends WP_UnitTestCase
             new TextBodyGenerator(),
             new IcsBuilder(),
         );
-        $signer = new DecisionTokenSigner((string) get_option('tb_decision_secret'));
-        $urls   = new UrlBuilder($signer, rest_url('trinity-booking/v1'));
+        $signer = new DecisionTokenSigner((string) get_option('sb_decision_secret'));
+        $urls   = new UrlBuilder($signer, rest_url('slashbooking/v1'));
 
         $notifier = new BookingNotifier($services, $bookings, $dispatcher, $urls);
         $notifier->register();
@@ -2071,7 +2071,7 @@ final class BookingNotifierTest extends WP_UnitTestCase
     public function test_booking_created_sends_two_emails(): void
     {
         $b = $this->newBooking('jean@test.fr');
-        do_action('trinity_booking/booking_created', $b->id());
+        do_action('slashbooking/booking_created', $b->id());
 
         self::assertCount(2, $this->sent);
         $recipients = array_column($this->sent, 'to');
@@ -2083,7 +2083,7 @@ final class BookingNotifierTest extends WP_UnitTestCase
     public function test_booking_confirmed_sends_one_email_with_ics(): void
     {
         $b = $this->newBooking('jean@test.fr');
-        do_action('trinity_booking/booking_confirmed', $b->id());
+        do_action('slashbooking/booking_confirmed', $b->id());
 
         self::assertCount(1, $this->sent);
         self::assertNotEmpty($this->sent[0]['attachments']);
@@ -2116,15 +2116,15 @@ final class BookingNotifierTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Http\UrlBuilder;
-use Trinity\Booking\Notifications\Events\BookingContext;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Http\UrlBuilder;
+use Slash\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 
 final class BookingNotifier
 {
@@ -2138,11 +2138,11 @@ final class BookingNotifier
 
     public function register(): void
     {
-        add_action('trinity_booking/booking_created',    [$this, 'onCreated'],    10, 1);
-        add_action('trinity_booking/booking_confirmed',  [$this, 'onConfirmed'],  10, 1);
-        add_action('trinity_booking/booking_rejected',   [$this, 'onRejected'],   10, 1);
-        add_action('trinity_booking/booking_cancelled',  [$this, 'onCancelled'],  10, 1);
-        add_action('trinity_booking/booking_reminder_due', [$this, 'onReminderDue'], 10, 1);
+        add_action('slashbooking/booking_created',    [$this, 'onCreated'],    10, 1);
+        add_action('slashbooking/booking_confirmed',  [$this, 'onConfirmed'],  10, 1);
+        add_action('slashbooking/booking_rejected',   [$this, 'onRejected'],   10, 1);
+        add_action('slashbooking/booking_cancelled',  [$this, 'onCancelled'],  10, 1);
+        add_action('slashbooking/booking_reminder_due', [$this, 'onReminderDue'], 10, 1);
     }
 
     public function onCreated(int $bookingId): void
@@ -2197,7 +2197,7 @@ final class BookingNotifier
         $svc = $this->services->findById($b->serviceId());
         if ($svc === null) {
             // Service supprimé : on essaie de rester functional avec un Service "fantôme".
-            $svc = new \Trinity\Booking\Domain\Service(
+            $svc = new \Slash\Booking\Domain\Service(
                 id: $b->serviceId(), slug: 'unknown', name: 'Service',
                 durationMin: max(1, (int) (($b->slot()->end->getTimestamp() - $b->slot()->start->getTimestamp()) / 60)),
                 bufferBeforeMin: 0, bufferAfterMin: 0,
@@ -2211,8 +2211,8 @@ final class BookingNotifier
             'site_name'     => (string) get_option('blogname', ''),
             'site_url'      => (string) home_url('/'),
             'admin_email'   => (string) get_option('admin_email', ''),
-            'company_phone' => (string) get_option('tb_company_phone', ''),
-            'company_logo'  => (string) get_option('tb_company_logo', ''),
+            'company_phone' => (string) get_option('sb_company_phone', ''),
+            'company_logo'  => (string) get_option('sb_company_logo', ''),
             'cancel_url'    => $this->urls->cancelUrl($b->publicUid(), $exp),
             'confirm_url'   => $b->id() !== null ? $this->urls->decisionUrl($b->id(), 'confirm', $exp) : '',
             'reject_url'    => $b->id() !== null ? $this->urls->decisionUrl($b->id(), 'reject',  $exp) : '',
@@ -2284,7 +2284,7 @@ if (!defined('MINUTE_IN_SECONDS')) {
 
 ```php
 if (function_exists('do_action') && $booking->id() !== null) {
-    do_action('trinity_booking/booking_created', $booking->id());
+    do_action('slashbooking/booking_created', $booking->id());
 }
 ```
 
@@ -2294,7 +2294,7 @@ Avant `return $booking;` :
 
 ```php
 if (function_exists('do_action') && $booking->id() !== null) {
-    do_action('trinity_booking/booking_confirmed', $booking->id());
+    do_action('slashbooking/booking_confirmed', $booking->id());
 }
 ```
 
@@ -2302,7 +2302,7 @@ if (function_exists('do_action') && $booking->id() !== null) {
 
 ```php
 if (function_exists('do_action') && $booking->id() !== null) {
-    do_action('trinity_booking/booking_rejected', $booking->id());
+    do_action('slashbooking/booking_rejected', $booking->id());
 }
 ```
 
@@ -2310,7 +2310,7 @@ if (function_exists('do_action') && $booking->id() !== null) {
 
 ```php
 if (function_exists('do_action') && $booking->id() !== null) {
-    do_action('trinity_booking/booking_cancelled', $booking->id());
+    do_action('slashbooking/booking_cancelled', $booking->id());
 }
 ```
 
@@ -2338,7 +2338,7 @@ git commit -m "feat(booking): use cases emit WP action hooks after persistence"
 - Create: `src/Http/DecisionController.php`
 - Create: `tests/Integration/DecisionControllerTest.php`
 
-Endpoint `GET /trinity-booking/v1/decide?booking={id}&action={confirm|reject}&exp={ts}&sig={hmac}` qui :
+Endpoint `GET /slashbooking/v1/decide?booking={id}&action={confirm|reject}&exp={ts}&sig={hmac}` qui :
 1. Vérifie HMAC + expiration.
 2. Exécute `ConfirmBooking` ou `RejectBooking` (idempotent).
 3. Affiche une page d'atterrissage HTML simple (pas du JSON — c'est lu dans un navigateur depuis un mail).
@@ -2349,17 +2349,17 @@ Endpoint `GET /trinity-booking/v1/decide?booking={id}&action={confirm|reject}&ex
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Http\UrlBuilder;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Http\UrlBuilder;
+use Slash\Booking\Persistence\BookingRepository;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
@@ -2373,8 +2373,8 @@ final class DecisionControllerTest extends WP_UnitTestCase
         parent::setUp();
         Activator::activate();
         do_action('rest_api_init');
-        $this->signer = new DecisionTokenSigner((string) get_option('tb_decision_secret'));
-        $this->urls   = new UrlBuilder($this->signer, rest_url('trinity-booking/v1'));
+        $this->signer = new DecisionTokenSigner((string) get_option('sb_decision_secret'));
+        $this->urls   = new UrlBuilder($this->signer, rest_url('slashbooking/v1'));
     }
 
     public function test_confirm_transitions_pending_to_confirmed(): void
@@ -2382,7 +2382,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() + 3600;
         $sig = $this->signer->sign('decide|' . $b->id() . '|confirm', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => $exp, 'sig' => $sig]);
         $response = rest_do_request($request);
         self::assertSame(200, $response->get_status());
@@ -2397,7 +2397,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() + 3600;
         $sig = $this->signer->sign('decide|' . $b->id() . '|reject', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'reject', 'exp' => $exp, 'sig' => $sig]);
         $response = rest_do_request($request);
         self::assertSame(200, $response->get_status());
@@ -2410,7 +2410,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
     public function test_invalid_signature_returns_403(): void
     {
         $b = $this->seedPending();
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => time() + 60, 'sig' => 'bogus']);
         $response = rest_do_request($request);
         self::assertSame(403, $response->get_status());
@@ -2421,7 +2421,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() - 10;
         $sig = $this->signer->sign('decide|' . $b->id() . '|confirm', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => $exp, 'sig' => $sig]);
         self::assertSame(403, rest_do_request($request)->get_status());
     }
@@ -2431,7 +2431,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() + 3600;
         $sig = $this->signer->sign('decide|' . $b->id() . '|confirm', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => $exp, 'sig' => $sig]);
         rest_do_request($request);
         self::assertSame(200, rest_do_request($request)->get_status());
@@ -2465,13 +2465,13 @@ final class DecisionControllerTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Booking\ConfirmBooking;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Booking\RejectBooking;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Booking\ConfirmBooking;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Booking\RejectBooking;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -2513,7 +2513,7 @@ final class DecisionController
         $sig    = (string) $request['sig'];
 
         if (!in_array($action, ['confirm', 'reject'], true)) {
-            return new WP_Error('tb_invalid_action', 'Action inconnue.', ['status' => 400]);
+            return new WP_Error('sb_invalid_action', 'Action inconnue.', ['status' => 400]);
         }
 
         $payload = 'decide|' . $id . '|' . $action;
@@ -2553,7 +2553,7 @@ final class DecisionController
 
     private function wrapHtml(string $inner): string
     {
-        $title = esc_html__('Décision RDV', 'trinity-booking');
+        $title = esc_html__('Décision RDV', 'slashbooking');
         return <<<HTML
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><title>{$title}</title>
 <style>body{font-family:system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 16px;color:#111}</style>
@@ -2568,13 +2568,13 @@ HTML;
 Dans `src/Http/RestRouter.php`, à la fin de `registerRoutes()` :
 
 ```php
-$confirmUC = new \Trinity\Booking\Booking\ConfirmBooking(
+$confirmUC = new \Slash\Booking\Booking\ConfirmBooking(
     find: fn (int $id) => $bookings->findById($id),
-    persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+    persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
 );
-$rejectUC = new \Trinity\Booking\Booking\RejectBooking(
+$rejectUC = new \Slash\Booking\Booking\RejectBooking(
     find: fn (int $id) => $bookings->findById($id),
-    persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+    persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
 );
 (new DecisionController($signer, $confirmUC, $rejectUC))->registerRoutes();
 ```
@@ -2598,7 +2598,7 @@ git commit -m "feat(http): DecisionController for HMAC confirm/reject email butt
 - Modify: `src/Deactivator.php` (no-op pour V1 — caps restent sur les rôles tant que le plugin est installé)
 - Create: `tests/Integration/CapabilitiesTest.php`
 
-Caps : `trinity_booking_manage` (admins), `trinity_booking_view` (admins).
+Caps : `slashbooking_manage` (admins), `slashbooking_view` (admins).
 
 - [ ] **Step 1 : Test**
 
@@ -2606,9 +2606,9 @@ Caps : `trinity_booking_manage` (admins), `trinity_booking_view` (admins).
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
-use Trinity\Booking\Activator;
+use Slash\Booking\Activator;
 use WP_UnitTestCase;
 
 final class CapabilitiesTest extends WP_UnitTestCase
@@ -2618,8 +2618,8 @@ final class CapabilitiesTest extends WP_UnitTestCase
         Activator::activate();
         $role = get_role('administrator');
         self::assertNotNull($role);
-        self::assertTrue($role->has_cap('trinity_booking_manage'));
-        self::assertTrue($role->has_cap('trinity_booking_view'));
+        self::assertTrue($role->has_cap('slashbooking_manage'));
+        self::assertTrue($role->has_cap('slashbooking_view'));
     }
 }
 ```
@@ -2632,12 +2632,12 @@ final class CapabilitiesTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Admin;
+namespace Slash\Booking\Admin;
 
 final class Capabilities
 {
-    public const MANAGE = 'trinity_booking_manage';
-    public const VIEW   = 'trinity_booking_view';
+    public const MANAGE = 'slashbooking_manage';
+    public const VIEW   = 'slashbooking_view';
 
     public static function install(): void
     {
@@ -2680,7 +2680,7 @@ self::seedMailTemplates(); // anticipation Task 21
 composer test:integration -- --filter CapabilitiesTest
 composer stan
 git add src/Admin/Capabilities.php src/Activator.php tests/Integration/CapabilitiesTest.php
-git commit -m "feat(admin): seed trinity_booking_manage/view caps on admin role"
+git commit -m "feat(admin): seed slashbooking_manage/view caps on admin role"
 ```
 
 ---
@@ -2699,7 +2699,7 @@ Endpoints :
 - `POST /admin/bookings/{id}/reject`
 - `POST /admin/bookings/{id}/cancel`
 
-Auth : `current_user_can('trinity_booking_manage')` + nonce X-WP-Nonce.
+Auth : `current_user_can('slashbooking_manage')` + nonce X-WP-Nonce.
 
 - [ ] **Step 1 : Étendre `BookingRepository` avec `paginate()`**
 
@@ -2762,15 +2762,15 @@ public function paginate(array $filters, int $page, int $perPage): array
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
@@ -2786,7 +2786,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
     public function test_list_requires_capability(): void
     {
         wp_set_current_user(0); // anonymous
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/admin/bookings');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/admin/bookings');
         self::assertSame(401, rest_do_request($r)->get_status());
     }
 
@@ -2796,7 +2796,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
         wp_set_current_user($userId);
         $this->seed(3);
 
-        $r = new WP_REST_Request('GET', '/trinity-booking/v1/admin/bookings');
+        $r = new WP_REST_Request('GET', '/slashbooking/v1/admin/bookings');
         $r->set_query_params(['per_page' => 2]);
         $resp = rest_do_request($r);
         self::assertSame(200, $resp->get_status());
@@ -2811,7 +2811,7 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
         wp_set_current_user($userId);
         $b = $this->seed(1)[0];
 
-        $r = new WP_REST_Request('POST', '/trinity-booking/v1/admin/bookings/' . $b->id() . '/confirm');
+        $r = new WP_REST_Request('POST', '/slashbooking/v1/admin/bookings/' . $b->id() . '/confirm');
         $resp = rest_do_request($r);
         self::assertSame(200, $resp->get_status());
 
@@ -2855,18 +2855,18 @@ final class AdminBookingControllerTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Booking\CancelBooking;
-use Trinity\Booking\Booking\ConfirmBooking;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Booking\RejectBooking;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Booking\CancelBooking;
+use Slash\Booking\Booking\ConfirmBooking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Booking\RejectBooking;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -2912,7 +2912,7 @@ final class AdminBookingController
     public function permission(): bool|WP_Error
     {
         if (!current_user_can(Capabilities::MANAGE)) {
-            return new WP_Error('tb_forbidden', 'Forbidden', ['status' => is_user_logged_in() ? 403 : 401]);
+            return new WP_Error('sb_forbidden', 'Forbidden', ['status' => is_user_logged_in() ? 403 : 401]);
         }
         return true;
     }
@@ -2960,9 +2960,9 @@ final class AdminBookingController
                     break;
             }
         } catch (BookingNotFound $e) {
-            return new WP_Error('tb_not_found', 'Booking not found.', ['status' => 404]);
+            return new WP_Error('sb_not_found', 'Booking not found.', ['status' => 404]);
         } catch (\DomainException $e) {
-            return new WP_Error('tb_invalid_transition', $e->getMessage(), ['status' => 409]);
+            return new WP_Error('sb_invalid_transition', $e->getMessage(), ['status' => 409]);
         }
         $refreshed = $this->bookings->findById($id);
         return new WP_REST_Response(self::serialize($refreshed));
@@ -3013,9 +3013,9 @@ final class AdminBookingController
 À la fin de `RestRouter::registerRoutes()` :
 
 ```php
-$cancelUC = new \Trinity\Booking\Booking\CancelBooking(
+$cancelUC = new \Slash\Booking\Booking\CancelBooking(
     find: fn (string $uid) => $bookings->findByPublicUid($uid),
-    persist: fn (\Trinity\Booking\Domain\Booking $b) => $bookings->save($b),
+    persist: fn (\Slash\Booking\Domain\Booking $b) => $bookings->save($b),
 );
 
 (new AdminBookingController($bookings, $confirmUC, $rejectUC, $cancelUC))->registerRoutes();
@@ -3041,7 +3041,7 @@ git commit -m "feat(http): AdminBookingController list + confirm/reject/cancel"
 - Modify: `src/Deactivator.php` (unschedule cron)
 - Modify: `src/Persistence/BookingRepository.php` (`findRemindersDue`, `markReminderSent`)
 
-Cron WP quotidien `tb_send_daily_reminders` à 10h fuseau site → sélectionne bookings `confirmed` dont `starts_at_utc ∈ [now+23h, now+25h]` et `reminder_sent_at IS NULL`, marque envoyé et émet `trinity_booking/booking_reminder_due`.
+Cron WP quotidien `sb_send_daily_reminders` à 10h fuseau site → sélectionne bookings `confirmed` dont `starts_at_utc ∈ [now+23h, now+25h]` et `reminder_sent_at IS NULL`, marque envoyé et émet `slashbooking/booking_reminder_due`.
 
 - [ ] **Step 1 : Étendre `BookingRepository`**
 
@@ -3084,15 +3084,15 @@ public function markReminderSent(int $bookingId, DateTimeImmutable $atUtc): void
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Notifications\ReminderScheduler;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Notifications\ReminderScheduler;
+use Slash\Booking\Persistence\BookingRepository;
 use WP_UnitTestCase;
 
 final class ReminderSchedulerTest extends WP_UnitTestCase
@@ -3121,7 +3121,7 @@ final class ReminderSchedulerTest extends WP_UnitTestCase
         $repo->save($b);
 
         $fired = [];
-        add_action('trinity_booking/booking_reminder_due', static function (int $id) use (&$fired): void {
+        add_action('slashbooking/booking_reminder_due', static function (int $id) use (&$fired): void {
             $fired[] = $id;
         });
 
@@ -3142,15 +3142,15 @@ final class ReminderSchedulerTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\BookingRepository;
 
 final class ReminderScheduler
 {
-    public const HOOK = 'tb_send_daily_reminders';
+    public const HOOK = 'sb_send_daily_reminders';
 
     public function __construct(private readonly BookingRepository $bookings)
     {
@@ -3174,7 +3174,7 @@ final class ReminderScheduler
             }
             // mark first to be anti-doublon under cron retry
             $this->bookings->markReminderSent($id, $now);
-            do_action('trinity_booking/booking_reminder_due', $id);
+            do_action('slashbooking/booking_reminder_due', $id);
         }
     }
 }
@@ -3185,8 +3185,8 @@ final class ReminderScheduler
 Dans `Activator::activate()` :
 
 ```php
-if (!wp_next_scheduled(\Trinity\Booking\Notifications\ReminderScheduler::HOOK)) {
-    wp_schedule_event(self::tomorrowAt10Utc(), 'daily', \Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+if (!wp_next_scheduled(\Slash\Booking\Notifications\ReminderScheduler::HOOK)) {
+    wp_schedule_event(self::tomorrowAt10Utc(), 'daily', \Slash\Booking\Notifications\ReminderScheduler::HOOK);
 }
 ```
 
@@ -3204,17 +3204,17 @@ private static function tomorrowAt10Utc(): int
 - [ ] **Step 5 : Unschedule dans Deactivator**
 
 ```php
-$timestamp = wp_next_scheduled(\Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+$timestamp = wp_next_scheduled(\Slash\Booking\Notifications\ReminderScheduler::HOOK);
 if ($timestamp !== false) {
-    wp_unschedule_event($timestamp, \Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+    wp_unschedule_event($timestamp, \Slash\Booking\Notifications\ReminderScheduler::HOOK);
 }
 ```
 
 - [ ] **Step 6 : Brancher le scheduler dans `Plugin::register()`**
 
 ```php
-$reminder = new \Trinity\Booking\Notifications\ReminderScheduler(
-    new \Trinity\Booking\Persistence\BookingRepository($wpdb)
+$reminder = new \Slash\Booking\Notifications\ReminderScheduler(
+    new \Slash\Booking\Persistence\BookingRepository($wpdb)
 );
 $reminder->register();
 ```
@@ -3242,19 +3242,19 @@ Instancier `BookingNotifier` à `Plugin::register()` pour qu'il s'abonne aux hoo
 Après les lignes existantes, ajouter :
 
 ```php
-$signer  = new \Trinity\Booking\Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
-$urls    = new \Trinity\Booking\Http\UrlBuilder($signer, rest_url(self::REST_NAMESPACE));
+$signer  = new \Slash\Booking\Booking\DecisionTokenSigner((string) get_option('sb_decision_secret'));
+$urls    = new \Slash\Booking\Http\UrlBuilder($signer, rest_url(self::REST_NAMESPACE));
 
-$dispatcher = new \Trinity\Booking\Notifications\MailDispatcher(
-    new \Trinity\Booking\Persistence\MailTemplateRepository($wpdb),
-    new \Trinity\Booking\Notifications\TemplateRenderer(new \Trinity\Booking\Notifications\TagRegistry()),
-    new \Trinity\Booking\Notifications\TextBodyGenerator(),
-    new \Trinity\Booking\Notifications\IcsBuilder(),
+$dispatcher = new \Slash\Booking\Notifications\MailDispatcher(
+    new \Slash\Booking\Persistence\MailTemplateRepository($wpdb),
+    new \Slash\Booking\Notifications\TemplateRenderer(new \Slash\Booking\Notifications\TagRegistry()),
+    new \Slash\Booking\Notifications\TextBodyGenerator(),
+    new \Slash\Booking\Notifications\IcsBuilder(),
 );
 
-(new \Trinity\Booking\Notifications\BookingNotifier(
+(new \Slash\Booking\Notifications\BookingNotifier(
     $services,
-    new \Trinity\Booking\Persistence\BookingRepository($wpdb),
+    new \Slash\Booking\Persistence\BookingRepository($wpdb),
     $dispatcher,
     $urls,
 ))->register();
@@ -3286,7 +3286,7 @@ git commit -m "feat(plugin): boot BookingNotifier to wire mails to booking lifec
 **Files:**
 - Modify: `src/Activator.php`
 
-Décision : on **ne pré-remplit pas** la table `wp_tb_mail_templates` à l'activation. La table reste vide jusqu'à ce que l'admin sauvegarde une override depuis l'éditeur (livré en Plan 5). Le repository retourne déjà le défaut bundlé via `getOrDefault()`. → On supprime juste l'appel placeholder `seedMailTemplates()` ajouté en Task 17.
+Décision : on **ne pré-remplit pas** la table `wp_sb_mail_templates` à l'activation. La table reste vide jusqu'à ce que l'admin sauvegarde une override depuis l'éditeur (livré en Plan 5). Le repository retourne déjà le défaut bundlé via `getOrDefault()`. → On supprime juste l'appel placeholder `seedMailTemplates()` ajouté en Task 17.
 
 - [ ] **Step 1 : Retirer l'appel à `seedMailTemplates`** dans `Activator::activate()`.
 - [ ] **Step 2 : Lancer la suite complète**
@@ -3313,7 +3313,7 @@ git commit -m "chore(activator): no template seed — repository defaults bundle
 - Modify: `src/Plugin.php` (instancier et register)
 - Create: `tests/Integration/AdminMenuTest.php`
 
-Ajoute un menu top-level "Trinity Booking" → page "Réservations" (render container `<div id="tb-admin-app">`).
+Ajoute un menu top-level "SlashBooking" → page "Réservations" (render container `<div id="sb-admin-app">`).
 
 - [ ] **Step 1 : Test**
 
@@ -3321,9 +3321,9 @@ Ajoute un menu top-level "Trinity Booking" → page "Réservations" (render cont
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
-use Trinity\Booking\Activator;
+use Slash\Booking\Activator;
 use WP_UnitTestCase;
 
 final class AdminMenuTest extends WP_UnitTestCase
@@ -3339,7 +3339,7 @@ final class AdminMenuTest extends WP_UnitTestCase
 
         global $menu;
         $slugs = array_column($menu ?? [], 2);
-        self::assertContains('trinity-booking', $slugs);
+        self::assertContains('slashbooking', $slugs);
     }
 }
 ```
@@ -3352,7 +3352,7 @@ final class AdminMenuTest extends WP_UnitTestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Admin;
+namespace Slash\Booking\Admin;
 
 final class AdminMenu
 {
@@ -3364,10 +3364,10 @@ final class AdminMenu
     public function addMenu(): void
     {
         add_menu_page(
-            page_title: __('Trinity Booking', 'trinity-booking'),
-            menu_title: __('Trinity Booking', 'trinity-booking'),
+            page_title: __('SlashBooking', 'slashbooking'),
+            menu_title: __('SlashBooking', 'slashbooking'),
             capability: Capabilities::VIEW,
-            menu_slug:  'trinity-booking',
+            menu_slug:  'slashbooking',
             callback:   [$this, 'render'],
             icon_url:   'dashicons-calendar-alt',
             position:   25,
@@ -3376,8 +3376,8 @@ final class AdminMenu
 
     public function render(): void
     {
-        echo '<div class="wrap"><h1>' . esc_html__('Trinity Booking', 'trinity-booking') . '</h1>';
-        echo '<div id="tb-admin-app"></div></div>';
+        echo '<div class="wrap"><h1>' . esc_html__('SlashBooking', 'slashbooking') . '</h1>';
+        echo '<div id="sb-admin-app"></div></div>';
     }
 }
 ```
@@ -3385,7 +3385,7 @@ final class AdminMenu
 - [ ] **Step 4 : Brancher dans `Plugin::register`**
 
 ```php
-(new \Trinity\Booking\Admin\AdminMenu())->register();
+(new \Slash\Booking\Admin\AdminMenu())->register();
 ```
 
 - [ ] **Step 5 : Vert + commit**
@@ -3413,9 +3413,9 @@ L'enqueue se fera **seulement** sur la page admin du plugin. On lit `assets/dist
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Admin;
+namespace Slash\Booking\Admin;
 
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 
 final class Assets
 {
@@ -3430,7 +3430,7 @@ final class Assets
 
     public function enqueue(string $hook): void
     {
-        if ($hook !== 'toplevel_page_trinity-booking') {
+        if ($hook !== 'toplevel_page_slashbooking') {
             return;
         }
         $dir = $this->plugin->pluginDir();
@@ -3444,7 +3444,7 @@ final class Assets
         $asset = require $assetFile;
 
         wp_enqueue_script(
-            'trinity-booking-admin',
+            'slashbooking-admin',
             $url . 'assets/dist/admin.js',
             $asset['dependencies'],
             $asset['version'],
@@ -3452,13 +3452,13 @@ final class Assets
         );
 
         wp_enqueue_style(
-            'trinity-booking-admin',
+            'slashbooking-admin',
             $url . 'assets/dist/admin.css',
             ['wp-components'],
             $asset['version'],
         );
 
-        wp_localize_script('trinity-booking-admin', 'TrinityBooking', [
+        wp_localize_script('slashbooking-admin', 'TrinityBooking', [
             'restUrl' => esc_url_raw(rest_url(Plugin::REST_NAMESPACE)),
             'nonce'   => wp_create_nonce('wp_rest'),
         ]);
@@ -3469,7 +3469,7 @@ final class Assets
 - [ ] **Step 2 : Brancher dans `Plugin::register`**
 
 ```php
-(new \Trinity\Booking\Admin\Assets($this))->register();
+(new \Slash\Booking\Admin\Assets($this))->register();
 ```
 
 - [ ] **Step 3 : Commit (test viendra avec le build npm)**
@@ -3493,10 +3493,10 @@ git commit -m "feat(admin): enqueue React SPA on plugin admin page"
 
 ```json
 {
-  "name": "trinity-booking-admin",
+  "name": "slashbooking-admin",
   "version": "0.2.0",
   "private": true,
-  "description": "Admin SPA for trinity-booking",
+  "description": "Admin SPA for slashbooking",
   "scripts": {
     "build": "wp-scripts build --webpack-src-dir=src/Admin/react-app/src --output-path=assets/dist --webpack-no-externals=false src/Admin/react-app/src/index.jsx",
     "start": "wp-scripts start --webpack-src-dir=src/Admin/react-app/src --output-path=assets/dist src/Admin/react-app/src/index.jsx",
@@ -3521,7 +3521,7 @@ assets/dist/
 import { createRoot } from '@wordpress/element';
 import App from './App';
 
-const mount = document.getElementById('tb-admin-app');
+const mount = document.getElementById('sb-admin-app');
 if (mount) {
     createRoot(mount).render(<App />);
 }
@@ -3536,9 +3536,9 @@ import BookingsPage from './BookingsPage';
 
 export default function App() {
     return (
-        <div className="tb-admin">
+        <div className="sb-admin">
             <Notice status="info" isDismissible={ false }>
-                { __( 'Trinity Booking — dashboard V1', 'trinity-booking' ) }
+                { __( 'SlashBooking — dashboard V1', 'slashbooking' ) }
             </Notice>
             <BookingsPage />
         </div>
@@ -3611,11 +3611,11 @@ import BookingRow from './BookingRow';
 setupApi();
 
 const STATUSES = [
-    { value: '',          label: __( 'Tous statuts', 'trinity-booking' ) },
-    { value: 'pending',   label: __( 'En attente',   'trinity-booking' ) },
-    { value: 'confirmed', label: __( 'Confirmés',    'trinity-booking' ) },
-    { value: 'rejected',  label: __( 'Refusés',      'trinity-booking' ) },
-    { value: 'cancelled', label: __( 'Annulés',      'trinity-booking' ) },
+    { value: '',          label: __( 'Tous statuts', 'slashbooking' ) },
+    { value: 'pending',   label: __( 'En attente',   'slashbooking' ) },
+    { value: 'confirmed', label: __( 'Confirmés',    'slashbooking' ) },
+    { value: 'rejected',  label: __( 'Refusés',      'slashbooking' ) },
+    { value: 'cancelled', label: __( 'Annulés',      'slashbooking' ) },
 ];
 
 export default function BookingsPage() {
@@ -3656,10 +3656,10 @@ export default function BookingsPage() {
     };
 
     return (
-        <section className="tb-bookings">
-            <div className="tb-bookings__toolbar">
+        <section className="sb-bookings">
+            <div className="sb-bookings__toolbar">
                 <SelectControl
-                    label={ __( 'Statut', 'trinity-booking' ) }
+                    label={ __( 'Statut', 'slashbooking' ) }
                     value={ status }
                     options={ STATUSES }
                     onChange={ ( v ) => { setPage( 1 ); setStatus( v ); } }
@@ -3672,16 +3672,16 @@ export default function BookingsPage() {
                 <table className="widefat striped">
                     <thead>
                         <tr>
-                            <th>{ __( 'Date',    'trinity-booking' ) }</th>
-                            <th>{ __( 'Service', 'trinity-booking' ) }</th>
-                            <th>{ __( 'Client',  'trinity-booking' ) }</th>
-                            <th>{ __( 'Statut',  'trinity-booking' ) }</th>
-                            <th>{ __( 'Actions', 'trinity-booking' ) }</th>
+                            <th>{ __( 'Date',    'slashbooking' ) }</th>
+                            <th>{ __( 'Service', 'slashbooking' ) }</th>
+                            <th>{ __( 'Client',  'slashbooking' ) }</th>
+                            <th>{ __( 'Statut',  'slashbooking' ) }</th>
+                            <th>{ __( 'Actions', 'slashbooking' ) }</th>
                         </tr>
                     </thead>
                     <tbody>
                         { items.length === 0 && (
-                            <tr><td colSpan={ 5 }>{ __( 'Aucun RDV.', 'trinity-booking' ) }</td></tr>
+                            <tr><td colSpan={ 5 }>{ __( 'Aucun RDV.', 'slashbooking' ) }</td></tr>
                         ) }
                         { items.map( ( b ) => (
                             <BookingRow key={ b.id } booking={ b } onAct={ onAct } />
@@ -3690,13 +3690,13 @@ export default function BookingsPage() {
                 </table>
             ) }
 
-            <div className="tb-bookings__pager">
+            <div className="sb-bookings__pager">
                 <Button disabled={ page <= 1 } onClick={ () => setPage( page - 1 ) }>
-                    { __( 'Précédent', 'trinity-booking' ) }
+                    { __( 'Précédent', 'slashbooking' ) }
                 </Button>
-                <span> { __( 'Page', 'trinity-booking' ) } { page } / { Math.max( 1, Math.ceil( total / 20 ) ) } </span>
+                <span> { __( 'Page', 'slashbooking' ) } { page } / { Math.max( 1, Math.ceil( total / 20 ) ) } </span>
                 <Button disabled={ page * 20 >= total } onClick={ () => setPage( page + 1 ) }>
-                    { __( 'Suivant', 'trinity-booking' ) }
+                    { __( 'Suivant', 'slashbooking' ) }
                 </Button>
             </div>
         </section>
@@ -3721,11 +3721,11 @@ function fmt( iso, tz ) {
 }
 
 const STATUS_LABELS = {
-    pending:   __( 'En attente', 'trinity-booking' ),
-    confirmed: __( 'Confirmé',   'trinity-booking' ),
-    rejected:  __( 'Refusé',     'trinity-booking' ),
-    cancelled: __( 'Annulé',     'trinity-booking' ),
-    completed: __( 'Passé',      'trinity-booking' ),
+    pending:   __( 'En attente', 'slashbooking' ),
+    confirmed: __( 'Confirmé',   'slashbooking' ),
+    rejected:  __( 'Refusé',     'slashbooking' ),
+    cancelled: __( 'Annulé',     'slashbooking' ),
+    completed: __( 'Passé',      'slashbooking' ),
 };
 
 export default function BookingRow( { booking, onAct } ) {
@@ -3742,13 +3742,13 @@ export default function BookingRow( { booking, onAct } ) {
             <td>
                 { s === 'pending' && (
                     <>
-                        <Button variant="primary"   onClick={ () => onAct( booking.id, 'confirm' ) }>{ __( 'Confirmer', 'trinity-booking' ) }</Button>{ ' ' }
-                        <Button variant="secondary" onClick={ () => onAct( booking.id, 'reject'  ) }>{ __( 'Refuser',   'trinity-booking' ) }</Button>{ ' ' }
+                        <Button variant="primary"   onClick={ () => onAct( booking.id, 'confirm' ) }>{ __( 'Confirmer', 'slashbooking' ) }</Button>{ ' ' }
+                        <Button variant="secondary" onClick={ () => onAct( booking.id, 'reject'  ) }>{ __( 'Refuser',   'slashbooking' ) }</Button>{ ' ' }
                     </>
                 ) }
                 { ( s === 'pending' || s === 'confirmed' ) && (
                     <Button isDestructive variant="tertiary" onClick={ () => onAct( booking.id, 'cancel' ) }>
-                        { __( 'Annuler', 'trinity-booking' ) }
+                        { __( 'Annuler', 'slashbooking' ) }
                     </Button>
                 ) }
             </td>
@@ -3760,31 +3760,31 @@ export default function BookingRow( { booking, onAct } ) {
 - [ ] **Step 3 : `styles.scss`**
 
 ```scss
-.tb-admin {
+.sb-admin {
     margin-top: 16px;
 }
-.tb-bookings__toolbar {
+.sb-bookings__toolbar {
     display: flex;
     gap: 16px;
     align-items: flex-end;
     margin-bottom: 16px;
 }
-.tb-bookings__pager {
+.sb-bookings__pager {
     margin-top: 16px;
     display: flex;
     align-items: center;
     gap: 12px;
 }
-.tb-status {
+.sb-status {
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 12px;
     background: #eee;
 }
-.tb-status--pending   { background: #fef3c7; color: #92400e; }
-.tb-status--confirmed { background: #dcfce7; color: #166534; }
-.tb-status--rejected  { background: #fee2e2; color: #991b1b; }
-.tb-status--cancelled { background: #e5e7eb; color: #374151; }
+.sb-status--pending   { background: #fef3c7; color: #92400e; }
+.sb-status--confirmed { background: #dcfce7; color: #166534; }
+.sb-status--rejected  { background: #fee2e2; color: #991b1b; }
+.sb-status--cancelled { background: #e5e7eb; color: #374151; }
 ```
 
 - [ ] **Step 4 : Importer SCSS depuis `index.jsx`**
@@ -3796,7 +3796,7 @@ import './styles.scss';
 import { createRoot } from '@wordpress/element';
 import App from './App';
 
-const mount = document.getElementById('tb-admin-app');
+const mount = document.getElementById('sb-admin-app');
 if (mount) {
     createRoot(mount).render(<App />);
 }
@@ -3813,7 +3813,7 @@ Vérifier que `assets/dist/admin.js`, `admin.css`, `admin.asset.php` sont créé
 - [ ] **Step 6 : Test manuel**
 
 1. Lancer WP en local avec `composer install` + plugin activé.
-2. Aller dans le menu "Trinity Booking".
+2. Aller dans le menu "SlashBooking".
 3. Créer un booking via `POST /bookings`, voir la liste se charger.
 4. Cliquer Confirmer → vérifier transition + e-mail (Mailhog/Mailtrap recommandé).
 
@@ -3934,7 +3934,7 @@ npm install && npm run build
 composer test && composer test:integration && composer stan
 ```
 
-Activer le plugin, créer un booking via `POST /wp-json/trinity-booking/v1/bookings`, vérifier l'e-mail client + admin, cliquer "Confirmer" dans l'e-mail, vérifier la transition + l'e-mail confirmé avec `.ics`, vérifier dans le dashboard.
+Activer le plugin, créer un booking via `POST /wp-json/slashbooking/v1/bookings`, vérifier l'e-mail client + admin, cliquer "Confirmer" dans l'e-mail, vérifier la transition + l'e-mail confirmé avec `.ics`, vérifier dans le dashboard.
 
 ---
 
@@ -3944,7 +3944,7 @@ Activer le plugin, créer un booking via `POST /wp-json/trinity-booking/v1/booki
 - PHPStan niveau 8 : 0 erreur.
 - PHPCS : 0 erreur.
 - Front : `npm run build` produit `assets/dist/admin.{js,css,asset.php}` sans erreur ; `npm run lint:js` clean.
-- Côté manuel : créer un booking → 2 e-mails partent ; clic Confirmer → transition + e-mail `.ics` ; clic Refuser → transition + e-mail "désolé" ; dashboard admin affiche la liste avec filtres et actions ; reminder J-1 envoie un mail si on déclenche `wp cron event run tb_send_daily_reminders`.
+- Côté manuel : créer un booking → 2 e-mails partent ; clic Confirmer → transition + e-mail `.ics` ; clic Refuser → transition + e-mail "désolé" ; dashboard admin affiche la liste avec filtres et actions ; reminder J-1 envoie un mail si on déclenche `wp cron event run sb_send_daily_reminders`.
 
 ---
 
@@ -3968,10 +3968,10 @@ Activer le plugin, créer un booking via `POST /wp-json/trinity-booking/v1/booki
 - `BookingRepository::paginate(filters, page, perPage)` retourne `{items,total,page,per_page}` — clé `per_page` (snake_case) utilisée côté React.
 
 **Hooks WP nommés :**
-- `trinity_booking/booking_created`
-- `trinity_booking/booking_confirmed`
-- `trinity_booking/booking_rejected`
-- `trinity_booking/booking_cancelled`
-- `trinity_booking/booking_reminder_due`
+- `slashbooking/booking_created`
+- `slashbooking/booking_confirmed`
+- `slashbooking/booking_rejected`
+- `slashbooking/booking_cancelled`
+- `slashbooking/booking_reminder_due`
 
 Utilisés exactement à l'identique dans les use cases (Task 15) et `BookingNotifier::register` (Task 14).

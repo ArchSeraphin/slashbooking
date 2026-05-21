@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Admin;
+namespace Slash\Booking\Admin;
 
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 
 final class Assets
 {
@@ -18,7 +18,7 @@ final class Assets
 
     public function enqueue(string $hook): void
     {
-        if ($hook !== 'toplevel_page_trinity-booking') {
+        if ($hook !== 'toplevel_page_slashbooking') {
             return;
         }
         $dir = $this->plugin->pluginDir();
@@ -33,7 +33,7 @@ final class Assets
         $asset = require $assetFile;
 
         wp_enqueue_script(
-            'trinity-booking-admin',
+            'slashbooking-admin',
             $url . 'assets/dist/index.jsx.js',
             $asset['dependencies'],
             $asset['version'],
@@ -41,13 +41,13 @@ final class Assets
         );
 
         wp_enqueue_style(
-            'trinity-booking-admin',
+            'slashbooking-admin',
             $url . 'assets/dist/index.jsx.css',
             ['wp-components'],
             $asset['version'],
         );
 
-        wp_localize_script('trinity-booking-admin', 'TrinityBooking', [
+        wp_localize_script('slashbooking-admin', 'SlashBooking', [
             'restUrl' => esc_url_raw(rest_url(Plugin::REST_NAMESPACE)),
             'nonce'   => wp_create_nonce('wp_rest'),
             'version' => Plugin::VERSION,

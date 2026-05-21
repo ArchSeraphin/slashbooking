@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
 
 /**
  * @phpstan-type TokenResponse array{
@@ -16,7 +16,7 @@ use Trinity\Booking\Google\Exceptions\OAuthFailure;
  */
 final class OAuthClient
 {
-    public const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+    public const SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
     private const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
     private const AUTH_ENDPOINT  = 'https://accounts.google.com/o/oauth2/v2/auth';
 

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Privacy\EmailMasker;
+use Slash\Booking\Privacy\EmailMasker;
 
 final class EmailMaskerTest extends TestCase
 {

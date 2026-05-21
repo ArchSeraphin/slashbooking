@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications\Events;
+namespace Slash\Booking\Notifications\Events;
 
 enum EventKey: string
 {

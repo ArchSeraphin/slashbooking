@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** Trinity Booking
+**Project:** SlashBooking
 **Generated:** 2026-05-20 22:10:46
 **Category:** Beauty/Spa/Wellness Service
 

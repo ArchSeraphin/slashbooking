@@ -1,4 +1,4 @@
-# trinity-booking — Plan 5 : Polish V1 (templates editor + RGPD + i18n + packaging)
+# slashbooking — Plan 5 : Polish V1 (templates editor + RGPD + i18n + packaging)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -6,15 +6,15 @@
 
 **Architecture:**
 
-- **Build/packaging.** Ajout de `humbug/php-scoper` en dev dep, fichier `scoper.inc.php` avec prefix `Trinity\Booking\Vendor`. Script `bin/build-release.sh` qui produit un ZIP `trinity-booking-<version>.zip` (composer no-dev + npm build + scoping vendor + src + checksum). Le code source `src/` n'est jamais modifié manuellement — c'est PHP-Scoper qui réécrit `Google\` et `GuzzleHttp\` en `Trinity\Booking\Vendor\Google\` / `Trinity\Booking\Vendor\GuzzleHttp\` à la phase build.
-- **i18n.** `make-pot` via `wp-cli` génère `languages/trinity-booking.pot`. On stub `trinity-booking-fr_FR.po/.mo` (la majorité des chaînes admin est déjà en français : on traduit les chaînes _techniques_ et de fallback EN). `Plugin::register()` charge `load_plugin_textdomain('trinity-booking', false, 'trinity-booking/languages')`.
-- **RGPD.** Deux nouvelles classes `Privacy/BookingExporter` et `Privacy/BookingEraser`, branchées sur les hooks `wp_privacy_personal_data_exporters` / `_erasers`. Eraser anonymise via hash SHA-256 court du `customer_email` (conserve l'agrégat). Nouvelle option WP `tb_legal_page_id` (page de mentions légales) exposée par REST et rendue dans le shortcode public via lien sous la case de consentement. Sync log : vérification du masquage e-mail (`a***@d***`) déjà mis en place Plan 3, audit + correctif si besoin. Nouveau cron `tb/purge_old_bookings` mensuel (rétention par défaut 3 ans après `ends_at_utc`, configurable via option `tb_booking_retention_days`).
+- **Build/packaging.** Ajout de `humbug/php-scoper` en dev dep, fichier `scoper.inc.php` avec prefix `Slash\Booking\Vendor`. Script `bin/build-release.sh` qui produit un ZIP `slashbooking-<version>.zip` (composer no-dev + npm build + scoping vendor + src + checksum). Le code source `src/` n'est jamais modifié manuellement — c'est PHP-Scoper qui réécrit `Google\` et `GuzzleHttp\` en `Slash\Booking\Vendor\Google\` / `Slash\Booking\Vendor\GuzzleHttp\` à la phase build.
+- **i18n.** `make-pot` via `wp-cli` génère `languages/slashbooking.pot`. On stub `slashbooking-fr_FR.po/.mo` (la majorité des chaînes admin est déjà en français : on traduit les chaînes _techniques_ et de fallback EN). `Plugin::register()` charge `load_plugin_textdomain('slashbooking', false, 'slashbooking/languages')`.
+- **RGPD.** Deux nouvelles classes `Privacy/BookingExporter` et `Privacy/BookingEraser`, branchées sur les hooks `wp_privacy_personal_data_exporters` / `_erasers`. Eraser anonymise via hash SHA-256 court du `customer_email` (conserve l'agrégat). Nouvelle option WP `sb_legal_page_id` (page de mentions légales) exposée par REST et rendue dans le shortcode public via lien sous la case de consentement. Sync log : vérification du masquage e-mail (`a***@d***`) déjà mis en place Plan 3, audit + correctif si besoin. Nouveau cron `sb/purge_old_bookings` mensuel (rétention par défaut 3 ans après `ends_at_utc`, configurable via option `sb_booking_retention_days`).
 - **Templates editor.** Backend : `Http/AdminMailTemplateController` (GET liste, GET/POST/DELETE par event_key, POST preview, POST test) + `Http/TagRegistryController` (GET catégories + tags). Frontend : `TemplatesPage.jsx` (liste des 6 templates avec badges custom/default), `TemplateEditor.jsx` (split-pane : CodeMirror HTML à gauche, preview à droite, bouton "Insérer un tag" en dropdown groupé, bouton "Envoyer un test", bouton "Restaurer le défaut"). Le preview est rendu **côté serveur** via le contrôleur (POST `/preview`) pour réutiliser `TemplateRenderer` et garantir parité d'exécution avec le vrai envoi.
-- **Documentation & version.** `README.md` final avec walkthrough Google Cloud Console + capture d'écran SPA (placeholder) + section troubleshooting. `CHANGELOG.md` rétrospectif sur les commits Plans 1–5. Version `Plugin::VERSION` bump `0.1.0-dev → 1.0.0-rc1` au démarrage puis `→ 1.0.0` à la fin du plan, header `trinity-booking.php` synchronisé.
+- **Documentation & version.** `README.md` final avec walkthrough Google Cloud Console + capture d'écran SPA (placeholder) + section troubleshooting. `CHANGELOG.md` rétrospectif sur les commits Plans 1–5. Version `Plugin::VERSION` bump `0.1.0-dev → 1.0.0-rc1` au démarrage puis `→ 1.0.0` à la fin du plan, header `slashbooking.php` synchronisé.
 
 **Tech Stack:** PHP 8.1+, WordPress 6.5+, `humbug/php-scoper ^0.18` (dev), `wp-cli` (dev local), `@uiw/react-codemirror ^4.x` + `@codemirror/lang-html ^6.x` (SPA), Action Scheduler v3.x (pour le cron de purge), PHPStan 2.x, PHPUnit 10 + Brain Monkey.
 
-**Spec source:** `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`, sections 2 (templates + RGPD), 8 (templates e-mail + tags + éditeur admin), 9 (sécurité), 10 (RGPD complet), 13 (i18n), 14 (installation + packaging), 15 (risque #1 = conflit namespaces vendors), 17 (étape 5 = polish, i18n, RGPD, tests E2E, packaging).
+**Spec source:** `docs/superpowers/specs/2026-05-19-slashbooking-design.md`, sections 2 (templates + RGPD), 8 (templates e-mail + tags + éditeur admin), 9 (sécurité), 10 (RGPD complet), 13 (i18n), 14 (installation + packaging), 15 (risque #1 = conflit namespaces vendors), 17 (étape 5 = polish, i18n, RGPD, tests E2E, packaging).
 
 ---
 
@@ -22,19 +22,19 @@
 
 À lire avant d'attaquer les tâches. Beaucoup de décisions tooling sont contre-intuitives ; les ignorer reproduira des erreurs déjà faites Plan 3-4.
 
-1. **PHP-Scoper réécrit le namespace `Google\…` en `Trinity\Booking\Vendor\Google\…` à la phase build.** Le code source `src/` continue d'écrire `use Google\Client`. À la phase release, PHP-Scoper passe sur **tout le projet** (`src/` + `vendor/`) et produit une copie réécrite dans `build/dist/`. Notre code `vendor/` dev reste original — ça nous évite de devoir maintenir deux chaînes d'imports. Les tests unitaires tournent contre `vendor/` non-prefixé (puisqu'on n'a qu'une seule copie de Google sur la machine de dev).
+1. **PHP-Scoper réécrit le namespace `Google\…` en `Slash\Booking\Vendor\Google\…` à la phase build.** Le code source `src/` continue d'écrire `use Google\Client`. À la phase release, PHP-Scoper passe sur **tout le projet** (`src/` + `vendor/`) et produit une copie réécrite dans `build/dist/`. Notre code `vendor/` dev reste original — ça nous évite de devoir maintenir deux chaînes d'imports. Les tests unitaires tournent contre `vendor/` non-prefixé (puisqu'on n'a qu'une seule copie de Google sur la machine de dev).
 
 2. **`scoper.inc.php` est le centre de gravité du packaging.** Il déclare le `prefix`, les `finders` (quels fichiers scoper), les `exclude-namespaces` (WordPress, PSR-3, etc. doivent rester globaux), les `exclude-classes` (`wpdb` etc.), les `exclude-functions` (`__`, `esc_html`…), et un `patchers` callback pour les cas spéciaux du SDK Google (ex. `Google\Service\Calendar::SCOPES` constant string). Référence pratique : [https://github.com/humbug/php-scoper#configuration](https://github.com/humbug/php-scoper#configuration).
 
-3. **Le ZIP de release ne contient PAS `vendor/` non-scopé.** Il contient `vendor-prefixed/` produit par scoper + `assets/dist/` (build npm) + `src/` réécrit par scoper + `languages/` + `composer.json` (sans `require-dev`, pour info) + `trinity-booking.php` + `uninstall.php` + `README.md` + `CHANGELOG.md`. Pas de `node_modules/`, pas de `tests/`, pas de `bin/`, pas de `docs/`. Le `.gitignore` à la racine du plugin liste ces exclusions.
+3. **Le ZIP de release ne contient PAS `vendor/` non-scopé.** Il contient `vendor-prefixed/` produit par scoper + `assets/dist/` (build npm) + `src/` réécrit par scoper + `languages/` + `composer.json` (sans `require-dev`, pour info) + `slashbooking.php` + `uninstall.php` + `README.md` + `CHANGELOG.md`. Pas de `node_modules/`, pas de `tests/`, pas de `bin/`, pas de `docs/`. Le `.gitignore` à la racine du plugin liste ces exclusions.
 
-4. **i18n WordPress = 3 niveaux.** `__('texte', 'trinity-booking')` retourne la traduction (texte + text-domain). `_x('texte', 'context', 'trinity-booking')` pour les chaînes ambiguës (ex. "post" verbe vs nom). `_n('singulier', 'pluriel', $count, 'trinity-booking')` pour le pluriel. `esc_html__()` / `esc_attr__()` combinent traduction + échappement. **Notre code utilise déjà `__` partout** — ce plan n'ajoute pas de traductions, il génère le POT et le PO.
+4. **i18n WordPress = 3 niveaux.** `__('texte', 'slashbooking')` retourne la traduction (texte + text-domain). `_x('texte', 'context', 'slashbooking')` pour les chaînes ambiguës (ex. "post" verbe vs nom). `_n('singulier', 'pluriel', $count, 'slashbooking')` pour le pluriel. `esc_html__()` / `esc_attr__()` combinent traduction + échappement. **Notre code utilise déjà `__` partout** — ce plan n'ajoute pas de traductions, il génère le POT et le PO.
 
-5. **`wp i18n make-pot` est la commande de référence pour générer le POT.** Elle scanne `src/` + le JSX buildé (assets/dist) ET les fichiers JSX sources si on lui passe `--include="src/Admin/react-app/**.jsx"`. Pour récupérer correctement les chaînes JS, on lui demande aussi `--allow-root` en local Docker. Output : `languages/trinity-booking.pot` UTF-8 avec headers `Project-Id-Version`, `Last-Translator`, etc.
+5. **`wp i18n make-pot` est la commande de référence pour générer le POT.** Elle scanne `src/` + le JSX buildé (assets/dist) ET les fichiers JSX sources si on lui passe `--include="src/Admin/react-app/**.jsx"`. Pour récupérer correctement les chaînes JS, on lui demande aussi `--allow-root` en local Docker. Output : `languages/slashbooking.pot` UTF-8 avec headers `Project-Id-Version`, `Last-Translator`, etc.
 
-6. **`fr_FR.po` peut être quasi-identique au POT.** Notre interface admin est déjà rédigée en français (cf. `__('Réservations', 'trinity-booking')` dans `App.jsx`). Le POT contient ces chaînes comme `msgid` ; `fr_FR.po` les recopie comme `msgstr` (identité). C'est légal et utile : ça « confirme » la traduction française et permet de désynchroniser un jour si on change le code source en anglais.
+6. **`fr_FR.po` peut être quasi-identique au POT.** Notre interface admin est déjà rédigée en français (cf. `__('Réservations', 'slashbooking')` dans `App.jsx`). Le POT contient ces chaînes comme `msgid` ; `fr_FR.po` les recopie comme `msgstr` (identité). C'est légal et utile : ça « confirme » la traduction française et permet de désynchroniser un jour si on change le code source en anglais.
 
-7. **`load_plugin_textdomain` au hook `init`.** Le bon hook est `init` (priorité 0 par défaut). On enregistre via `add_action('init', ...)` dans `Plugin::register()`. Plus tôt (ex. `plugins_loaded`) ne fonctionne pas pour les chaînes utilisées dans des hooks `init` eux-mêmes. Le path est relatif à `WP_PLUGIN_DIR` : `trinity-booking/languages`.
+7. **`load_plugin_textdomain` au hook `init`.** Le bon hook est `init` (priorité 0 par défaut). On enregistre via `add_action('init', ...)` dans `Plugin::register()`. Plus tôt (ex. `plugins_loaded`) ne fonctionne pas pour les chaînes utilisées dans des hooks `init` eux-mêmes. Le path est relatif à `WP_PLUGIN_DIR` : `slashbooking/languages`.
 
 8. **Privacy Exporter WordPress = fonction qui retourne `[ 'data' => [...], 'done' => bool ]`.** Voir `wp-admin/includes/class-wp-personal-data-exporter.php`. On enregistre via filter `wp_privacy_personal_data_exporters`. L'admin va dans **Outils → Exporter les données personnelles**, saisit un e-mail, WP appelle notre callback avec `( $email, $page = 1 )`. On retourne tous les bookings matchant `customer_email`, formatés en `group_id`, `group_label`, `item_id`, `data` (paires `name / value`).
 
@@ -42,7 +42,7 @@
 
 10. **`customer_email` masqué dans `sync_log` = `a***@d***` (premier caractère + `***` + premier caractère domaine + `***`).** Spec §10. Audit Plan 5 : vérifier que `BookingNotifier`, `PushEventJob`, `SyncEngine` n'insèrent jamais d'e-mail brut dans le payload du sync log. Si trouvé → corriger via un helper `Privacy\EmailMasker::mask($email): string`.
 
-11. **Rétention bookings = 3 ans par défaut, configurable.** Cron mensuel `tb/purge_old_bookings` (run le 1er de chaque mois à 03:30 timezone site). Sélectionne `bookings WHERE ends_at_utc < NOW() - INTERVAL X DAY AND status IN ('completed','cancelled','rejected')`. **N'efface pas les `confirmed` futurs**. Option WP `tb_booking_retention_days` (défaut 1095). Hard delete (pas anonymisation — c'est déjà rétention légale RGPD : on supprime).
+11. **Rétention bookings = 3 ans par défaut, configurable.** Cron mensuel `sb/purge_old_bookings` (run le 1er de chaque mois à 03:30 timezone site). Sélectionne `bookings WHERE ends_at_utc < NOW() - INTERVAL X DAY AND status IN ('completed','cancelled','rejected')`. **N'efface pas les `confirmed` futurs**. Option WP `sb_booking_retention_days` (défaut 1095). Hard delete (pas anonymisation — c'est déjà rétention légale RGPD : on supprime).
 
 12. **CodeMirror 6 via `@uiw/react-codemirror`.** Package wrapper React stable. `import CodeMirror from '@uiw/react-codemirror'; import { html } from '@codemirror/lang-html';`. Composant : `<CodeMirror value={html} extensions={[html()]} onChange={setHtml} />`. Hauteur réglée via prop `height="400px"`. **Important :** ces deux paquets pèsent ~80 KB minified — c'est acceptable pour de l'admin (pas le front public). Le bundle SPA passe d'~80 KB à ~160 KB.
 
@@ -64,11 +64,11 @@
 
 21. **PHPStan 2.x reste à `treatPhpDocTypesAsCertain: false`.** On ne change pas la config héritée du Plan 4. Si scoper introduit des classes prefixées que PHPStan ne reconnaît pas, on ajoute `excludePaths` ou `ignoreErrors` ciblés — mais en pratique PHPStan tourne sur `src/` (non-scopé) et `vendor/szepeviktor/phpstan-wordpress` (déjà non-scopé) donc rien à changer.
 
-22. **Pas de modification du modèle de données SQL en Plan 5.** Aucune migration. Le schéma `wp_tb_mail_templates` existe déjà (Plan 2). Si on doit toucher le schéma, c'est qu'on est en train de prendre une mauvaise décision.
+22. **Pas de modification du modèle de données SQL en Plan 5.** Aucune migration. Le schéma `wp_sb_mail_templates` existe déjà (Plan 2). Si on doit toucher le schéma, c'est qu'on est en train de prendre une mauvaise décision.
 
-23. **Capability requise pour tous les nouveaux endpoints `/admin/mail-templates/*` et `/admin/tags` : `trinity_booking_manage`.** Comme Plan 3/4. Nonce vérifié automatiquement par `@wordpress/api-fetch` (middleware déjà câblé `setupApi()`).
+23. **Capability requise pour tous les nouveaux endpoints `/admin/mail-templates/*` et `/admin/tags` : `slashbooking_manage`.** Comme Plan 3/4. Nonce vérifié automatiquement par `@wordpress/api-fetch` (middleware déjà câblé `setupApi()`).
 
-24. **Le ZIP de release est versionné dans le nom.** `trinity-booking-1.0.0.zip`. Pas de `-rc1`/`-rc2` traînant en `Plugin::VERSION` à la fin du plan. La toute dernière tâche du plan bump à `1.0.0` (sans suffixe) ; juste avant elle, on est en `1.0.0-rc1`.
+24. **Le ZIP de release est versionné dans le nom.** `slashbooking-1.0.0.zip`. Pas de `-rc1`/`-rc2` traînant en `Plugin::VERSION` à la fin du plan. La toute dernière tâche du plan bump à `1.0.0` (sans suffixe) ; juste avant elle, on est en `1.0.0-rc1`.
 
 25. **Pas de tag git automatique.** Le tag `v1.0.0` est manuel après validation finale. Le plan crée le commit "release: v1.0.0" mais ne lance pas `git tag`. L'utilisateur (Nicolas) le fait depuis la CLI quand il valide.
 
@@ -78,7 +78,7 @@
 
 ```
 plugins-booking/
-├── trinity-booking.php                          # MODIFY — version 0.1.0-dev → 1.0.0-rc1 → 1.0.0
+├── slashbooking.php                          # MODIFY — version 0.1.0-dev → 1.0.0-rc1 → 1.0.0
 ├── composer.json                                # MODIFY — add humbug/php-scoper ^0.18 dev dep
 ├── composer.lock                                # AUTO — composer update
 ├── package.json                                 # MODIFY — add @uiw/react-codemirror + @codemirror/lang-html
@@ -90,18 +90,18 @@ plugins-booking/
 ├── bin/
 │   └── build-release.sh                         # CREATE — script bash : composer + npm + scoper + zip
 ├── languages/
-│   ├── trinity-booking.pot                      # CREATE — généré par wp i18n make-pot
-│   ├── trinity-booking-fr_FR.po                 # CREATE — traduction française (souvent identité)
-│   └── trinity-booking-fr_FR.mo                 # AUTO — généré par msgfmt
+│   ├── slashbooking.pot                      # CREATE — généré par wp i18n make-pot
+│   ├── slashbooking-fr_FR.po                 # CREATE — traduction française (souvent identité)
+│   └── slashbooking-fr_FR.mo                 # AUTO — généré par msgfmt
 ├── src/
 │   ├── Plugin.php                               # MODIFY — load_plugin_textdomain + register Privacy + register AdminMailTemplate routes + register cron purge
-│   ├── Activator.php                            # MODIFY — schedule tb/purge_old_bookings cron mensuel
-│   ├── Deactivator.php                          # MODIFY — unschedule tb/purge_old_bookings
+│   ├── Activator.php                            # MODIFY — schedule sb/purge_old_bookings cron mensuel
+│   ├── Deactivator.php                          # MODIFY — unschedule sb/purge_old_bookings
 │   ├── Privacy/
 │   │   ├── BookingExporter.php                  # CREATE — wp_privacy_personal_data_exporters
 │   │   ├── BookingEraser.php                    # CREATE — wp_privacy_personal_data_erasers (anonymisation)
 │   │   ├── EmailMasker.php                      # CREATE — helper masquage e-mail dans logs ("a***@d***")
-│   │   └── BookingRetentionPurger.php           # CREATE — handler cron tb/purge_old_bookings (3y default)
+│   │   └── BookingRetentionPurger.php           # CREATE — handler cron sb/purge_old_bookings (3y default)
 │   ├── Persistence/
 │   │   └── BookingRepository.php                # MODIFY — anonymizeByEmail + deleteOlderThan helpers
 │   ├── Notifications/
@@ -135,7 +135,7 @@ plugins-booking/
 │       ├── AdminMailTemplateControllerTest.php   # CREATE — couvre GET/POST/DELETE/preview/test
 │       └── TagRegistryControllerTest.php         # CREATE
 └── docs/superpowers/plans/
-    └── 2026-05-20-trinity-booking-plan-5-polish-packaging.md   # ce fichier
+    └── 2026-05-20-slashbooking-plan-5-polish-packaging.md   # ce fichier
 ```
 
 Récap fichiers créés : **15** ; fichiers modifiés : **12** ; tests ajoutés : **6**.
@@ -147,12 +147,12 @@ Récap fichiers créés : **15** ; fichiers modifiés : **12** ; tests ajoutés 
 On commence par marquer l'entrée dans le cycle release-candidate. La constante `Plugin::VERSION` est référencée par les `wp_enqueue_*` (cache-busting CSS/JS), par les User-Agent HTTP, par le header plugin. Tout en un commit.
 
 **Files:**
-- Modify: `trinity-booking.php`
+- Modify: `slashbooking.php`
 - Modify: `src/Plugin.php`
 - Modify: `package.json`
 - Modify: `README.md`
 
-- [ ] **Step 1 : Modifier `trinity-booking.php`**
+- [ ] **Step 1 : Modifier `slashbooking.php`**
 
 Remplacer la ligne `Version: 0.1.0-dev` :
 
@@ -185,7 +185,7 @@ Remplacer la section "Statut" en haut du fichier :
 
 - ✅ **Plan 1** — fondations + parcours de réservation public minimal fonctionnel.
 - ✅ **Plan 2** — notifications e-mail (6 events + templates + .ics) + validation admin (HMAC e-mail + dashboard React).
-- ✅ **Plan 3** — Google OAuth + push WP → GCal via Action Scheduler (chiffrement sodium, journal de sync, `wp trinity-booking doctor`).
+- ✅ **Plan 3** — Google OAuth + push WP → GCal via Action Scheduler (chiffrement sodium, journal de sync, `wp slashbooking doctor`).
 - ✅ **Plan 4** — webhook + pull GCal → WP (SyncEngine + WatchChannelManager + crons + SPA diagnostics).
 - 🚧 **Plan 5** (en cours) — éditeur de templates + RGPD + i18n + packaging V1.
 
@@ -205,7 +205,7 @@ Attendu : 117 tests OK + PHPStan clean (rien ne dépend littéralement de `0.1.0
 - [ ] **Step 6 : Commit**
 
 ```bash
-git add trinity-booking.php src/Plugin.php package.json README.md
+git add slashbooking.php src/Plugin.php package.json README.md
 git commit -m "chore: bump version to 1.0.0-rc1 — start Plan 5"
 ```
 
@@ -236,7 +236,7 @@ declare(strict_types=1);
 use Isolated\Symfony\Component\Finder\Finder;
 
 return [
-    'prefix' => 'Trinity\\Booking\\Vendor',
+    'prefix' => 'Slash\\Booking\\Vendor',
 
     'finders' => [
         // 1) Tout le code source du plugin.
@@ -280,7 +280,7 @@ return [
     // Ne PAS prefixer ces namespaces : ils restent globaux.
     'exclude-namespaces' => [
         // WordPress n'a pas de namespace formel, mais on protège les classes globales connues.
-        'Trinity\\Booking',          // notre code à nous, jamais préfixé
+        'Slash\\Booking',          // notre code à nous, jamais préfixé
         'PHPUnit',
         'Composer',
         'Symfony\\Polyfill',         // polyfills doivent rester globaux
@@ -378,13 +378,13 @@ Le dryrun sort un répertoire `/tmp/scoper-dryrun/` avec `src/` + sous-arbres `v
 head -20 /tmp/scoper-dryrun/src/Google/PushEventJob.php
 ```
 
-Attendu : ligne `use Trinity\Booking\Vendor\Google\Client;` au lieu de `use Google\Client;`.
+Attendu : ligne `use Slash\Booking\Vendor\Google\Client;` au lieu de `use Google\Client;`.
 
 ```bash
 head -20 /tmp/scoper-dryrun/vendor/google/apiclient/src/Client.php
 ```
 
-Attendu : `namespace Trinity\Booking\Vendor\Google;`.
+Attendu : `namespace Slash\Booking\Vendor\Google;`.
 
 Si le dryrun produit ces deux résultats → la config est correcte. Sinon, ajuster les `finders` ou les `patchers` jusqu'à obtention.
 
@@ -446,13 +446,13 @@ Note : `src/Admin/react-app` (sources JSX) est exclu — le ZIP n'embarque que `
 
 ```bash
 #!/usr/bin/env bash
-# Build a distribution ZIP for trinity-booking.
+# Build a distribution ZIP for slashbooking.
 # Usage: bin/build-release.sh [version]
 #        version defaults to the value read from src/Plugin.php
 
 set -euo pipefail
 
-PLUGIN_SLUG="trinity-booking"
+PLUGIN_SLUG="slashbooking"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build"
 STAGING_DIR="${BUILD_DIR}/${PLUGIN_SLUG}"
@@ -480,7 +480,7 @@ echo "→ npm run build (SPA assets)"
 (cd "${ROOT_DIR}" && npm ci --silent && npm run build --silent)
 
 # 4. Run PHP-Scoper to produce scoped src/ + vendor/
-echo "→ php-scoper (prefix Trinity\\Booking\\Vendor)"
+echo "→ php-scoper (prefix Slash\\Booking\\Vendor)"
 # Re-install dev to get php-scoper binary
 (cd "${ROOT_DIR}" && composer install --quiet)
 (cd "${ROOT_DIR}" && vendor/bin/php-scoper add-prefix \
@@ -506,7 +506,7 @@ file_put_contents('${SCOPED_DIR}/composer.json', json_encode(\$j, JSON_PRETTY_PR
 echo "→ staging files into ${STAGING_DIR}"
 cp -R "${SCOPED_DIR}/src" "${STAGING_DIR}/src"
 cp -R "${SCOPED_DIR}/vendor" "${STAGING_DIR}/vendor"
-cp "${ROOT_DIR}/trinity-booking.php" "${STAGING_DIR}/trinity-booking.php"
+cp "${ROOT_DIR}/slashbooking.php" "${STAGING_DIR}/slashbooking.php"
 cp "${ROOT_DIR}/uninstall.php" "${STAGING_DIR}/uninstall.php"
 cp "${ROOT_DIR}/README.md" "${STAGING_DIR}/README.md"
 cp "${ROOT_DIR}/CHANGELOG.md" "${STAGING_DIR}/CHANGELOG.md" 2>/dev/null || true
@@ -579,10 +579,10 @@ Exemple typique à corriger (chercher des occurrences similaires) :
 
 ```php
 // AVANT
-return new WP_Error('tb_service_not_found', 'Service introuvable', ['status' => 404]);
+return new WP_Error('sb_service_not_found', 'Service introuvable', ['status' => 404]);
 
 // APRÈS
-return new WP_Error('tb_service_not_found', __('Service introuvable', 'trinity-booking'), ['status' => 404]);
+return new WP_Error('sb_service_not_found', __('Service introuvable', 'slashbooking'), ['status' => 404]);
 ```
 
 Faire ce pass sur :
@@ -595,7 +595,7 @@ Faire ce pass sur :
 - `src/Http/AdminSyncLogController.php`
 - `src/Http/GoogleWebhookController.php`
 
-Pour chaque, repérer les littérales utilisateur (messages d'erreur, labels, etc.) — laisser les codes d'erreur techniques (`tb_service_not_found`) en l'état.
+Pour chaque, repérer les littérales utilisateur (messages d'erreur, labels, etc.) — laisser les codes d'erreur techniques (`sb_service_not_found`) en l'état.
 
 - [ ] **Step 3 : Grep des chaînes JSX**
 
@@ -604,7 +604,7 @@ grep -rn "['\"][A-ZÉÀÈÊÎÔÛ][^'\"]\{8,\}" src/Admin/react-app/src/ \
   | grep -v "__("
 ```
 
-Idem : toute chaîne user-facing doit être en `__('...', 'trinity-booking')`.
+Idem : toute chaîne user-facing doit être en `__('...', 'slashbooking')`.
 
 - [ ] **Step 4 : Lancer les tests pour valider qu'on n'a rien cassé**
 
@@ -626,12 +626,12 @@ Note : si l'audit ne trouve rien (tout est déjà wrappé) → pas de commit, pa
 
 ---
 
-## Task 5 : i18n — générer `languages/trinity-booking.pot`
+## Task 5 : i18n — générer `languages/slashbooking.pot`
 
 Le POT est le fichier modèle source pour toutes les traductions. Il liste les `msgid` (extraits du code) sans `msgstr`.
 
 **Files:**
-- Create: `languages/trinity-booking.pot`
+- Create: `languages/slashbooking.pot`
 
 - [ ] **Step 1 : Préreq — `wp-cli` disponible**
 
@@ -656,27 +656,27 @@ mkdir -p languages
 - [ ] **Step 3 : Générer le POT**
 
 ```bash
-wp i18n make-pot . languages/trinity-booking.pot \
-  --slug=trinity-booking \
-  --domain=trinity-booking \
-  --include="src/**/*.php,trinity-booking.php" \
+wp i18n make-pot . languages/slashbooking.pot \
+  --slug=slashbooking \
+  --domain=slashbooking \
+  --include="src/**/*.php,slashbooking.php" \
   --exclude="vendor,node_modules,build,tests,docs,assets/dist" \
-  --headers='{"Project-Id-Version":"Trinity Booking 1.0.0","Last-Translator":"Trinity <nicolas@voilavoila.tv>","Language-Team":"French <nicolas@voilavoila.tv>","Report-Msgid-Bugs-To":"https://github.com/trinity/booking/issues"}' \
+  --headers='{"Project-Id-Version":"SlashBooking 1.0.0","Last-Translator":"Trinity <nicolas@voilavoila.tv>","Language-Team":"French <nicolas@voilavoila.tv>","Report-Msgid-Bugs-To":"https://github.com/trinity/booking/issues"}' \
   --skip-audit
 ```
 
-Attendu : fichier `languages/trinity-booking.pot` créé avec ~150-250 entrées `msgid "..."`.
+Attendu : fichier `languages/slashbooking.pot` créé avec ~150-250 entrées `msgid "..."`.
 
 - [ ] **Step 4 : Vérifier le contenu du POT**
 
 ```bash
-head -30 languages/trinity-booking.pot
-wc -l languages/trinity-booking.pot
-grep -c "^msgid " languages/trinity-booking.pot
+head -30 languages/slashbooking.pot
+wc -l languages/slashbooking.pot
+grep -c "^msgid " languages/slashbooking.pot
 ```
 
 Attendu :
-- Header avec `Project-Id-Version: Trinity Booking 1.0.0` et `"Content-Type: text/plain; charset=UTF-8\n"`.
+- Header avec `Project-Id-Version: SlashBooking 1.0.0` et `"Content-Type: text/plain; charset=UTF-8\n"`.
 - Plus de 150 entrées msgid (premiere = `""` qui est le header).
 
 - [ ] **Step 5 : Aussi extraire les chaînes JSX**
@@ -685,19 +685,19 @@ Attendu :
 
 ```bash
 npm run build
-wp i18n make-pot . languages/trinity-booking.pot \
-  --slug=trinity-booking \
-  --domain=trinity-booking \
-  --include="src/**/*.php,trinity-booking.php,src/Admin/react-app/src/**/*.{js,jsx}" \
+wp i18n make-pot . languages/slashbooking.pot \
+  --slug=slashbooking \
+  --domain=slashbooking \
+  --include="src/**/*.php,slashbooking.php,src/Admin/react-app/src/**/*.{js,jsx}" \
   --exclude="vendor,node_modules,build,tests,docs" \
-  --headers='{"Project-Id-Version":"Trinity Booking 1.0.0","Last-Translator":"Trinity <nicolas@voilavoila.tv>","Language-Team":"French <nicolas@voilavoila.tv>","Report-Msgid-Bugs-To":"https://github.com/trinity/booking/issues"}' \
+  --headers='{"Project-Id-Version":"SlashBooking 1.0.0","Last-Translator":"Trinity <nicolas@voilavoila.tv>","Language-Team":"French <nicolas@voilavoila.tv>","Report-Msgid-Bugs-To":"https://github.com/trinity/booking/issues"}' \
   --skip-audit
 ```
 
 Vérifier ensuite que les chaînes JSX (ex. `'Réservations'`) apparaissent :
 
 ```bash
-grep "Réservations" languages/trinity-booking.pot
+grep "Réservations" languages/slashbooking.pot
 ```
 
 Attendu : au moins une ligne `msgid "Réservations"`.
@@ -705,8 +705,8 @@ Attendu : au moins une ligne `msgid "Réservations"`.
 - [ ] **Step 6 : Commit**
 
 ```bash
-git add languages/trinity-booking.pot
-git commit -m "i18n: generate languages/trinity-booking.pot"
+git add languages/slashbooking.pot
+git commit -m "i18n: generate languages/slashbooking.pot"
 ```
 
 ---
@@ -716,20 +716,20 @@ git commit -m "i18n: generate languages/trinity-booking.pot"
 On crée le fichier `fr_FR.po` (souvent identité avec le POT puisque les chaînes sont déjà en français) puis on compile en `.mo` et on charge le text domain dans `Plugin::register()`.
 
 **Files:**
-- Create: `languages/trinity-booking-fr_FR.po`
-- Create: `languages/trinity-booking-fr_FR.mo`
+- Create: `languages/slashbooking-fr_FR.po`
+- Create: `languages/slashbooking-fr_FR.mo`
 - Modify: `src/Plugin.php`
 
 - [ ] **Step 1 : Copier le POT en PO et ajuster les headers**
 
 ```bash
-cp languages/trinity-booking.pot languages/trinity-booking-fr_FR.po
+cp languages/slashbooking.pot languages/slashbooking-fr_FR.po
 ```
 
 Éditer ensuite le header du `fr_FR.po` :
 
 ```
-"Project-Id-Version: Trinity Booking 1.0.0\n"
+"Project-Id-Version: SlashBooking 1.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/trinity/booking/issues\n"
 "POT-Creation-Date: 2026-05-20T12:00:00+00:00\n"
 "PO-Revision-Date: 2026-05-20T12:00:00+00:00\n"
@@ -741,7 +741,7 @@ cp languages/trinity-booking.pot languages/trinity-booking-fr_FR.po
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: WP-CLI 2.x\n"
-"X-Domain: trinity-booking\n"
+"X-Domain: slashbooking\n"
 ```
 
 - [ ] **Step 2 : Remplir les `msgstr` identité-français**
@@ -751,7 +751,7 @@ Comme les chaînes source sont déjà en français, on peut faire un remplissage
 ```bash
 python3 - <<'PY'
 import re
-p = 'languages/trinity-booking-fr_FR.po'
+p = 'languages/slashbooking-fr_FR.po'
 with open(p) as f:
     s = f.read()
 def repl(m):
@@ -769,7 +769,7 @@ Attendu : presque toutes les entrées ont maintenant `msgstr "..."` égal à `ms
 - [ ] **Step 3 : Compiler en MO**
 
 ```bash
-msgfmt languages/trinity-booking-fr_FR.po -o languages/trinity-booking-fr_FR.mo
+msgfmt languages/slashbooking-fr_FR.po -o languages/slashbooking-fr_FR.mo
 ```
 
 Si `msgfmt` n'est pas installé : `brew install gettext` (macOS) ou `apt-get install gettext` (Linux).
@@ -777,7 +777,7 @@ Si `msgfmt` n'est pas installé : `brew install gettext` (macOS) ou `apt-get ins
 Vérifier :
 
 ```bash
-ls -la languages/trinity-booking-fr_FR.mo
+ls -la languages/slashbooking-fr_FR.mo
 ```
 
 Attendu : fichier binaire > 0 bytes.
@@ -791,9 +791,9 @@ private function register(): void
 {
     add_action('init', static function (): void {
         load_plugin_textdomain(
-            'trinity-booking',
+            'slashbooking',
             false,
-            'trinity-booking/languages'
+            'slashbooking/languages'
         );
     }, 0);
 
@@ -807,7 +807,7 @@ php -r "
 require 'vendor/autoload.php';
 // Simuler WP avec le minimum
 require_once 'tests/bootstrap.php';
-echo __('Réservations', 'trinity-booking');
+echo __('Réservations', 'slashbooking');
 "
 ```
 
@@ -845,10 +845,10 @@ Helper pur (sans dépendance WP) qui masque un e-mail pour les logs. Utilisé en
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Privacy\EmailMasker;
+use Slash\Booking\Privacy\EmailMasker;
 
 final class EmailMaskerTest extends TestCase
 {
@@ -888,7 +888,7 @@ final class EmailMaskerTest extends TestCase
 composer test -- --filter EmailMaskerTest
 ```
 
-Attendu : `Class Trinity\Booking\Privacy\EmailMasker not found`.
+Attendu : `Class Slash\Booking\Privacy\EmailMasker not found`.
 
 - [ ] **Step 3 : Implémentation `src/Privacy/EmailMasker.php`**
 
@@ -896,7 +896,7 @@ Attendu : `Class Trinity\Booking\Privacy\EmailMasker not found`.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 final class EmailMasker
 {
@@ -979,7 +979,7 @@ $this->syncLog->append(
 );
 
 // APRÈS
-use Trinity\Booking\Privacy\EmailMasker;
+use Slash\Booking\Privacy\EmailMasker;
 // ...
 $this->syncLog->append(
     'info', 'internal', 'booking', $bookingId, null,
@@ -1034,15 +1034,15 @@ Export des données personnelles d'un client matchant une adresse e-mail. Branch
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Privacy\BookingExporter;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Privacy\BookingExporter;
 
 final class BookingExporterTest extends TestCase
 {
@@ -1057,7 +1057,7 @@ final class BookingExporterTest extends TestCase
 
         $this->assertTrue($result['done']);
         $this->assertCount(1, $result['data']);
-        $this->assertSame('trinity-booking', $result['data'][0]['group_id']);
+        $this->assertSame('slashbooking', $result['data'][0]['group_id']);
         $this->assertSame((string) $booking->id(), $result['data'][0]['item_id']);
         $fields = array_column($result['data'][0]['data'], 'value', 'name');
         $this->assertSame('Alice Martin', $fields['Nom']);
@@ -1102,7 +1102,7 @@ final class BookingExporterTest extends TestCase
 composer test -- --filter BookingExporterTest
 ```
 
-Attendu : `Class Trinity\Booking\Privacy\BookingExporter not found`.
+Attendu : `Class Slash\Booking\Privacy\BookingExporter not found`.
 
 - [ ] **Step 3 : Implémentation `src/Privacy/BookingExporter.php`**
 
@@ -1110,10 +1110,10 @@ Attendu : `Class Trinity\Booking\Privacy\BookingExporter not found`.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 use Closure;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Domain\Booking;
 
 final class BookingExporter
 {
@@ -1133,18 +1133,18 @@ final class BookingExporter
         $data = [];
         foreach ($bookings as $b) {
             $data[] = [
-                'group_id'    => 'trinity-booking',
-                'group_label' => __('Réservations Trinity Booking', 'trinity-booking'),
+                'group_id'    => 'slashbooking',
+                'group_label' => __('Réservations SlashBooking', 'slashbooking'),
                 'item_id'     => (string) ($b->id() ?? 0),
                 'data'        => [
-                    ['name' => __('Nom', 'trinity-booking'),     'value' => $b->customerName()],
-                    ['name' => __('E-mail', 'trinity-booking'),  'value' => $b->customerEmail()],
-                    ['name' => __('Téléphone', 'trinity-booking'),'value' => $b->customerPhone()],
-                    ['name' => __('Adresse', 'trinity-booking'), 'value' => $b->customerAddress()],
-                    ['name' => __('Notes', 'trinity-booking'),   'value' => $b->notes()],
-                    ['name' => __('Statut', 'trinity-booking'),  'value' => $b->status()->value],
-                    ['name' => __('Date du RDV', 'trinity-booking'), 'value' => $b->slot()->start->format('Y-m-d H:i')],
-                    ['name' => __('Fuseau', 'trinity-booking'),  'value' => $b->timezone()],
+                    ['name' => __('Nom', 'slashbooking'),     'value' => $b->customerName()],
+                    ['name' => __('E-mail', 'slashbooking'),  'value' => $b->customerEmail()],
+                    ['name' => __('Téléphone', 'slashbooking'),'value' => $b->customerPhone()],
+                    ['name' => __('Adresse', 'slashbooking'), 'value' => $b->customerAddress()],
+                    ['name' => __('Notes', 'slashbooking'),   'value' => $b->notes()],
+                    ['name' => __('Statut', 'slashbooking'),  'value' => $b->status()->value],
+                    ['name' => __('Date du RDV', 'slashbooking'), 'value' => $b->slot()->start->format('Y-m-d H:i')],
+                    ['name' => __('Fuseau', 'slashbooking'),  'value' => $b->timezone()],
                 ],
             ];
         }
@@ -1220,10 +1220,10 @@ Anonymise les bookings d'un client (sans hard delete) pour rester conforme RGPD 
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Privacy\BookingEraser;
+use Slash\Booking\Privacy\BookingEraser;
 
 final class BookingEraserTest extends TestCase
 {
@@ -1271,7 +1271,7 @@ composer test -- --filter BookingEraserTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 use Closure;
 
@@ -1295,7 +1295,7 @@ final class BookingEraser
             ? [
                 sprintf(
                     /* translators: %d: number of bookings anonymized */
-                    __('Trinity Booking : %d réservation(s) anonymisée(s) (les agrégats sont conservés).', 'trinity-booking'),
+                    __('SlashBooking : %d réservation(s) anonymisée(s) (les agrégats sont conservés).', 'slashbooking'),
                     $count
                 ),
             ]
@@ -1377,7 +1377,7 @@ git commit -m "feat(privacy): BookingEraser anonymizes booking PII via SHA-256 h
 
 ## Task 11 : RGPD — branchement WP des exporters/erasers + option mentions légales
 
-On câble les hooks WP et on ajoute l'option `tb_legal_page_id` consommée par le shortcode.
+On câble les hooks WP et on ajoute l'option `sb_legal_page_id` consommée par le shortcode.
 
 **Files:**
 - Modify: `src/Plugin.php` — register Privacy + filters
@@ -1393,10 +1393,10 @@ Décision : on ajoute la persistance `legal_page_id` au controller `AdminGoogleS
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -1422,12 +1422,12 @@ final class AdminSettingsController
 
     public function read(): WP_REST_Response
     {
-        $legalId = (int) get_option('tb_legal_page_id', 0);
+        $legalId = (int) get_option('sb_legal_page_id', 0);
         $url     = $legalId > 0 ? (string) get_permalink($legalId) : '';
         return new WP_REST_Response([
             'legal_page_id'         => $legalId,
             'legal_url'             => $url,
-            'booking_retention_days' => (int) get_option('tb_booking_retention_days', 1095),
+            'booking_retention_days' => (int) get_option('sb_booking_retention_days', 1095),
         ], 200);
     }
 
@@ -1436,9 +1436,9 @@ final class AdminSettingsController
         $legalId = (int) $req->get_param('legal_page_id');
         $retention = (int) $req->get_param('booking_retention_days');
 
-        update_option('tb_legal_page_id', max(0, $legalId), false);
+        update_option('sb_legal_page_id', max(0, $legalId), false);
         if ($retention >= 30 && $retention <= 3650) {
-            update_option('tb_booking_retention_days', $retention, false);
+            update_option('sb_booking_retention_days', $retention, false);
         }
 
         return new WP_REST_Response(['saved' => true], 200);
@@ -1451,10 +1451,10 @@ final class AdminSettingsController
 Modifier la méthode `maybeEnqueue()`, dans le `wp_localize_script` :
 
 ```php
-$legalId  = (int) get_option('tb_legal_page_id', 0);
+$legalId  = (int) get_option('sb_legal_page_id', 0);
 $legalUrl = $legalId > 0 ? (string) get_permalink($legalId) : '';
 
-wp_localize_script('trinity-booking-public', 'TrinityBooking', [
+wp_localize_script('slashbooking-public', 'TrinityBooking', [
     'nonce'     => wp_create_nonce('wp_rest'),
     'locale'    => get_locale(),
     'legalUrl'  => $legalUrl,
@@ -1473,7 +1473,7 @@ if (legalUrl) {
     link.target = '_blank';
     link.rel = 'noopener';
     link.textContent = 'Mentions légales';
-    link.className = 'tb-legal-link';
+    link.className = 'sb-legal-link';
     // Inject after consent checkbox label
     consentLabel.appendChild(document.createTextNode(' — '));
     consentLabel.appendChild(link);
@@ -1496,8 +1496,8 @@ $exporter = new Privacy\BookingExporter(
     findByEmail: fn (string $email) => $bookings->findByCustomerEmail($email),
 );
 add_filter('wp_privacy_personal_data_exporters', static function (array $exporters) use ($exporter): array {
-    $exporters['trinity-booking'] = [
-        'exporter_friendly_name' => __('Trinity Booking', 'trinity-booking'),
+    $exporters['slashbooking'] = [
+        'exporter_friendly_name' => __('SlashBooking', 'slashbooking'),
         'callback'               => static fn (string $email, int $page = 1) => $exporter->export($email, $page),
     ];
     return $exporters;
@@ -1507,8 +1507,8 @@ $eraser = new Privacy\BookingEraser(
     anonymizeByEmail: fn (string $email) => $bookings->anonymizeByEmail($email),
 );
 add_filter('wp_privacy_personal_data_erasers', static function (array $erasers) use ($eraser): array {
-    $erasers['trinity-booking'] = [
-        'eraser_friendly_name' => __('Trinity Booking', 'trinity-booking'),
+    $erasers['slashbooking'] = [
+        'eraser_friendly_name' => __('SlashBooking', 'slashbooking'),
         'callback'             => static fn (string $email, int $page = 1) => $eraser->erase($email, $page),
     ];
     return $erasers;
@@ -1528,12 +1528,12 @@ composer stan
 
 ```bash
 git add src/Http/AdminSettingsController.php src/PublicFront/ src/Plugin.php
-git commit -m "feat(privacy): wire WP exporters/erasers + tb_legal_page_id option"
+git commit -m "feat(privacy): wire WP exporters/erasers + sb_legal_page_id option"
 ```
 
 ---
 
-## Task 12 : RGPD — cron mensuel `tb/purge_old_bookings`
+## Task 12 : RGPD — cron mensuel `sb/purge_old_bookings`
 
 Purge les bookings de plus de 3 ans (par défaut), statuts terminaux uniquement (`completed`, `cancelled`, `rejected`). Cron mensuel.
 
@@ -1541,7 +1541,7 @@ Purge les bookings de plus de 3 ans (par défaut), statuts terminaux uniquement 
 - Create: `src/Privacy/BookingRetentionPurger.php`
 - Create: `tests/Unit/Privacy/BookingRetentionPurgerTest.php`
 - Modify: `src/Persistence/BookingRepository.php` — ajouter `deleteOlderThan`
-- Modify: `src/Activator.php` — scheduler tb_purge_old_bookings
+- Modify: `src/Activator.php` — scheduler sb_purge_old_bookings
 - Modify: `src/Deactivator.php` — unscheduler
 - Modify: `src/Plugin.php` — register handler
 
@@ -1551,11 +1551,11 @@ Purge les bookings de plus de 3 ans (par défaut), statuts terminaux uniquement 
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Privacy;
+namespace Slash\Booking\Tests\Unit\Privacy;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Privacy\BookingRetentionPurger;
+use Slash\Booking\Privacy\BookingRetentionPurger;
 
 final class BookingRetentionPurgerTest extends TestCase
 {
@@ -1608,7 +1608,7 @@ composer test -- --filter BookingRetentionPurgerTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 use Closure;
 use DateInterval;
@@ -1617,7 +1617,7 @@ use DateTimeZone;
 
 final class BookingRetentionPurger
 {
-    public const HOOK = 'tb/purge_old_bookings';
+    public const HOOK = 'sb/purge_old_bookings';
 
     /**
      * @param Closure(DateTimeImmutable): int $deleteOlderThan returns count of deleted rows.
@@ -1637,12 +1637,12 @@ final class BookingRetentionPurger
 
     public static function fromOptions(): self
     {
-        $days = (int) (function_exists('get_option') ? get_option('tb_booking_retention_days', 1095) : 1095);
+        $days = (int) (function_exists('get_option') ? get_option('sb_booking_retention_days', 1095) : 1095);
         if ($days < 30) {
             $days = 30; // safety floor
         }
         global $wpdb;
-        $repo = new \Trinity\Booking\Persistence\BookingRepository($wpdb);
+        $repo = new \Slash\Booking\Persistence\BookingRepository($wpdb);
 
         return new self(
             retentionDays: $days,
@@ -1702,17 +1702,17 @@ Ajouter dans `activate()`, près des autres `wp_schedule_event` :
 ```php
 // Custom monthly interval (WP doesn't ship one by default).
 add_filter('cron_schedules', static function (array $s): array {
-    if (!isset($s['tb_monthly'])) {
-        $s['tb_monthly'] = [
+    if (!isset($s['sb_monthly'])) {
+        $s['sb_monthly'] = [
             'interval' => 2_592_000, // 30 days in seconds
-            'display'  => 'Once every 30 days (Trinity Booking)',
+            'display'  => 'Once every 30 days (SlashBooking)',
         ];
     }
     return $s;
 });
 
-if (!wp_next_scheduled(\Trinity\Booking\Privacy\BookingRetentionPurger::HOOK)) {
-    wp_schedule_event(self::firstDayNextMonthAt0330SiteTz(), 'tb_monthly', \Trinity\Booking\Privacy\BookingRetentionPurger::HOOK);
+if (!wp_next_scheduled(\Slash\Booking\Privacy\BookingRetentionPurger::HOOK)) {
+    wp_schedule_event(self::firstDayNextMonthAt0330SiteTz(), 'sb_monthly', \Slash\Booking\Privacy\BookingRetentionPurger::HOOK);
 }
 ```
 
@@ -1731,7 +1731,7 @@ private static function firstDayNextMonthAt0330SiteTz(): int
 Ajouter à `deactivate()` :
 
 ```php
-wp_clear_scheduled_hook(\Trinity\Booking\Privacy\BookingRetentionPurger::HOOK);
+wp_clear_scheduled_hook(\Slash\Booking\Privacy\BookingRetentionPurger::HOOK);
 ```
 
 - [ ] **Step 8 : Modifier `src/Plugin.php` — register handler**
@@ -1741,10 +1741,10 @@ Dans `Plugin::register()`, après les Privacy hooks (Task 11) :
 ```php
 // Cron interval must also be present at runtime, not just at activation.
 add_filter('cron_schedules', static function (array $s): array {
-    if (!isset($s['tb_monthly'])) {
-        $s['tb_monthly'] = [
+    if (!isset($s['sb_monthly'])) {
+        $s['sb_monthly'] = [
             'interval' => 2_592_000,
-            'display'  => 'Once every 30 days (Trinity Booking)',
+            'display'  => 'Once every 30 days (SlashBooking)',
         ];
     }
     return $s;
@@ -1764,7 +1764,7 @@ composer stan
 
 ```bash
 git add src/Privacy/BookingRetentionPurger.php tests/Unit/Privacy/BookingRetentionPurgerTest.php src/Persistence/BookingRepository.php src/Activator.php src/Deactivator.php src/Plugin.php
-git commit -m "feat(privacy): monthly tb/purge_old_bookings cron with 3y retention default"
+git commit -m "feat(privacy): monthly sb/purge_old_bookings cron with 3y retention default"
 ```
 
 ---
@@ -1845,13 +1845,13 @@ Endpoint `GET /admin/tags` qui renvoie les tags groupés par catégorie pour ali
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_REST_Request;
 use WP_REST_Server;
 use WP_UnitTestCase;
-use Trinity\Booking\Http\TagRegistryController;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Http\TagRegistryController;
+use Slash\Booking\Plugin;
 
 /** @group rest */
 final class TagRegistryControllerTest extends WP_UnitTestCase
@@ -1906,7 +1906,7 @@ final class TagRegistryControllerTest extends WP_UnitTestCase
 composer test:integration -- --filter TagRegistryControllerTest
 ```
 
-Attendu : `Class Trinity\Booking\Http\TagRegistryController not found` (ou suite ignorée si WP test suite absente — auquel cas tester via unit, voir Step 5).
+Attendu : `Class Slash\Booking\Http\TagRegistryController not found` (ou suite ignorée si WP test suite absente — auquel cas tester via unit, voir Step 5).
 
 - [ ] **Step 3 : Implémentation `src/Http/TagRegistryController.php`**
 
@@ -1914,11 +1914,11 @@ Attendu : `Class Trinity\Booking\Http\TagRegistryController not found` (ou suite
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Plugin;
 use WP_REST_Response;
 
 final class TagRegistryController
@@ -1957,10 +1957,10 @@ final class TagRegistryController
     private function categoryLabel(string $cat): string
     {
         return match ($cat) {
-            'customer'    => __('Client', 'trinity-booking'),
-            'appointment' => __('Rendez-vous', 'trinity-booking'),
-            'actions'     => __('Liens d\'action', 'trinity-booking'),
-            'site'        => __('Site', 'trinity-booking'),
+            'customer'    => __('Client', 'slashbooking'),
+            'appointment' => __('Rendez-vous', 'slashbooking'),
+            'actions'     => __('Liens d\'action', 'slashbooking'),
+            'site'        => __('Site', 'slashbooking'),
             default       => $cat,
         };
     }
@@ -1980,11 +1980,11 @@ composer test:integration -- --filter TagRegistryControllerTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Http;
+namespace Slash\Booking\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Http\TagRegistryController;
-use Trinity\Booking\Notifications\TagRegistry;
+use Slash\Booking\Http\TagRegistryController;
+use Slash\Booking\Notifications\TagRegistry;
 
 final class TagRegistryControllerTest extends TestCase
 {
@@ -2033,18 +2033,18 @@ Endpoints :
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_REST_Request;
 use WP_REST_Server;
 use WP_UnitTestCase;
-use Trinity\Booking\Http\AdminMailTemplateController;
-use Trinity\Booking\Notifications\DefaultTemplates;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Http\AdminMailTemplateController;
+use Slash\Booking\Notifications\DefaultTemplates;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Plugin;
 
 /** @group rest */
 final class AdminMailTemplateControllerTest extends WP_UnitTestCase
@@ -2190,17 +2190,17 @@ composer test:integration -- --filter AdminMailTemplateControllerTest
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Notifications\DefaultTemplates;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Notifications\DefaultTemplates;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -2284,7 +2284,7 @@ final class AdminMailTemplateController
         $enabled = (bool) $req->get_param('enabled');
 
         if (trim($subject) === '' || trim($html) === '') {
-            return new WP_Error('tb_invalid_template', __('Sujet et corps HTML obligatoires.', 'trinity-booking'), ['status' => 400]);
+            return new WP_Error('sb_invalid_template', __('Sujet et corps HTML obligatoires.', 'slashbooking'), ['status' => 400]);
         }
 
         $this->repo->save(
@@ -2351,7 +2351,7 @@ final class AdminMailTemplateController
         $raw = (string) $req->get_param('event_key');
         $key = EventKey::tryFrom($raw);
         if ($key === null) {
-            return new WP_Error('tb_unknown_event_key', __('Event key inconnue.', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_unknown_event_key', __('Event key inconnue.', 'slashbooking'), ['status' => 404]);
         }
         return $key;
     }
@@ -2423,17 +2423,17 @@ grep -n "registerRoutes\|new Admin\|new Public" src/Http/RestRouter.php
 
 ```php
 // --- Plan 5 : templates editor + settings ---
-$mailRepo   = new \Trinity\Booking\Persistence\MailTemplateRepository($wpdb);
-$tagRegistry = new \Trinity\Booking\Notifications\TagRegistry();
-$renderer   = new \Trinity\Booking\Notifications\TemplateRenderer($tagRegistry);
+$mailRepo   = new \Slash\Booking\Persistence\MailTemplateRepository($wpdb);
+$tagRegistry = new \Slash\Booking\Notifications\TagRegistry();
+$renderer   = new \Slash\Booking\Notifications\TemplateRenderer($tagRegistry);
 
 // MailDispatcher dépend de ces 3 — réutiliser l'instance déjà câblée Plan 2 si disponible
 // (DI léger : on récupère depuis Plugin::instance()->get() si set, sinon on instancie minimal).
 $dispatcher = $this->resolveMailDispatcher($renderer, $tagRegistry, $mailRepo);
 
-(new \Trinity\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
-(new \Trinity\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
-(new \Trinity\Booking\Http\AdminSettingsController())->registerRoutes();
+(new \Slash\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
+(new \Slash\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
+(new \Slash\Booking\Http\AdminSettingsController())->registerRoutes();
 ```
 
 - [ ] **Step 3 : Ajouter la méthode helper `resolveMailDispatcher`**
@@ -2442,18 +2442,18 @@ $dispatcher = $this->resolveMailDispatcher($renderer, $tagRegistry, $mailRepo);
 
 ```php
 private function resolveMailDispatcher(
-    \Trinity\Booking\Notifications\TemplateRenderer $renderer,
-    \Trinity\Booking\Notifications\TagRegistry $tags,
-    \Trinity\Booking\Persistence\MailTemplateRepository $repo,
-): \Trinity\Booking\Notifications\MailDispatcher {
+    \Slash\Booking\Notifications\TemplateRenderer $renderer,
+    \Slash\Booking\Notifications\TagRegistry $tags,
+    \Slash\Booking\Persistence\MailTemplateRepository $repo,
+): \Slash\Booking\Notifications\MailDispatcher {
     try {
-        return \Trinity\Booking\Plugin::instance()->get(\Trinity\Booking\Notifications\MailDispatcher::class);
+        return \Slash\Booking\Plugin::instance()->get(\Slash\Booking\Notifications\MailDispatcher::class);
     } catch (\RuntimeException) {
         global $wpdb;
-        $textGen = new \Trinity\Booking\Notifications\TextBodyGenerator();
-        $ics     = new \Trinity\Booking\Notifications\IcsBuilder();
-        $syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
-        return new \Trinity\Booking\Notifications\MailDispatcher(
+        $textGen = new \Slash\Booking\Notifications\TextBodyGenerator();
+        $ics     = new \Slash\Booking\Notifications\IcsBuilder();
+        $syncLog = new \Slash\Booking\Persistence\SyncLogRepository($wpdb);
+        return new \Slash\Booking\Notifications\MailDispatcher(
             repo: $repo,
             renderer: $renderer,
             textGen: $textGen,
@@ -2662,10 +2662,10 @@ export default function TemplatesPage() {
 	}
 
 	return (
-		<div className="tb-templates-page">
+		<div className="sb-templates-page">
 			<Card>
 				<CardHeader>
-					<h2>{ __( 'Templates e-mail', 'trinity-booking' ) }</h2>
+					<h2>{ __( 'Templates e-mail', 'slashbooking' ) }</h2>
 				</CardHeader>
 				<CardBody>
 					{ loading && <Spinner /> }
@@ -2678,9 +2678,9 @@ export default function TemplatesPage() {
 						<table className="widefat striped tb-templates-table">
 							<thead>
 								<tr>
-									<th>{ __( 'Évènement', 'trinity-booking' ) }</th>
-									<th>{ __( 'Sujet', 'trinity-booking' ) }</th>
-									<th>{ __( 'État', 'trinity-booking' ) }</th>
+									<th>{ __( 'Évènement', 'slashbooking' ) }</th>
+									<th>{ __( 'Sujet', 'slashbooking' ) }</th>
+									<th>{ __( 'État', 'slashbooking' ) }</th>
 									<th></th>
 								</tr>
 							</thead>
@@ -2699,12 +2699,12 @@ export default function TemplatesPage() {
 										<td>{ t.subject }</td>
 										<td>
 											{ t.is_custom ? (
-												<span className="tb-badge tb-badge-custom">
-													{ __( 'Personnalisé', 'trinity-booking' ) }
+												<span className="sb-badge tb-badge-custom">
+													{ __( 'Personnalisé', 'slashbooking' ) }
 												</span>
 											) : (
-												<span className="tb-badge tb-badge-default">
-													{ __( 'Défaut', 'trinity-booking' ) }
+												<span className="sb-badge tb-badge-default">
+													{ __( 'Défaut', 'slashbooking' ) }
 												</span>
 											) }
 										</td>
@@ -2713,7 +2713,7 @@ export default function TemplatesPage() {
 												variant="secondary"
 												onClick={ () => setSelected( t.event_key ) }
 											>
-												{ __( 'Modifier', 'trinity-booking' ) }
+												{ __( 'Modifier', 'slashbooking' ) }
 											</Button>
 										</td>
 									</tr>
@@ -2865,7 +2865,7 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 				enabled,
 			} );
 			setIsDirty( false );
-			setMessage( __( 'Template enregistré.', 'trinity-booking' ) );
+			setMessage( __( 'Template enregistré.', 'slashbooking' ) );
 			await load();
 		} catch ( e ) {
 			setError( e.message ?? String( e ) );
@@ -2876,12 +2876,12 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 
 	const restore = async () => {
 		// eslint-disable-next-line no-alert
-		if ( ! window.confirm( __( 'Restaurer le template par défaut ?', 'trinity-booking' ) ) ) {
+		if ( ! window.confirm( __( 'Restaurer le template par défaut ?', 'slashbooking' ) ) ) {
 			return;
 		}
 		try {
 			await restoreMailTemplate( eventKey );
-			setMessage( __( 'Template par défaut restauré.', 'trinity-booking' ) );
+			setMessage( __( 'Template par défaut restauré.', 'slashbooking' ) );
 			await load();
 		} catch ( e ) {
 			setError( e.message ?? String( e ) );
@@ -2893,8 +2893,8 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 			const r = await sendTestMailTemplate( eventKey, { subject, htmlBody } );
 			setMessage(
 				r.sent
-					? __( 'E-mail de test envoyé à : ', 'trinity-booking' ) + r.to
-					: __( 'Échec de l\'envoi du test.', 'trinity-booking' )
+					? __( 'E-mail de test envoyé à : ', 'slashbooking' ) + r.to
+					: __( 'Échec de l\'envoi du test.', 'slashbooking' )
 			);
 		} catch ( e ) {
 			setError( e.message ?? String( e ) );
@@ -2904,7 +2904,7 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 	const close = () => {
 		if ( isDirty ) {
 			// eslint-disable-next-line no-alert
-			if ( ! window.confirm( __( 'Modifications non sauvegardées, quitter ?', 'trinity-booking' ) ) ) {
+			if ( ! window.confirm( __( 'Modifications non sauvegardées, quitter ?', 'slashbooking' ) ) ) {
 				return;
 			}
 		}
@@ -2921,7 +2921,7 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 		);
 	}
 
-	const tagOptions = [ { label: __( '— Insérer un tag —', 'trinity-booking' ), value: '' } ];
+	const tagOptions = [ { label: __( '— Insérer un tag —', 'slashbooking' ), value: '' } ];
 	tagGroups.forEach( ( g ) => {
 		g.tags.forEach( ( t ) => {
 			tagOptions.push( {
@@ -2937,18 +2937,18 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 				<Flex>
 					<FlexItem>
 						<h2 style={ { margin: 0 } }>
-							{ __( 'Édition : ', 'trinity-booking' ) }
+							{ __( 'Édition : ', 'slashbooking' ) }
 							<code>{ eventKey }</code>
 							{ template?.is_custom && (
-								<span className="tb-badge tb-badge-custom" style={ { marginLeft: 8 } }>
-									{ __( 'Personnalisé', 'trinity-booking' ) }
+								<span className="sb-badge tb-badge-custom" style={ { marginLeft: 8 } }>
+									{ __( 'Personnalisé', 'slashbooking' ) }
 								</span>
 							) }
 						</h2>
 					</FlexItem>
 					<FlexItem>
 						<Button variant="tertiary" onClick={ close }>
-							← { __( 'Retour à la liste', 'trinity-booking' ) }
+							← { __( 'Retour à la liste', 'slashbooking' ) }
 						</Button>
 					</FlexItem>
 				</Flex>
@@ -2965,17 +2965,17 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 					</Notice>
 				) }
 
-				<div className="tb-template-split">
-					<div className="tb-template-edit">
+				<div className="sb-template-split">
+					<div className="sb-template-edit">
 						<TextControl
-							label={ __( 'Sujet de l\'e-mail', 'trinity-booking' ) }
+							label={ __( 'Sujet de l\'e-mail', 'slashbooking' ) }
 							value={ subject }
 							onChange={ onSubjectChange }
 						/>
 
-						<div className="tb-tag-picker">
+						<div className="sb-tag-picker">
 							<SelectControl
-								label={ __( 'Insérer un tag dans le corps HTML', 'trinity-booking' ) }
+								label={ __( 'Insérer un tag dans le corps HTML', 'slashbooking' ) }
 								options={ tagOptions }
 								value={ selectedTag }
 								onChange={ ( v ) => {
@@ -2985,10 +2985,10 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 							/>
 						</div>
 
-						<label className="tb-cm-label">
-							{ __( 'Corps HTML', 'trinity-booking' ) }
+						<label className="sb-cm-label">
+							{ __( 'Corps HTML', 'slashbooking' ) }
 						</label>
-						<div className="tb-codemirror-wrap" ref={ codeMirrorRef }>
+						<div className="sb-codemirror-wrap" ref={ codeMirrorRef }>
 							<CodeMirror
 								value={ htmlBody }
 								height="380px"
@@ -2998,40 +2998,40 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 						</div>
 
 						<TextareaControl
-							label={ __( 'Version texte (laisser vide pour génération auto)', 'trinity-booking' ) }
+							label={ __( 'Version texte (laisser vide pour génération auto)', 'slashbooking' ) }
 							value={ textBody }
 							onChange={ onTextChange }
 							rows={ 5 }
 						/>
 
-						<Flex gap={ 2 } className="tb-template-actions">
+						<Flex gap={ 2 } className="sb-template-actions">
 							<FlexItem>
 								<Button variant="primary" onClick={ save } isBusy={ saving } disabled={ ! isDirty || saving }>
-									{ __( 'Enregistrer', 'trinity-booking' ) }
+									{ __( 'Enregistrer', 'slashbooking' ) }
 								</Button>
 							</FlexItem>
 							<FlexItem>
 								<Button variant="secondary" onClick={ sendTest }>
-									{ __( 'Envoyer un test', 'trinity-booking' ) }
+									{ __( 'Envoyer un test', 'slashbooking' ) }
 								</Button>
 							</FlexItem>
 							<FlexItem>
 								<Button variant="tertiary" isDestructive onClick={ restore } disabled={ ! template?.is_custom }>
-									{ __( 'Restaurer le défaut', 'trinity-booking' ) }
+									{ __( 'Restaurer le défaut', 'slashbooking' ) }
 								</Button>
 							</FlexItem>
 						</Flex>
 					</div>
 
-					<div className="tb-template-preview">
-						<h4>{ __( 'Aperçu live', 'trinity-booking' ) }</h4>
-						<div className="tb-preview-subject">
-							<strong>{ __( 'Sujet rendu : ', 'trinity-booking' ) }</strong>
+					<div className="sb-template-preview">
+						<h4>{ __( 'Aperçu live', 'slashbooking' ) }</h4>
+						<div className="sb-preview-subject">
+							<strong>{ __( 'Sujet rendu : ', 'slashbooking' ) }</strong>
 							{ preview.subject }
 						</div>
 						<iframe
-							className="tb-preview-iframe"
-							title={ __( 'Aperçu du template', 'trinity-booking' ) }
+							className="sb-preview-iframe"
+							title={ __( 'Aperçu du template', 'slashbooking' ) }
 							srcDoc={ preview.html }
 							sandbox="allow-same-origin"
 						/>
@@ -3048,11 +3048,11 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 À la fin du fichier :
 
 ```scss
-.tb-templates-table {
+.sb-templates-table {
 	td { vertical-align: middle; }
 }
 
-.tb-badge {
+.sb-badge {
 	display: inline-block;
 	padding: 2px 8px;
 	border-radius: 10px;
@@ -3064,7 +3064,7 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 	&-default { background: #e5e7eb; color: #374151; }
 }
 
-.tb-template-split {
+.sb-template-split {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 24px;
@@ -3074,14 +3074,14 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 	}
 }
 
-.tb-template-edit {
-	.tb-codemirror-wrap {
+.sb-template-edit {
+	.sb-codemirror-wrap {
 		border: 1px solid #c3c4c7;
 		border-radius: 2px;
 		margin-bottom: 16px;
 		overflow: hidden;
 	}
-	.tb-cm-label {
+	.sb-cm-label {
 		display: block;
 		font-size: 11px;
 		font-weight: 500;
@@ -3089,25 +3089,25 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 		text-transform: uppercase;
 		color: #1e1e1e;
 	}
-	.tb-tag-picker { margin-bottom: 16px; }
-	.tb-template-actions { margin-top: 16px; }
+	.sb-tag-picker { margin-bottom: 16px; }
+	.sb-template-actions { margin-top: 16px; }
 }
 
-.tb-template-preview {
+.sb-template-preview {
 	border: 1px solid #c3c4c7;
 	border-radius: 2px;
 	padding: 16px;
 	background: #f6f7f7;
 
 	h4 { margin: 0 0 12px 0; }
-	.tb-preview-subject {
+	.sb-preview-subject {
 		padding: 8px 12px;
 		background: #fff;
 		border: 1px solid #e2e4e7;
 		margin-bottom: 12px;
 		font-size: 13px;
 	}
-	.tb-preview-iframe {
+	.sb-preview-iframe {
 		width: 100%;
 		height: 480px;
 		background: #fff;
@@ -3153,14 +3153,14 @@ import TemplatesPage from './TemplatesPage';
 export default function App() {
 	const initial = window.location.hash.replace( '#/', '' ) || 'bookings';
 	return (
-		<div className="tb-admin">
+		<div className="sb-admin">
 			<TabPanel
-				className="tb-tabs"
+				className="sb-tabs"
 				tabs={ [
-					{ name: 'bookings',  title: __( 'Réservations', 'trinity-booking' ) },
-					{ name: 'google',    title: __( 'Google', 'trinity-booking' ) },
-					{ name: 'templates', title: __( 'Templates', 'trinity-booking' ) },
-					{ name: 'log',       title: __( 'Journal', 'trinity-booking' ) },
+					{ name: 'bookings',  title: __( 'Réservations', 'slashbooking' ) },
+					{ name: 'google',    title: __( 'Google', 'slashbooking' ) },
+					{ name: 'templates', title: __( 'Templates', 'slashbooking' ) },
+					{ name: 'log',       title: __( 'Journal', 'slashbooking' ) },
 				] }
 				initialTabName={ initial }
 				onSelect={ ( name ) => {
@@ -3188,7 +3188,7 @@ npm run build
 - [ ] **Step 3 : Test manuel rapide en browser (si WP local disponible)**
 
 1. Activer le plugin dans WP local.
-2. Ouvrir `wp-admin → Trinity Booking → onglet "Templates"`.
+2. Ouvrir `wp-admin → SlashBooking → onglet "Templates"`.
 3. Vérifier que la liste des 6 templates s'affiche, tous avec badge "Défaut".
 4. Cliquer "Modifier" sur `booking.pending.client`.
 5. Modifier le HTML, observer l'aperçu live (~400ms debounce).
@@ -3228,7 +3228,7 @@ Identifier les césures Plan 1 → Plan 2 → … via les messages de commit ("d
 ```markdown
 # Changelog
 
-Tous les changements notables de **trinity-booking** sont consignés ici.
+Tous les changements notables de **slashbooking** sont consignés ici.
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le projet utilise [Semantic Versioning](https://semver.org/).
 
@@ -3236,56 +3236,56 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ## [1.0.0] — 2026-05-20
 
-Première release stable. Périmètre V1 fermé selon `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`.
+Première release stable. Périmètre V1 fermé selon `docs/superpowers/specs/2026-05-19-slashbooking-design.md`.
 
 ### Added — Plan 5 : Polish V1
 
 - Éditeur de templates e-mail dans le dashboard admin (CodeMirror 6 + preview live + insertion de tag + envoi d'un test + restauration du défaut) pour les 6 événements (`booking.pending.client/admin`, `booking.confirmed.client`, `booking.rejected.client`, `booking.cancelled.client`, `booking.reminder.client`).
-- Internationalisation complète : `languages/trinity-booking.pot` généré, traduction `fr_FR` fournie.
+- Internationalisation complète : `languages/slashbooking.pot` généré, traduction `fr_FR` fournie.
 - Conformité RGPD :
   - Privacy Exporter (`wp_privacy_personal_data_exporters`) — exporte tous les bookings matchant un e-mail.
   - Privacy Eraser (`wp_privacy_personal_data_erasers`) — anonymise via SHA-256 + `@anon.invalid`, conserve les agrégats.
   - Masquage e-mails dans `sync_log` (`a***@d***`).
-  - Option `tb_legal_page_id` pour lien "Mentions légales" sous case de consentement.
-  - Cron mensuel `tb/purge_old_bookings` (rétention par défaut 3 ans après `ends_at_utc`).
-- Isolation des dépendances vendor via PHP-Scoper (`Trinity\Booking\Vendor\Google\…`, etc.) — élimine le risque de collision avec d'autres plugins WordPress.
+  - Option `sb_legal_page_id` pour lien "Mentions légales" sous case de consentement.
+  - Cron mensuel `sb/purge_old_bookings` (rétention par défaut 3 ans après `ends_at_utc`).
+- Isolation des dépendances vendor via PHP-Scoper (`Slash\Booking\Vendor\Google\…`, etc.) — élimine le risque de collision avec d'autres plugins WordPress.
 - Script `bin/build-release.sh` produit un ZIP de release reproductible (composer no-dev + npm build + scoping + autoload classmap + checksum SHA-256).
 - Documentation `README.md` complète (walkthrough Google Cloud Console, screenshots SPA, troubleshooting).
 
 ### Added — Plan 4 : Webhook + pull Google → WP
 
 - Push notifications Google : `WatchChannelManager` (start/stop/renew) + endpoint REST `POST /google/webhook` (vérif HMAC `X-Goog-Channel-Token`).
-- Pull incrémental via `events.list` + `syncToken` : `SyncEngine` + handler Action Scheduler `tb/google_pull`.
+- Pull incrémental via `events.list` + `syncToken` : `SyncEngine` + handler Action Scheduler `sb/google_pull`.
 - Reflection : ignore les events GCal créés par notre propre push (Plan 3) via `BookingRepository::findByGoogleEventId`.
-- Cron `tb/watch_renew_check` (quotidien) + `tb/google_pull_all` (15 min fallback).
-- Diagnostics étendus : SPA `GooglePage` montre statut watch, dernier sync, sync token ; `wp trinity-booking doctor` étendu.
+- Cron `sb/watch_renew_check` (quotidien) + `sb/google_pull_all` (15 min fallback).
+- Diagnostics étendus : SPA `GooglePage` montre statut watch, dernier sync, sync token ; `wp slashbooking doctor` étendu.
 - Upgrade PHPStan 1.x → 2.x avec `treatPhpDocTypesAsCertain: false`.
 
 ### Added — Plan 3 : Google OAuth + push WP → GCal
 
 - OAuth 2.0 utilisateur (refresh token chiffré via `sodium_crypto_secretbox`).
-- Push WP → GCal via Action Scheduler `tb/push_gcal_event` (create / update / delete selon statut).
+- Push WP → GCal via Action Scheduler `sb/push_gcal_event` (create / update / delete selon statut).
 - Code couleur GCal : orange `colorId=6` (pending), vert `colorId=10` (confirmed), delete (rejected/cancelled).
-- Journal de synchronisation `wp_tb_sync_log` (cron quotidien `tb_purge_sync_log` 30j).
-- CLI `wp trinity-booking doctor` (état OAuth + probe create/delete event).
+- Journal de synchronisation `wp_sb_sync_log` (cron quotidien `sb_purge_sync_log` 30j).
+- CLI `wp slashbooking doctor` (état OAuth + probe create/delete event).
 - SPA admin : `GooglePage` (Configuration OAuth + Google Calendar) + `SyncLogPage`.
 
 ### Added — Plan 2 : Notifications e-mail + validation admin
 
-- 6 templates HTML personnalisables (`wp_tb_mail_templates`) + tags `{{...}}` + fallback texte auto via `wp_strip_all_tags`.
+- 6 templates HTML personnalisables (`wp_sb_mail_templates`) + tags `{{...}}` + fallback texte auto via `wp_strip_all_tags`.
 - Pièce jointe `.ics` RFC 5545 sur l'e-mail de confirmation.
-- Reminder J-1 (cron quotidien `tb_send_daily_reminders` à 10h00 site TZ).
+- Reminder J-1 (cron quotidien `sb_send_daily_reminders` à 10h00 site TZ).
 - Validation admin : boutons HMAC dans l'e-mail (72h, idempotent) + dashboard React minimal.
 - Annulation client via lien HMAC dans e-mail de confirmation.
-- Capabilities WP : `trinity_booking_manage`, `trinity_booking_view`.
+- Capabilities WP : `slashbooking_manage`, `slashbooking_view`.
 
 ### Added — Plan 1 : Fondations
 
 - Architecture modulaire (Domain / Persistence / Availability / Booking / Http / PublicFront / Cli).
-- Modèle de données : 6 tables `wp_tb_*` (`services`, `bookings`, `busy_blocks`, `google_accounts`, `sync_log`, `mail_templates`).
+- Modèle de données : 6 tables `wp_sb_*` (`services`, `bookings`, `busy_blocks`, `google_accounts`, `sync_log`, `mail_templates`).
 - 2 services seed à l'activation (`pv` 90min, `irve` 45min).
 - REST API publique : `GET /services`, `GET /availability`, `POST /bookings`.
-- Bloc Gutenberg + shortcode `[trinity_booking service="pv|irve"]`.
+- Bloc Gutenberg + shortcode `[slashbooking service="pv|irve"]`.
 - Anti-bot : honeypot + délai min + rate-limit transient.
 - Buffer 30 min + délai 24h + horizon 60 jours.
 
@@ -3335,13 +3335,13 @@ Après la section Pré-requis, insérer :
 ```markdown
 ## Installation production (ZIP)
 
-1. Télécharger `trinity-booking-1.0.0.zip` depuis la page Releases (ou le construire via `bin/build-release.sh`).
+1. Télécharger `slashbooking-1.0.0.zip` depuis la page Releases (ou le construire via `bin/build-release.sh`).
 2. **WP Admin → Extensions → Ajouter → Téléverser** → uploader le ZIP → activer.
-3. L'activation crée 6 tables `wp_tb_*`, seed `pv` + `irve`, installe les capabilities, programme les crons (J-1 reminder à 10h, sync log purge à 3h, watch renewal à 4h, retention purge le 1er du mois à 3h30).
+3. L'activation crée 6 tables `wp_sb_*`, seed `pv` + `irve`, installe les capabilities, programme les crons (J-1 reminder à 10h, sync log purge à 3h, watch renewal à 4h, retention purge le 1er du mois à 3h30).
 4. Définir dans `wp-config.php` (recommandé) :
 
    ```php
-   define( 'TRINITY_BOOKING_ENC_KEY', '<64-char hex string>' );
+   define( 'SLASHBOOKING_ENC_KEY', '<64-char hex string>' );
    ```
 
    Génère via : `php -r 'echo bin2hex(random_bytes(32));'`.
@@ -3350,10 +3350,10 @@ Après la section Pré-requis, insérer :
 6. Insérer le shortcode dans une page :
 
    ```
-   [trinity_booking service="pv"]
+   [slashbooking service="pv"]
    ```
 
-7. (Optionnel) Définir la page "Mentions légales" : **Trinity Booking → … → Settings** (sera ajouté en V2 — pour V1, utiliser le filtre `update_option('tb_legal_page_id', <page_id>)`).
+7. (Optionnel) Définir la page "Mentions légales" : **SlashBooking → … → Settings** (sera ajouté en V2 — pour V1, utiliser le filtre `update_option('sb_legal_page_id', <page_id>)`).
 ```
 
 - [ ] **Step 3 : Ajouter une section "Troubleshooting" en fin de README**
@@ -3363,7 +3363,7 @@ Après la section Pré-requis, insérer :
 
 ### Le webhook Google n'arrive pas → `BusyBlock` n'apparaît pas
 
-1. Vérifier dans **Trinity Booking → Google → Synchronisation entrante** que le watch est actif (id de channel + `expires_at` futur).
+1. Vérifier dans **SlashBooking → Google → Synchronisation entrante** que le watch est actif (id de channel + `expires_at` futur).
 2. Vérifier que votre URL est HTTPS (Google rejette HTTP) :
 
    ```bash
@@ -3373,23 +3373,23 @@ Après la section Pré-requis, insérer :
 3. Tester la réception webhook depuis l'extérieur :
 
    ```bash
-   curl -X POST https://votresite.fr/wp-json/trinity-booking/v1/google/webhook \
+   curl -X POST https://votresite.fr/wp-json/slashbooking/v1/google/webhook \
      -H "X-Goog-Resource-State: sync" \
      -H "X-Goog-Channel-Id: test" \
-     -H "X-Goog-Channel-Token: $(wp option get tb_google_accounts | jq -r '.[0].watch_token_secret')"
+     -H "X-Goog-Channel-Token: $(wp option get sb_google_accounts | jq -r '.[0].watch_token_secret')"
    ```
 
    Attendu : `200`. Si `401` → le token ne correspond pas (re-créer le watch). Si timeout → firewall / WAF bloque, vérifier les logs du reverse proxy.
 
-4. Cron fallback : toutes les 15 min, `tb/google_pull_all` exécute un pull manuel. Vérifier avec :
+4. Cron fallback : toutes les 15 min, `sb/google_pull_all` exécute un pull manuel. Vérifier avec :
 
    ```bash
-   wp cron event list | grep tb_google_pull_all
+   wp cron event list | grep sb_google_pull_all
    ```
 
-### `wp trinity-booking doctor` signale `oauth_failed`
+### `wp slashbooking doctor` signale `oauth_failed`
 
-Le refresh token est invalide (révoqué côté Google, ou clé `TRINITY_BOOKING_ENC_KEY` modifiée). Reconnecter depuis **Trinity Booking → Google → Configuration OAuth → Reconnecter mon Google Calendar**.
+Le refresh token est invalide (révoqué côté Google, ou clé `SLASHBOOKING_ENC_KEY` modifiée). Reconnecter depuis **SlashBooking → Google → Configuration OAuth → Reconnecter mon Google Calendar**.
 
 ### `syncToken expired` (410 Gone) dans le sync log
 
@@ -3398,8 +3398,8 @@ Normal après une longue période sans pull (Google invalide les tokens > 7 jour
 ### L'e-mail admin "à valider" n'arrive pas
 
 1. Vérifier la config SMTP : `wp option get admin_email` + plugin SMTP installé (ex: WP Mail SMTP).
-2. Tester via **Trinity Booking → Templates → booking.pending.admin → Envoyer un test**.
-3. Si le test n'arrive pas : log dans **Trinity Booking → Journal** filtre `entity=booking action=mail_sent` — vérifier `error_message`.
+2. Tester via **SlashBooking → Templates → booking.pending.admin → Envoyer un test**.
+3. Si le test n'arrive pas : log dans **SlashBooking → Journal** filtre `entity=booking action=mail_sent` — vérifier `error_message`.
 
 ### Le SPA admin est vide / pas de tabs
 
@@ -3414,8 +3414,8 @@ V1 est mono-commercial. Pour la V2 multi-commercial : voir issue GitHub #X.
 **Outils → Désinstaller des extensions** ne supprime pas les données par défaut. Pour un nettoyage complet :
 
 ```bash
-wp db query "DROP TABLE wp_tb_services, wp_tb_bookings, wp_tb_busy_blocks, wp_tb_google_accounts, wp_tb_sync_log, wp_tb_mail_templates;"
-wp option delete tb_db_version tb_decision_secret tb_google_client_id tb_google_client_secret tb_legal_page_id tb_booking_retention_days TRINITY_BOOKING_ENC_KEY_FALLBACK
+wp db query "DROP TABLE wp_sb_services, wp_sb_bookings, wp_sb_busy_blocks, wp_sb_google_accounts, wp_sb_sync_log, wp_sb_mail_templates;"
+wp option delete sb_db_version sb_decision_secret sb_google_client_id sb_google_client_secret sb_legal_page_id sb_booking_retention_days SLASHBOOKING_ENC_KEY_FALLBACK
 ```
 ```
 
@@ -3443,15 +3443,15 @@ Premier vrai lancement de `bin/build-release.sh`. Toutes les pré-requis sont en
 
 Attendu : output proche de :
 ```
-→ Building trinity-booking v1.0.0-rc1
+→ Building slashbooking v1.0.0-rc1
 → composer install --no-dev (production deps)
 → npm run build (SPA assets)
-→ php-scoper (prefix Trinity\Booking\Vendor)
+→ php-scoper (prefix Slash\Booking\Vendor)
 → composer dump-autoload (scoped, classmap-authoritative)
-→ staging files into …/build/trinity-booking
-→ packaging ZIP …/build/trinity-booking-1.0.0-rc1.zip
+→ staging files into …/build/slashbooking
+→ packaging ZIP …/build/slashbooking-1.0.0-rc1.zip
 ✓ Release built:
-  File:     …/build/trinity-booking-1.0.0-rc1.zip
+  File:     …/build/slashbooking-1.0.0-rc1.zip
   Size:     ~6-9M
   SHA-256:  <hash>
 ```
@@ -3459,43 +3459,43 @@ Attendu : output proche de :
 - [ ] **Step 2 : Inspecter le contenu du ZIP**
 
 ```bash
-unzip -l build/trinity-booking-1.0.0-rc1.zip | head -40
+unzip -l build/slashbooking-1.0.0-rc1.zip | head -40
 ```
 
 Vérifications :
-- Présence : `trinity-booking/trinity-booking.php`, `trinity-booking/src/`, `trinity-booking/vendor/`, `trinity-booking/assets/dist/`, `trinity-booking/languages/`.
+- Présence : `slashbooking/slashbooking.php`, `slashbooking/src/`, `slashbooking/vendor/`, `slashbooking/assets/dist/`, `slashbooking/languages/`.
 - Absence : `tests/`, `docs/`, `node_modules/`, `bin/`, `scoper.inc.php`.
 - Inspecter `vendor/google/apiclient/src/Client.php` :
 
    ```bash
-   unzip -p build/trinity-booking-1.0.0-rc1.zip trinity-booking/vendor/google/apiclient/src/Client.php | head -10
+   unzip -p build/slashbooking-1.0.0-rc1.zip slashbooking/vendor/google/apiclient/src/Client.php | head -10
    ```
 
-   Attendu : `namespace Trinity\Booking\Vendor\Google;` (scoper a fait son job).
+   Attendu : `namespace Slash\Booking\Vendor\Google;` (scoper a fait son job).
 
 - Inspecter `src/Google/PushEventJob.php` extrait :
 
    ```bash
-   unzip -p build/trinity-booking-1.0.0-rc1.zip trinity-booking/src/Google/PushEventJob.php | grep "use"
+   unzip -p build/slashbooking-1.0.0-rc1.zip slashbooking/src/Google/PushEventJob.php | grep "use"
    ```
 
-   Attendu : `use Trinity\Booking\Vendor\Google\Client;` (au moins une ligne avec le prefix).
+   Attendu : `use Slash\Booking\Vendor\Google\Client;` (au moins une ligne avec le prefix).
 
 - [ ] **Step 3 : Test d'installation locale (si WP local disponible)**
 
 ```bash
 # Détruire toute installation locale précédente
-wp plugin deactivate trinity-booking 2>/dev/null
-wp plugin delete trinity-booking 2>/dev/null
+wp plugin deactivate slashbooking 2>/dev/null
+wp plugin delete slashbooking 2>/dev/null
 
 # Installer depuis le ZIP
-wp plugin install build/trinity-booking-1.0.0-rc1.zip --activate
+wp plugin install build/slashbooking-1.0.0-rc1.zip --activate
 ```
 
 Vérifier :
-- `wp plugin list | grep trinity-booking` → status `active`.
-- `wp db query "SHOW TABLES LIKE 'wp_tb_%';"` → 6 tables.
-- Visiter `/wp-admin/admin.php?page=trinity-booking` → SPA s'affiche avec les 4 onglets.
+- `wp plugin list | grep slashbooking` → status `active`.
+- `wp db query "SHOW TABLES LIKE 'wp_sb_%';"` → 6 tables.
+- Visiter `/wp-admin/admin.php?page=slashbooking` → SPA s'affiche avec les 4 onglets.
 
 Si WP local non disponible : marquer ce step "à valider en post-merge tests manuels" et continuer.
 
@@ -3526,14 +3526,14 @@ git commit -m "build: ignore release build/ directory"
 Dernière passe : la version stable.
 
 **Files:**
-- Modify: `trinity-booking.php`
+- Modify: `slashbooking.php`
 - Modify: `src/Plugin.php`
 - Modify: `package.json`
 - Modify: `README.md` (déjà mis à jour Task 22, vérifier cohérence)
 
 - [ ] **Step 1 : Bump version dans les 3 fichiers**
 
-`trinity-booking.php` :
+`slashbooking.php` :
 
 ```php
  * Version:           1.0.0
@@ -3567,10 +3567,10 @@ Si une référence à `1.0.0-rc1` traîne → corriger en `1.0.0`.
 ./bin/build-release.sh
 ```
 
-Attendu : `build/trinity-booking-1.0.0.zip` créé + checksum.
+Attendu : `build/slashbooking-1.0.0.zip` créé + checksum.
 
 ```bash
-ls -lh build/trinity-booking-1.0.0.zip build/trinity-booking-1.0.0.zip.sha256
+ls -lh build/slashbooking-1.0.0.zip build/slashbooking-1.0.0.zip.sha256
 ```
 
 - [ ] **Step 5 : Lancer toute la suite finale**
@@ -3591,7 +3591,7 @@ Attendu :
 - [ ] **Step 6 : Commit final**
 
 ```bash
-git add trinity-booking.php src/Plugin.php package.json README.md
+git add slashbooking.php src/Plugin.php package.json README.md
 git commit -m "release: v1.0.0 — V1 stable (Plans 1-5 complete)"
 ```
 
@@ -3600,7 +3600,7 @@ git commit -m "release: v1.0.0 — V1 stable (Plans 1-5 complete)"
 Le tag `v1.0.0` n'est PAS créé automatiquement par ce plan. Quand tu valides la release :
 
 ```bash
-git tag -a v1.0.0 -m "Trinity Booking 1.0.0 — V1 stable"
+git tag -a v1.0.0 -m "SlashBooking 1.0.0 — V1 stable"
 # (optionnel) push si remote configuré : git push origin v1.0.0
 ```
 
@@ -3615,7 +3615,7 @@ Cette tâche n'est PAS une tâche d'écriture de code, c'est une checklist d'acc
 
 - [ ] **Step 1 : Cycle complet client → admin**
 
-1. Visiter la page contenant `[trinity_booking service="pv"]` en navigateur privé.
+1. Visiter la page contenant `[slashbooking service="pv"]` en navigateur privé.
 2. Choisir un créneau dispo → remplir formulaire (nom/email/tel/adresse/notes) → cocher consentement → submit.
 3. Vérifier : page "demande envoyée" + e-mail "demande reçue" arrive côté client + e-mail admin "à valider" arrive avec boutons Confirmer / Refuser.
 4. Cliquer "Confirmer" dans l'e-mail admin → page "✓ RDV confirmé".
@@ -3630,12 +3630,12 @@ Cette tâche n'est PAS une tâche d'écriture de code, c'est une checklist d'acc
 
 1. Créer un event manuellement dans Google Calendar (sans passer par le plugin).
 2. Attendre ≤ 30 secondes.
-3. Vérifier dans **Trinity Booking → Journal** filtre `direction=g_to_wp` : ligne `entity=busy_block action=upsert`.
+3. Vérifier dans **SlashBooking → Journal** filtre `direction=g_to_wp` : ligne `entity=busy_block action=upsert`.
 4. Tenter de réserver un créneau qui chevauche cet event : doit être bloqué.
 
 - [ ] **Step 4 : Templates editor**
 
-1. **Trinity Booking → Templates → booking.confirmed.client → Modifier**.
+1. **SlashBooking → Templates → booking.confirmed.client → Modifier**.
 2. Modifier le sujet et le HTML.
 3. "Insérer un tag" → `{{notes}}` → vérifier insertion.
 4. Aperçu live se met à jour ~400ms après modif.
@@ -3647,7 +3647,7 @@ Cette tâche n'est PAS une tâche d'écriture de code, c'est une checklist d'acc
 - [ ] **Step 5 : Privacy exporter / eraser**
 
 1. **WP Admin → Outils → Exporter les données personnelles** → saisir l'e-mail d'un booking de test → Envoyer la demande → Confirmer dans l'e-mail.
-2. Vérifier : le ZIP exporté contient un groupe "Trinity Booking" avec les bookings.
+2. Vérifier : le ZIP exporté contient un groupe "SlashBooking" avec les bookings.
 3. **Outils → Effacer les données personnelles** → même e-mail → Envoyer la demande → Confirmer.
 4. Vérifier : booking en base a `customer_name='Anonyme'`, `customer_email='xxxx@anon.invalid'`, `customer_phone=''`, etc.
 5. Re-tenter eraser sur le même e-mail → 0 lignes touchées (idempotent).
@@ -3657,7 +3657,7 @@ Cette tâche n'est PAS une tâche d'écriture de code, c'est une checklist d'acc
 Mettre à jour `MEMORY.md` :
 
 ```
-- [Vue d'ensemble trinity-booking](project_overview.md) — Calendly-like PV/IRVE + sync GCal ; 5 plans terminés, V1 stable.
+- [Vue d'ensemble slashbooking](project_overview.md) — Calendly-like PV/IRVE + sync GCal ; 5 plans terminés, V1 stable.
 ```
 
 (Cette mise à jour est faite par l'agent qui exécute le plan, pas par ce plan.)
@@ -3686,8 +3686,8 @@ Mettre à jour `MEMORY.md` :
 - `BookingRepository::findByCustomerEmail / anonymizeByEmail / deleteOlderThan` posées dans 3 tâches successives sans renaming.
 
 **4. Gaps identifiés et acceptés :**
-- Pas d'UI admin pour `tb_legal_page_id` / `tb_booking_retention_days` (les options s'éditent via `wp option set` en V1 — UI à ajouter en V2). Couvert par Task 11 backend REST mais sans page settings dans le SPA. Acceptable : volume très faible d'utilisation, le REST endpoint existe si on veut bricoler une UI plus tard.
-- Pas de bloc Gutenberg distinct du shortcode (le bloc Gutenberg est en V2 selon spec §4). Le shortcode `[trinity_booking]` couvre la V1.
+- Pas d'UI admin pour `sb_legal_page_id` / `sb_booking_retention_days` (les options s'éditent via `wp option set` en V1 — UI à ajouter en V2). Couvert par Task 11 backend REST mais sans page settings dans le SPA. Acceptable : volume très faible d'utilisation, le REST endpoint existe si on veut bricoler une UI plus tard.
+- Pas de bloc Gutenberg distinct du shortcode (le bloc Gutenberg est en V2 selon spec §4). Le shortcode `[slashbooking]` couvre la V1.
 - Pas de tests Playwright E2E (spec §11 les mentionne, mais §17 étape 5 dit "polish + i18n + RGPD + tests E2E + packaging" — on traite E2E comme checklist manuelle Task 25, pas du code automatisé). V2 si l'équipe grandit.
 
 ---

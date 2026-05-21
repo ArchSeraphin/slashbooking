@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -91,6 +91,21 @@ final class GoogleAccount
     {
         $this->accessTokenEnc = $accessTokenEnc;
         $this->expiresAt = $expiresAt;
+        $this->touch();
+    }
+
+    public function setCalendarId(string $calendarId): void
+    {
+        $calendarId = trim($calendarId);
+        if ($calendarId === '') {
+            throw new \DomainException('Calendar id cannot be empty.');
+        }
+        if ($this->calendarId === $calendarId) {
+            return;
+        }
+        $this->calendarId = $calendarId;
+        $this->clearWatch();
+        $this->clearSyncToken();
         $this->touch();
     }
 

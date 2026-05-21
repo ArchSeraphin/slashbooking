@@ -1,15 +1,15 @@
 import apiFetch from '@wordpress/api-fetch';
 
-const NAMESPACE = 'trinity-booking/v1/';
+const NAMESPACE = 'slashbooking/v1/';
 
 export function setupApi() {
-	if ( window.TrinityBooking?.nonce ) {
+	if ( window.SlashBooking?.nonce ) {
 		apiFetch.use(
-			apiFetch.createNonceMiddleware( window.TrinityBooking.nonce )
+			apiFetch.createNonceMiddleware( window.SlashBooking.nonce )
 		);
 	}
 	// Prefix every path with our REST namespace so WordPress's default
-	// rootURL middleware builds wp-json/trinity-booking/v1/<path> correctly.
+	// rootURL middleware builds wp-json/slashbooking/v1/<path> correctly.
 	// We do NOT override the rootURL itself — last-added middleware would
 	// run first, then WP's own rootURL middleware would overwrite the URL
 	// using the bare path, producing wp-json/<path> and a 404.
@@ -104,6 +104,18 @@ export async function forcePullNow() {
 	return apiFetch( {
 		path: 'admin/google/pull/now',
 		method: 'POST',
+	} );
+}
+
+export async function fetchGoogleCalendars() {
+	return apiFetch( { path: 'admin/google/calendars' } );
+}
+
+export async function setGoogleCalendar( calendarId ) {
+	return apiFetch( {
+		path: 'admin/google/calendar',
+		method: 'POST',
+		data: { calendar_id: calendarId },
 	} );
 }
 

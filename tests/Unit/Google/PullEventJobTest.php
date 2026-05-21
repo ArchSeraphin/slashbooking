@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\PullEventJob;
-use Trinity\Booking\Google\PullResult;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\PullEventJob;
+use Slash\Booking\Google\PullResult;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class PullEventJobTest extends TestCase
 {

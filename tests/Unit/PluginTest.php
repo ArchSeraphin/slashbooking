@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit;
+namespace Slash\Booking\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 
 final class PluginTest extends TestCase
 {
@@ -15,6 +15,6 @@ final class PluginTest extends TestCase
 
     public function test_text_domain_constant(): void
     {
-        self::assertSame('trinity-booking', Plugin::TEXT_DOMAIN);
+        self::assertSame('slashbooking', Plugin::TEXT_DOMAIN);
     }
 }

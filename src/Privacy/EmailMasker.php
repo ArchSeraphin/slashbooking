@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 final class EmailMasker
 {

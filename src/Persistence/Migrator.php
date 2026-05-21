@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Plugin;
+use Slash\Booking\Plugin;
 use wpdb;
 
 final class Migrator
@@ -14,7 +14,7 @@ final class Migrator
 
     public function migrate(): void
     {
-        $currentVersion = (int) get_option('tb_db_version', 0);
+        $currentVersion = (int) get_option('sb_db_version', 0);
         if ($currentVersion >= Plugin::DB_VERSION) {
             return;
         }
@@ -24,7 +24,7 @@ final class Migrator
         $prefix  = $this->wpdb->prefix;
 
         $statements = [
-            "CREATE TABLE {$prefix}tb_services (
+            "CREATE TABLE {$prefix}sb_services (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 slug VARCHAR(64) NOT NULL,
                 name VARCHAR(160) NOT NULL,
@@ -43,7 +43,7 @@ final class Migrator
                 UNIQUE KEY uk_slug (slug)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_bookings (
+            "CREATE TABLE {$prefix}sb_bookings (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 public_uid CHAR(36) NOT NULL,
                 service_id BIGINT UNSIGNED NOT NULL,
@@ -71,7 +71,7 @@ final class Migrator
                 KEY idx_google_event (google_event_id)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_busy_blocks (
+            "CREATE TABLE {$prefix}sb_busy_blocks (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 source VARCHAR(16) NOT NULL,
                 source_id VARCHAR(255) NOT NULL,
@@ -85,7 +85,7 @@ final class Migrator
                 KEY idx_range (starts_at_utc, ends_at_utc)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_google_accounts (
+            "CREATE TABLE {$prefix}sb_google_accounts (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 label VARCHAR(120) NOT NULL,
                 calendar_id VARCHAR(200) NOT NULL,
@@ -103,7 +103,7 @@ final class Migrator
                 PRIMARY KEY (id)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_sync_log (
+            "CREATE TABLE {$prefix}sb_sync_log (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 ts DATETIME NOT NULL,
                 level VARCHAR(10) NOT NULL,
@@ -120,7 +120,7 @@ final class Migrator
                 KEY idx_entity (entity, entity_id)
             ) {$charset};",
 
-            "CREATE TABLE {$prefix}tb_mail_templates (
+            "CREATE TABLE {$prefix}sb_mail_templates (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 event_key VARCHAR(64) NOT NULL,
                 subject VARCHAR(255) NOT NULL,
@@ -138,6 +138,6 @@ final class Migrator
             dbDelta($sql);
         }
 
-        update_option('tb_db_version', Plugin::DB_VERSION, false);
+        update_option('sb_db_version', Plugin::DB_VERSION, false);
     }
 }

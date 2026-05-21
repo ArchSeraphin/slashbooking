@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
@@ -23,7 +23,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         parent::setUp();
         Activator::activate();
         do_action('rest_api_init');
-        $this->signer = new DecisionTokenSigner((string) get_option('tb_decision_secret'));
+        $this->signer = new DecisionTokenSigner((string) get_option('sb_decision_secret'));
     }
 
     public function test_confirm_transitions_pending_to_confirmed(): void
@@ -31,7 +31,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() + 3600;
         $sig = $this->signer->sign('decide|' . $b->id() . '|confirm', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => $exp, 'sig' => $sig]);
         $response = rest_do_request($request);
         self::assertSame(200, $response->get_status());
@@ -46,7 +46,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() + 3600;
         $sig = $this->signer->sign('decide|' . $b->id() . '|reject', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'reject', 'exp' => $exp, 'sig' => $sig]);
         $response = rest_do_request($request);
         self::assertSame(200, $response->get_status());
@@ -59,7 +59,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
     public function test_invalid_signature_returns_403(): void
     {
         $b = $this->seedPending();
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => time() + 60, 'sig' => 'bogus']);
         $response = rest_do_request($request);
         self::assertSame(403, $response->get_status());
@@ -70,7 +70,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() - 10;
         $sig = $this->signer->sign('decide|' . $b->id() . '|confirm', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => $exp, 'sig' => $sig]);
         self::assertSame(403, rest_do_request($request)->get_status());
     }
@@ -80,7 +80,7 @@ final class DecisionControllerTest extends WP_UnitTestCase
         $b = $this->seedPending();
         $exp = time() + 3600;
         $sig = $this->signer->sign('decide|' . $b->id() . '|confirm', $exp);
-        $request = new WP_REST_Request('GET', '/trinity-booking/v1/decide');
+        $request = new WP_REST_Request('GET', '/slashbooking/v1/decide');
         $request->set_query_params(['booking' => $b->id(), 'action' => 'confirm', 'exp' => $exp, 'sig' => $sig]);
         rest_do_request($request);
         self::assertSame(200, rest_do_request($request)->get_status());

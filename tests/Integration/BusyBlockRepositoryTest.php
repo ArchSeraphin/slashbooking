@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\BusyBlock;
-use Trinity\Booking\Persistence\BusyBlockRepository;
+use Slash\Booking\Domain\BusyBlock;
+use Slash\Booking\Persistence\BusyBlockRepository;
 
 final class BusyBlockRepositoryTest extends TestCase
 {
@@ -25,7 +25,7 @@ final class BusyBlockRepositoryTest extends TestCase
         }
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_busy_blocks");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_busy_blocks");
     }
 
     public function test_upsert_inserts_new_block(): void

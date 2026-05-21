@@ -1,5 +1,5 @@
 {
-  "name": "trinity/booking",
+  "name": "slash/booking",
   "description": "WordPress booking plugin for photovoltaic and EV-charging appointments with bidirectional Google Calendar sync",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
@@ -22,12 +22,12 @@
   },
   "autoload": {
     "psr-4": {
-      "Trinity\\Booking\\": "src/"
+      "Slash\\Booking\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Trinity\\Booking\\Tests\\": "tests/"
+      "Slash\\Booking\\Tests\\": "tests/"
     }
   },
   "scripts": {

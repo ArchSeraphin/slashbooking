@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Google\EventFormatter;
-use Trinity\Booking\Google\PushEventJob;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Google\EventFormatter;
+use Slash\Booking\Google\PushEventJob;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class PushEventJobTest extends TestCase
 {
@@ -187,7 +187,7 @@ final class PushEventJobTest extends TestCase
     {
         $b = $this->pending(42);
         $this->gateway->failNext = true;
-        $this->expectException(\Trinity\Booking\Google\Exceptions\GoogleApiError::class);
+        $this->expectException(\Slash\Booking\Google\Exceptions\GoogleApiError::class);
         try {
             $this->job($b)->handle(42, 'create');
         } finally {

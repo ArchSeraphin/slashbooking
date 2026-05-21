@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Persistence\SyncLogRepository;
+use Slash\Booking\Persistence\SyncLogRepository;
 
 final class SyncLogRepositoryTest extends TestCase
 {
@@ -16,7 +16,7 @@ final class SyncLogRepositoryTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit.');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_sync_log");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_sync_log");
     }
 
     public function test_append_then_paginate(): void
@@ -49,7 +49,7 @@ final class SyncLogRepositoryTest extends TestCase
         global $wpdb;
         $repo = new SyncLogRepository($wpdb);
         $repo->append('info', 'wp_to_g', 'booking', 1, null, 'create', 'ok', [], null);
-        $wpdb->query("UPDATE {$wpdb->prefix}tb_sync_log SET ts = DATE_SUB(NOW(), INTERVAL 40 DAY)");
+        $wpdb->query("UPDATE {$wpdb->prefix}sb_sync_log SET ts = DATE_SUB(NOW(), INTERVAL 40 DAY)");
 
         $repo->append('info', 'wp_to_g', 'booking', 2, null, 'create', 'ok', [], null);
 

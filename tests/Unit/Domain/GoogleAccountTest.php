@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\GoogleAccount;
 
 final class GoogleAccountTest extends TestCase
 {
@@ -82,5 +82,37 @@ final class GoogleAccountTest extends TestCase
         $when = new DateTimeImmutable('2026-05-20 12:00:00', new DateTimeZone('UTC'));
         $a->markFullSyncedAt($when);
         self::assertSame('2026-05-20 12:00:00', $a->lastFullSyncAt()?->format('Y-m-d H:i:s'));
+    }
+
+    public function test_set_calendar_id_clears_watch_and_sync_token(): void
+    {
+        $a = $this->fresh();
+        $a->attachWatch('ch', 'res', 'tok', new DateTimeImmutable('+7 days', new DateTimeZone('UTC')));
+        $a->updateSyncToken('sync_abc');
+
+        $a->setCalendarId('work@example.com');
+
+        self::assertSame('work@example.com', $a->calendarId());
+        self::assertNull($a->watchChannelId());
+        self::assertNull($a->syncToken());
+    }
+
+    public function test_set_calendar_id_noop_when_unchanged(): void
+    {
+        $a = $this->fresh(); // calendar = 'primary'
+        $a->attachWatch('ch', 'res', 'tok', new DateTimeImmutable('+7 days', new DateTimeZone('UTC')));
+        $a->updateSyncToken('sync_abc');
+
+        $a->setCalendarId('primary'); // same → no side-effects
+
+        self::assertSame('ch', $a->watchChannelId());
+        self::assertSame('sync_abc', $a->syncToken());
+    }
+
+    public function test_set_calendar_id_rejects_empty(): void
+    {
+        $a = $this->fresh();
+        $this->expectException(\DomainException::class);
+        $a->setCalendarId('   ');
     }
 }

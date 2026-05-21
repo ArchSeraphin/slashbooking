@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Booking\CancelBooking;
-use Trinity\Booking\Booking\ConfirmBooking;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Booking\RejectBooking;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Booking\CancelBooking;
+use Slash\Booking\Booking\ConfirmBooking;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Booking\RejectBooking;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -58,7 +58,7 @@ final class AdminBookingController
     public function permission(): bool|WP_Error
     {
         if (!current_user_can(Capabilities::MANAGE)) {
-            return new WP_Error('tb_forbidden', __('Forbidden', 'trinity-booking'), ['status' => is_user_logged_in() ? 403 : 401]);
+            return new WP_Error('sb_forbidden', __('Forbidden', 'slashbooking'), ['status' => is_user_logged_in() ? 403 : 401]);
         }
         return true;
     }
@@ -106,9 +106,9 @@ final class AdminBookingController
                     break;
             }
         } catch (BookingNotFound $e) {
-            return new WP_Error('tb_not_found', __('Booking not found.', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_not_found', __('Booking not found.', 'slashbooking'), ['status' => 404]);
         } catch (\DomainException $e) {
-            return new WP_Error('tb_invalid_transition', $e->getMessage(), ['status' => 409]);
+            return new WP_Error('sb_invalid_transition', $e->getMessage(), ['status' => 409]);
         }
         $refreshed = $this->bookings->findById($id);
         return new WP_REST_Response(self::serialize($refreshed));

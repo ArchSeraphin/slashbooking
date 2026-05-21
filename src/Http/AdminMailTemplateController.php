@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -100,7 +100,7 @@ final class AdminMailTemplateController
         $enabled = (bool) $req->get_param('enabled');
 
         if (trim($subject) === '' || trim($html) === '') {
-            return new WP_Error('tb_invalid_template', __('Sujet et corps HTML obligatoires.', 'trinity-booking'), ['status' => 400]);
+            return new WP_Error('sb_invalid_template', __('Sujet et corps HTML obligatoires.', 'slashbooking'), ['status' => 400]);
         }
 
         $this->repo->save(
@@ -178,7 +178,7 @@ final class AdminMailTemplateController
         $raw = (string) $req->get_param('event_key');
         $key = EventKey::tryFrom($raw);
         if ($key === null) {
-            return new WP_Error('tb_unknown_event_key', __('Event key inconnue.', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_unknown_event_key', __('Event key inconnue.', 'slashbooking'), ['status' => 404]);
         }
         return $key;
     }
@@ -205,7 +205,7 @@ final class AdminMailTemplateController
             'confirm_url'      => 'https://example.com/confirm?id=preview',
             'reject_url'       => 'https://example.com/reject?id=preview',
             'ics_url'          => 'https://example.com/preview.ics',
-            'site_name'        => (string) get_option('blogname', 'Trinity'),
+            'site_name'        => (string) get_option('blogname', 'SlashBooking'),
             'site_url'         => (string) get_option('home', 'https://example.com'),
             'admin_email'      => (string) get_option('admin_email', 'admin@example.com'),
             'company_logo'     => '',

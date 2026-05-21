@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\PublicFront;
+namespace Slash\Booking\PublicFront;
 
-use Trinity\Booking\Persistence\ServiceRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Plugin;
 
 final class Shortcode
 {
@@ -14,7 +14,7 @@ final class Shortcode
 
     public function register(): void
     {
-        add_shortcode('trinity_booking', [$this, 'render']);
+        add_shortcode('slashbooking', [$this, 'render']);
     }
 
     /**
@@ -25,9 +25,9 @@ final class Shortcode
         $attrs = is_array($attrs) ? $attrs : [];
 
         // The shortcode supports three forms:
-        //   [trinity_booking]                   -> user picks service in the widget (all active services)
-        //   [trinity_booking service="pv"]      -> service forced (no picker step)
-        //   [trinity_booking service="pv,irve"] -> picker filtered to a whitelist
+        //   [slashbooking]                   -> user picks service in the widget (all active services)
+        //   [slashbooking service="pv"]      -> service forced (no picker step)
+        //   [slashbooking service="pv,irve"] -> picker filtered to a whitelist
         $rawService = isset($attrs['service']) ? sanitize_text_field((string) $attrs['service']) : '';
         $slugs = array_values(array_filter(array_map(
             static fn (string $s): string => preg_replace('/[^a-z0-9_\-]/i', '', trim($s)) ?? '',
@@ -38,7 +38,7 @@ final class Shortcode
         if (count($slugs) === 1) {
             $svc = $this->services->findBySlug($slugs[0]);
             if ($svc === null || !$svc->isActive()) {
-                return '<div class="tb-error">' . esc_html__('Service inconnu', 'trinity-booking') . '</div>';
+                return '<div class="sb-error">' . esc_html__('Service inconnu', 'slashbooking') . '</div>';
             }
             $serviceAttr = $svc->slug;
         } else {
@@ -50,7 +50,7 @@ final class Shortcode
         $this->enqueueAssets();
 
         return sprintf(
-            '<div class="tb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
+            '<div class="sb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
             esc_attr($serviceAttr),
             esc_url_raw(rest_url(Plugin::REST_NAMESPACE . '/')),
         );
@@ -61,24 +61,24 @@ final class Shortcode
         $pluginUrl = plugin_dir_url(Plugin::instance()->pluginFile());
 
         wp_enqueue_style(
-            'trinity-booking-public',
+            'slashbooking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.css',
             [],
             Plugin::VERSION
         );
 
         wp_enqueue_script(
-            'trinity-booking-public',
+            'slashbooking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.js',
             [],
             Plugin::VERSION,
             true
         );
 
-        $legalId  = (int) get_option('tb_legal_page_id', 0);
+        $legalId  = (int) get_option('sb_legal_page_id', 0);
         $legalUrl = $legalId > 0 ? (string) get_permalink($legalId) : '';
 
-        wp_localize_script('trinity-booking-public', 'TrinityBooking', [
+        wp_localize_script('slashbooking-public', 'SlashBooking', [
             'nonce'    => wp_create_nonce('wp_rest'),
             'locale'   => get_locale(),
             'legalUrl' => $legalUrl,

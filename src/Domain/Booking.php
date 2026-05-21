@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;

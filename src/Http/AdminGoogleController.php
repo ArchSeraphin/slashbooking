@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use Closure;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Encryption;
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
-use Trinity\Booking\Google\GoogleClientBuilder;
-use Trinity\Booking\Google\OAuthClient;
-use Trinity\Booking\Google\OAuthState;
-use Trinity\Booking\Google\WatchChannelManager;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Encryption;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Google\GoogleClientBuilder;
+use Slash\Booking\Google\OAuthClient;
+use Slash\Booking\Google\OAuthState;
+use Slash\Booking\Google\WatchChannelManager;
+use Slash\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -81,6 +81,22 @@ final class AdminGoogleController
             'callback'            => [$this, 'diagnostics'],
             'permission_callback' => fn () => current_user_can(Capabilities::MANAGE),
         ]);
+        register_rest_route($ns, '/admin/google/calendars', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'listCalendars'],
+            'permission_callback' => [$this, 'canManage'],
+        ]);
+        register_rest_route($ns, '/admin/google/calendar', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'setCalendar'],
+            'permission_callback' => [$this, 'canManage'],
+            'args'                => [
+                'calendar_id' => [
+                    'type'     => 'string',
+                    'required' => true,
+                ],
+            ],
+        ]);
     }
 
     public function canManage(): bool
@@ -92,7 +108,7 @@ final class AdminGoogleController
     {
         $userId = get_current_user_id();
         if ($userId === 0) {
-            return new WP_Error('not_logged_in', __('Not logged in', 'trinity-booking'), ['status' => 401]);
+            return new WP_Error('not_logged_in', __('Not logged in', 'slashbooking'), ['status' => 401]);
         }
         $stateToken = $this->state->issue($userId);
         $url        = $this->oauthClient->authUrl($stateToken);
@@ -105,7 +121,7 @@ final class AdminGoogleController
         $state = (string) $req->get_param('state');
 
         if ($code === '' || $this->state->verify($state) === null) {
-            return new WP_Error('invalid_state', __('Invalid or expired OAuth state.', 'trinity-booking'), ['status' => 403]);
+            return new WP_Error('invalid_state', __('Invalid or expired OAuth state.', 'slashbooking'), ['status' => 403]);
         }
 
         try {
@@ -117,7 +133,7 @@ final class AdminGoogleController
         if (!isset($tokens['refresh_token'])) {
             return new WP_Error(
                 'missing_refresh_token',
-                __('Google did not return a refresh token. Revoke access at myaccount.google.com and retry with prompt=consent.', 'trinity-booking'),
+                __('Google did not return a refresh token. Revoke access at myaccount.google.com and retry with prompt=consent.', 'slashbooking'),
                 ['status' => 502]
             );
         }
@@ -129,7 +145,7 @@ final class AdminGoogleController
         $refreshEnc = $this->encryption->encrypt((string) $tokens['refresh_token']);
         $accessEnc  = $this->encryption->encrypt((string) $tokens['access_token']);
 
-        $label      = $existing?->label() ?? 'Commercial Trinity';
+        $label      = $existing?->label() ?? 'Commercial';
         $calendarId = $existing?->calendarId() ?? 'primary';
 
         $account = GoogleAccount::connect(
@@ -145,7 +161,7 @@ final class AdminGoogleController
 
         $this->accounts->save($account);
 
-        $redirect = admin_url('admin.php?page=trinity-booking#/google?connected=1');
+        $redirect = admin_url('admin.php?page=slashbooking#/google?connected=1');
         return new WP_REST_Response(null, 302, ['Location' => $redirect]);
     }
 
@@ -216,6 +232,45 @@ final class AdminGoogleController
         }
         ($this->enqueuePull)((int) $account->id());
         return new WP_REST_Response(['ok' => true]);
+    }
+
+    public function listCalendars(): WP_REST_Response|WP_Error
+    {
+        $account = $this->accounts->findSingle();
+        if ($account === null) {
+            return new WP_Error('no_account', __('Aucun compte Google connecté.', 'slashbooking'), ['status' => 400]);
+        }
+        try {
+            $gateway = $this->clientBuilder->buildGateway($account);
+            $items   = $gateway->listCalendars();
+        } catch (\Throwable $e) {
+            return new WP_Error('list_failed', $e->getMessage(), ['status' => 502]);
+        }
+        return new WP_REST_Response([
+            'selected'  => $account->calendarId(),
+            'calendars' => $items,
+        ], 200);
+    }
+
+    public function setCalendar(WP_REST_Request $req): WP_REST_Response|WP_Error
+    {
+        $calendarId = trim((string) $req->get_param('calendar_id'));
+        if ($calendarId === '') {
+            return new WP_Error('invalid_calendar', __('Identifiant de calendrier requis.', 'slashbooking'), ['status' => 400]);
+        }
+
+        $account = $this->accounts->findSingle();
+        if ($account === null) {
+            return new WP_Error('no_account', __('Aucun compte Google connecté.', 'slashbooking'), ['status' => 400]);
+        }
+
+        $account->setCalendarId($calendarId);
+        $this->accounts->save($account);
+
+        return new WP_REST_Response([
+            'ok'          => true,
+            'calendar_id' => $account->calendarId(),
+        ], 200);
     }
 
     public function diagnostics(): WP_REST_Response

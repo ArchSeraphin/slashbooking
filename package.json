@@ -1,8 +1,8 @@
 {
-  "name": "trinity-booking-admin",
+  "name": "slashbooking-admin",
   "version": "1.0.9",
   "private": true,
-  "description": "Admin SPA for trinity-booking",
+  "description": "Admin SPA for slashbooking",
   "scripts": {
     "build": "wp-scripts build --webpack-src-dir=src/Admin/react-app/src --output-path=assets/dist src/Admin/react-app/src/index.jsx",
     "start": "wp-scripts start --webpack-src-dir=src/Admin/react-app/src --output-path=assets/dist src/Admin/react-app/src/index.jsx",

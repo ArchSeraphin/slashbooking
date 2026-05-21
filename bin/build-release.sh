@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build a distribution ZIP for trinity-booking.
+# Build a distribution ZIP for slashbooking.
 # Usage: bin/build-release.sh [version]
 #        version defaults to the value read from src/Plugin.php
 
 set -euo pipefail
 
-PLUGIN_SLUG="trinity-booking"
+PLUGIN_SLUG="slashbooking"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build"
 STAGING_DIR="${BUILD_DIR}/${PLUGIN_SLUG}"
@@ -33,7 +33,7 @@ echo "→ npm run build (SPA assets)"
 (cd "${ROOT_DIR}" && npm ci --silent && npm run build --silent)
 
 # 4. Run PHP-Scoper to produce scoped src/ + vendor/
-echo "→ php-scoper (prefix Trinity\\Booking\\Vendor)"
+echo "→ php-scoper (prefix Slash\\Booking\\Vendor)"
 # Re-install dev to get php-scoper binary
 (cd "${ROOT_DIR}" && composer install --quiet)
 # Memory limit 1G is required: scoper processes ~34k files
@@ -61,7 +61,7 @@ file_put_contents($path, json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLAS
 echo "→ staging files into ${STAGING_DIR}"
 cp -R "${SCOPED_DIR}/src" "${STAGING_DIR}/src"
 cp -R "${SCOPED_DIR}/vendor" "${STAGING_DIR}/vendor"
-cp "${ROOT_DIR}/trinity-booking.php" "${STAGING_DIR}/trinity-booking.php"
+cp "${ROOT_DIR}/slashbooking.php" "${STAGING_DIR}/slashbooking.php"
 cp "${ROOT_DIR}/uninstall.php" "${STAGING_DIR}/uninstall.php"
 cp "${ROOT_DIR}/README.md" "${STAGING_DIR}/README.md"
 cp "${ROOT_DIR}/CHANGELOG.md" "${STAGING_DIR}/CHANGELOG.md" 2>/dev/null || true

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use Closure;
-use Trinity\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\DecisionTokenSigner;
 
 final class UrlBuilder
 {

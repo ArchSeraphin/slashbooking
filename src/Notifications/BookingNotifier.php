@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Http\UrlBuilder;
-use Trinity\Booking\Notifications\Events\BookingContext;
-use Trinity\Booking\Notifications\Events\EventKey;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Http\UrlBuilder;
+use Slash\Booking\Notifications\Events\BookingContext;
+use Slash\Booking\Notifications\Events\EventKey;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 
 final class BookingNotifier
 {
@@ -23,11 +23,11 @@ final class BookingNotifier
 
     public function register(): void
     {
-        add_action('trinity_booking/booking_created',      [$this, 'onCreated'],      10, 1);
-        add_action('trinity_booking/booking_confirmed',    [$this, 'onConfirmed'],    10, 1);
-        add_action('trinity_booking/booking_rejected',     [$this, 'onRejected'],     10, 1);
-        add_action('trinity_booking/booking_cancelled',    [$this, 'onCancelled'],    10, 1);
-        add_action('trinity_booking/booking_reminder_due', [$this, 'onReminderDue'],  10, 1);
+        add_action('slashbooking/booking_created',      [$this, 'onCreated'],      10, 1);
+        add_action('slashbooking/booking_confirmed',    [$this, 'onConfirmed'],    10, 1);
+        add_action('slashbooking/booking_rejected',     [$this, 'onRejected'],     10, 1);
+        add_action('slashbooking/booking_cancelled',    [$this, 'onCancelled'],    10, 1);
+        add_action('slashbooking/booking_reminder_due', [$this, 'onReminderDue'],  10, 1);
     }
 
     public function onCreated(int $bookingId): void
@@ -97,8 +97,8 @@ final class BookingNotifier
             'site_name'     => (string) get_option('blogname', ''),
             'site_url'      => (string) home_url('/'),
             'admin_email'   => (string) get_option('admin_email', ''),
-            'company_phone' => (string) get_option('tb_company_phone', ''),
-            'company_logo'  => (string) get_option('tb_company_logo', ''),
+            'company_phone' => (string) get_option('sb_company_phone', ''),
+            'company_logo'  => (string) get_option('sb_company_logo', ''),
             'cancel_url'    => $this->urls->cancelUrl($b->publicUid(), $exp),
             'confirm_url'   => $b->id() !== null ? $this->urls->decisionUrl($b->id(), 'confirm', $exp) : '',
             'reject_url'    => $b->id() !== null ? $this->urls->decisionUrl($b->id(), 'reject',  $exp) : '',

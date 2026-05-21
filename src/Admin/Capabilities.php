@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Admin;
+namespace Slash\Booking\Admin;
 
 final class Capabilities
 {
-    public const MANAGE = 'trinity_booking_manage';
-    public const VIEW   = 'trinity_booking_view';
+    public const MANAGE = 'slashbooking_manage';
+    public const VIEW   = 'slashbooking_view';
 
     public static function install(): void
     {

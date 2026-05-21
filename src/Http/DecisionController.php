@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Booking\ConfirmBooking;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Booking\Exceptions\BookingNotFound;
-use Trinity\Booking\Booking\RejectBooking;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Booking\ConfirmBooking;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Booking\Exceptions\BookingNotFound;
+use Slash\Booking\Booking\RejectBooking;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -48,34 +48,34 @@ final class DecisionController
         $sig    = (string) $request['sig'];
 
         if (!in_array($action, ['confirm', 'reject'], true)) {
-            return $this->htmlResponse(400, '<h1>' . esc_html__('Action invalide', 'trinity-booking') . '</h1>');
+            return $this->htmlResponse(400, '<h1>' . esc_html__('Action invalide', 'slashbooking') . '</h1>');
         }
 
         $payload = 'decide|' . $id . '|' . $action;
         if (!$this->signer->verify($payload, $exp, $sig)) {
             return $this->htmlResponse(
                 403,
-                '<h1>' . esc_html__('Lien invalide ou expiré', 'trinity-booking') . '</h1>'
-                . '<p>' . esc_html__('Demandez un nouveau lien.', 'trinity-booking') . '</p>',
+                '<h1>' . esc_html__('Lien invalide ou expiré', 'slashbooking') . '</h1>'
+                . '<p>' . esc_html__('Demandez un nouveau lien.', 'slashbooking') . '</p>',
             );
         }
 
         try {
             if ($action === 'confirm') {
                 $this->confirm->execute($id);
-                $message = '<h1>' . esc_html__('RDV confirmé ✓', 'trinity-booking') . '</h1>'
-                    . '<p>' . esc_html__('Le client a été notifié.', 'trinity-booking') . '</p>';
+                $message = '<h1>' . esc_html__('RDV confirmé ✓', 'slashbooking') . '</h1>'
+                    . '<p>' . esc_html__('Le client a été notifié.', 'slashbooking') . '</p>';
             } else {
                 $this->reject->execute($id);
-                $message = '<h1>' . esc_html__('RDV refusé', 'trinity-booking') . '</h1>'
-                    . '<p>' . esc_html__('Le client a été notifié.', 'trinity-booking') . '</p>';
+                $message = '<h1>' . esc_html__('RDV refusé', 'slashbooking') . '</h1>'
+                    . '<p>' . esc_html__('Le client a été notifié.', 'slashbooking') . '</p>';
             }
         } catch (BookingNotFound $e) {
-            return $this->htmlResponse(404, '<h1>' . esc_html__('Réservation introuvable', 'trinity-booking') . '</h1>');
+            return $this->htmlResponse(404, '<h1>' . esc_html__('Réservation introuvable', 'slashbooking') . '</h1>');
         } catch (\DomainException $e) {
             return $this->htmlResponse(
                 409,
-                '<h1>' . esc_html__('Impossible', 'trinity-booking') . '</h1>'
+                '<h1>' . esc_html__('Impossible', 'slashbooking') . '</h1>'
                 . '<p>' . esc_html($e->getMessage()) . '</p>',
             );
         }
@@ -94,7 +94,7 @@ final class DecisionController
 
     private function wrapHtml(string $inner): string
     {
-        $title = esc_html__('Décision RDV', 'trinity-booking');
+        $title = esc_html__('Décision RDV', 'slashbooking');
         return <<<HTML
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><title>{$title}</title>
 <style>body{font-family:system-ui,sans-serif;max-width:560px;margin:80px auto;padding:0 16px;color:#111}</style>

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -94,7 +94,7 @@ final class BookingRepositoryTest extends WP_UnitTestCase
     {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $wpdb->insert($wpdb->prefix . 'tb_bookings', [
+        $wpdb->insert($wpdb->prefix . 'sb_bookings', [
             'public_uid'       => 'uid-' . uniqid(),
             'service_id'       => $this->serviceId,
             'status'           => 'confirmed',

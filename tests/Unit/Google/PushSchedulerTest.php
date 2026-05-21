@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\PushScheduler;
+use Slash\Booking\Google\PushScheduler;
 
 final class PushSchedulerTest extends TestCase
 {
@@ -17,7 +17,7 @@ final class PushSchedulerTest extends TestCase
         $scheduler = new PushScheduler($enqueue);
         $scheduler->onCreated(42);
 
-        self::assertSame([['tb/push_gcal_event', [42, 'create']]], $calls);
+        self::assertSame([['sb/push_gcal_event', [42, 'create']]], $calls);
     }
 
     public function test_on_confirmed_enqueues_confirm(): void
@@ -27,7 +27,7 @@ final class PushSchedulerTest extends TestCase
             $calls[] = [$hook, $args];
         });
         $scheduler->onConfirmed(42);
-        self::assertSame([['tb/push_gcal_event', [42, 'confirm']]], $calls);
+        self::assertSame([['sb/push_gcal_event', [42, 'confirm']]], $calls);
     }
 
     public function test_on_rejected_and_cancelled_enqueue_delete(): void
@@ -40,8 +40,8 @@ final class PushSchedulerTest extends TestCase
         $s->onRejected(42);
         $s->onCancelled(43);
         self::assertSame([
-            ['tb/push_gcal_event', [42, 'delete']],
-            ['tb/push_gcal_event', [43, 'delete']],
+            ['sb/push_gcal_event', [42, 'delete']],
+            ['sb/push_gcal_event', [43, 'delete']],
         ], $calls);
     }
 }

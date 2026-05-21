@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Persistence\SyncLogRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Persistence\SyncLogRepository;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 

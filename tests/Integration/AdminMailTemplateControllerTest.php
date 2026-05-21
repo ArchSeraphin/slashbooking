@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_REST_Request;
 use WP_REST_Server;
 use WP_UnitTestCase;
-use Trinity\Booking\Http\AdminMailTemplateController;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Http\AdminMailTemplateController;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Plugin;
 
 /** @group rest */
 final class AdminMailTemplateControllerTest extends WP_UnitTestCase

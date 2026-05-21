@@ -1,24 +1,24 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Booking\DecisionTokenSigner;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Http\UrlBuilder;
-use Trinity\Booking\Notifications\BookingNotifier;
-use Trinity\Booking\Notifications\IcsBuilder;
-use Trinity\Booking\Notifications\MailDispatcher;
-use Trinity\Booking\Notifications\TagRegistry;
-use Trinity\Booking\Notifications\TemplateRenderer;
-use Trinity\Booking\Notifications\TextBodyGenerator;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\MailTemplateRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Booking\DecisionTokenSigner;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Http\UrlBuilder;
+use Slash\Booking\Notifications\BookingNotifier;
+use Slash\Booking\Notifications\IcsBuilder;
+use Slash\Booking\Notifications\MailDispatcher;
+use Slash\Booking\Notifications\TagRegistry;
+use Slash\Booking\Notifications\TemplateRenderer;
+use Slash\Booking\Notifications\TextBodyGenerator;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\MailTemplateRepository;
+use Slash\Booking\Persistence\ServiceRepository;
 use WP_UnitTestCase;
 
 final class BookingNotifierTest extends WP_UnitTestCase
@@ -39,8 +39,8 @@ final class BookingNotifierTest extends WP_UnitTestCase
             new TextBodyGenerator(),
             new IcsBuilder(),
         );
-        $signer = new DecisionTokenSigner((string) get_option('tb_decision_secret'));
-        $urls   = new UrlBuilder($signer, rest_url('trinity-booking/v1'));
+        $signer = new DecisionTokenSigner((string) get_option('sb_decision_secret'));
+        $urls   = new UrlBuilder($signer, rest_url('slashbooking/v1'));
 
         (new BookingNotifier($services, $bookings, $dispatcher, $urls))->register();
 
@@ -54,7 +54,7 @@ final class BookingNotifierTest extends WP_UnitTestCase
     public function test_booking_created_sends_two_emails(): void
     {
         $b = $this->newBooking('jean@test.fr');
-        do_action('trinity_booking/booking_created', $b->id());
+        do_action('slashbooking/booking_created', $b->id());
 
         self::assertCount(2, $this->sent);
         $recipients = array_column($this->sent, 'to');
@@ -65,7 +65,7 @@ final class BookingNotifierTest extends WP_UnitTestCase
     public function test_booking_confirmed_sends_one_email_with_ics(): void
     {
         $b = $this->newBooking('jean@test.fr');
-        do_action('trinity_booking/booking_confirmed', $b->id());
+        do_action('slashbooking/booking_confirmed', $b->id());
 
         self::assertCount(1, $this->sent);
         self::assertNotEmpty($this->sent[0]['attachments']);
@@ -73,7 +73,7 @@ final class BookingNotifierTest extends WP_UnitTestCase
 
     public function test_unknown_booking_id_is_safe_noop(): void
     {
-        do_action('trinity_booking/booking_confirmed', 99999);
+        do_action('slashbooking/booking_confirmed', 99999);
         self::assertCount(0, $this->sent);
     }
 

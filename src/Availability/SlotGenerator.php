@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Availability;
+namespace Slash\Booking\Availability;
 
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
 use DateTimeImmutable;
 use DateTimeZone;
 use DateInterval;

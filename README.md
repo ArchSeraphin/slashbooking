@@ -1,4 +1,4 @@
-# trinity-booking
+# SlashBooking
 
 Plugin WordPress de prise de rendez-vous commerciaux pour services solaires (photovoltaïque) et IRVE (borne de recharge), avec synchronisation bidirectionnelle Google Calendar.
 
@@ -24,13 +24,13 @@ Voir `docs/superpowers/specs/` pour la spécification complète et `docs/superpo
 
 ## Installation production (ZIP)
 
-1. Télécharger `trinity-booking-1.0.0.zip` depuis la page Releases (ou le construire via `bin/build-release.sh`).
+1. Télécharger `slashbooking-1.0.0.zip` depuis la page Releases (ou le construire via `bin/build-release.sh`).
 2. **WP Admin → Extensions → Ajouter → Téléverser** → uploader le ZIP → activer.
-3. L'activation crée 6 tables `wp_tb_*`, seed `pv` + `irve`, installe les capabilities, programme les crons (J-1 reminder à 10h, sync log purge à 3h, watch renewal à 4h, retention purge le 1er du mois à 3h30).
+3. L'activation crée 6 tables `wp_sb_*`, seed `pv` + `irve`, installe les capabilities, programme les crons (J-1 reminder à 10h, sync log purge à 3h, watch renewal à 4h, retention purge le 1er du mois à 3h30).
 4. Définir dans `wp-config.php` (recommandé) :
 
    ```php
-   define( 'TRINITY_BOOKING_ENC_KEY', '<64-char hex string>' );
+   define( 'SLASHBOOKING_ENC_KEY', '<64-char hex string>' );
    ```
 
    Génère via : `php -r 'echo bin2hex(random_bytes(32));'`.
@@ -39,82 +39,54 @@ Voir `docs/superpowers/specs/` pour la spécification complète et `docs/superpo
 6. Insérer le shortcode dans une page :
 
    ```
-   [trinity_booking service="pv"]
+   [slashbooking service="pv"]
    ```
 
-7. (Optionnel) Définir la page "Mentions légales" : `wp option update tb_legal_page_id <page_id>`.
+7. (Optionnel) Définir la page "Mentions légales" : `wp option update sb_legal_page_id <page_id>`.
 
 ## Quickstart (état actuel post Plan 2)
 
 1. Installer comme plugin WordPress standard (avec `vendor/` inclus dans le ZIP de release, ou `composer install --no-dev` en local).
 2. Builder le dashboard admin : `npm install && npm run build` (génère `assets/dist/`).
-3. Activer dans `/wp-admin/plugins.php`. L'activation crée les 6 tables (`wp_tb_*`), seed les services par défaut (`pv`, `irve`), installe les capabilities `trinity_booking_{manage,view}` et programme le cron quotidien J-1.
+3. Activer dans `/wp-admin/plugins.php`. L'activation crée les 6 tables (`wp_sb_*`), seed les services par défaut (`pv`, `irve`), installe les capabilities `slashbooking_{manage,view}` et programme le cron quotidien J-1.
 4. Sur une page, ajouter le shortcode :
 
    ```
-   [trinity_booking service="pv"]
-   [trinity_booking service="irve"]
+   [slashbooking service="pv"]
+   [slashbooking service="irve"]
    ```
 
 5. Cycle complet maintenant fonctionnel :
    - Le visiteur prend RDV → 2 e-mails partent (client + admin avec boutons HMAC Confirmer/Refuser).
-   - L'admin clique dans le mail OU passe par le menu **Trinity Booking** (dashboard React) pour confirmer/refuser/annuler.
+   - L'admin clique dans le mail OU passe par le menu **SlashBooking** (dashboard React) pour confirmer/refuser/annuler.
    - À chaque transition, le client reçoit le mail correspondant (confirmé avec `.ics`, refusé, annulé).
    - Reminder J-1 envoyé automatiquement la veille à 10h.
 
 > ⚠️ La sync **entrante** Google Calendar (webhook, Plan 4) et l'éditeur de templates CodeMirror (Plan 5) ne sont pas encore livrés. Le push sortant WP → GCal est en place depuis le Plan 3.
 
-## Google Calendar setup (Plan 3)
+## Google Calendar setup
 
-1. **Créer un projet sur Google Cloud Console** : https://console.cloud.google.com → APIs & Services → Library → activer **Google Calendar API**.
-2. **OAuth consent screen** : configurer en mode "External", ajouter votre adresse e-mail comme *test user* (V1 mono-commercial — Google limite à 100 testeurs sans review).
-3. **OAuth 2.0 Client ID** :
-   - Type : *Web application*.
-   - *Authorized redirect URI* : copier l'URI affichée dans **Trinity Booking → Google → Configuration OAuth** (typiquement `https://votresite.fr/wp-json/trinity-booking/v1/admin/google/oauth/callback`).
-4. **Coller** le `Client ID` + `Client secret` dans le formulaire admin et **Enregistrer**.
-5. Cliquer **Connecter mon Google Calendar** → autoriser sur l'écran Google → retour automatique sur la page admin avec `?connected=1`.
-6. (Recommandé) Définir dans `wp-config.php` :
+La mise en place complète de l'OAuth Google + watch channel + webhook est documentée dans un fichier dédié :
 
-   ```php
-   define('TRINITY_BOOKING_ENC_KEY', '<64-char hex string, ex: bin2hex(random_bytes(32))>');
-   ```
+📄 **[docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md)** (version PDF : [docs/GOOGLE_SETUP.pdf](docs/GOOGLE_SETUP.pdf))
 
-   Cette constante est utilisée pour chiffrer les refresh tokens (sodium `crypto_secretbox`). Sinon une clé fallback est générée et stockée en option WP (un *admin notice* le rappelle).
+Sommaire :
 
-À partir de là, chaque transition booking (création / confirmation / refus / annulation) déclenche un job Action Scheduler `tb/push_gcal_event` qui crée, met à jour ou supprime l'événement dans Google Calendar. Les erreurs 5xx sont retentées automatiquement ; les 4xx sont consignées dans le journal sans retry. `404`/`410` sur `delete` sont tolérés (déjà absent côté Google = succès).
+1. Création du projet Google Cloud + activation Calendar API
+2. OAuth consent screen (External + test users)
+3. OAuth 2.0 Client ID (redirect URI)
+4. Connexion dans WordPress
+5. Clé de chiffrement `SLASHBOOKING_ENC_KEY`
+6. Sync entrante (watch + webhook + crons)
+7. Vérification via `wp slashbooking doctor`
+8. Diagnostics, troubleshooting, désactivation propre
 
-## Sync entrante Google → WP (Plan 4)
-
-Un événement créé directement dans Google Calendar devient automatiquement un `BusyBlock` côté WP en ~5 secondes (via webhook) ou ≤ 15 minutes (cron fallback).
-
-### Mécanisme
-
-1. **Watch channel.** Une fois OAuth connecté, ouvrir **Trinity Booking → Google** et cliquer **Démarrer le watch**. Un channel push notifications est créé chez Google (TTL 7 jours). À chaque modif de calendrier, Google POST notre webhook public.
-2. **Webhook.** `POST /wp-json/trinity-booking/v1/google/webhook`. Vérification HMAC du header `X-Goog-Channel-Token` contre le secret persisté → enfile un job `tb/google_pull` (debounce 5 s).
-3. **Pull job.** Action Scheduler exécute `tb/google_pull` qui appelle `events.list?syncToken=…` pour récupérer les diffs incrémentaux. Upsert / delete des `BusyBlock` selon `status` de l'event (`confirmed`/`tentative` → upsert ; `cancelled` → delete).
-4. **Reflection.** Quand notre push (Plan 3) crée un event GCal, Google nous re-notifie. On l'ignore (lookup `google_event_id` dans `wp_tb_bookings`).
-5. **Renewal.** Cron quotidien `tb/watch_renew_check` : si le channel expire dans < 24h, on le renouvelle automatiquement.
-6. **Fallback.** Cron `tb/google_pull_all` toutes les 15 min : exécute un pull même si le webhook n'a rien reçu (firewall, DNS, etc.). No-op si rien à pull.
-
-### Pré-requis Google Cloud
-
-- Webhook URL **doit** être HTTPS et publique. Google rejette `http://` et les IPs RFC1918.
-- En dev local : utiliser un tunnel **ngrok** (`ngrok http 8080`) ou **Cloudflare Tunnel** et configurer `WP_HOME` / `WP_SITEURL` sur l'URL publique le temps des tests.
-
-### Diagnostics
-
-- **WP admin → Trinity Booking → Google → Synchronisation entrante** : statut watch (channel id, expires_at), dernier full sync, présence du sync token, boutons "Démarrer / Arrêter watch" et "Forcer un pull maintenant".
-- **WP-CLI** : `wp trinity-booking doctor` — vérifie OAuth, statut watch, et lance un pull de test (rapporte upserted / deleted / reflection-ignored).
-- **Journal** : Trinity Booking → Journal, filtre `direction=g_to_wp` ou `entity=watch`.
-
-### Désactivation propre
-
-Avant de désactiver le plugin, **cliquer Arrêter le watch** pour libérer le channel côté Google. Sinon le channel expire de lui-même en ≤ 7 jours. La désactivation WP n'appelle PAS `stopChannel()` automatiquement (le bootstrap du plugin n'est pas garanti dans le contexte de désactivation).
+> En résumé : chaque transition booking (création / confirmation / refus / annulation) déclenche un job Action Scheduler `sb/push_gcal_event` (sortant). Et tout événement créé directement dans Google Calendar devient un `BusyBlock` côté WP en ~5 s (webhook) ou ≤ 15 min (cron fallback). Les erreurs 5xx sont retentées ; les 4xx consignées sans retry ; `404`/`410` sur delete tolérés.
 
 ## CLI diagnostics
 
 ```bash
-wp trinity-booking doctor
+wp slashbooking doctor
 ```
 
 Vérifie : compte connecté, rafraîchissement du token, accessibilité de la Calendar API (insère puis supprime un event de test). Utile en post-déploiement ou après une modification du Client ID / Secret.
@@ -194,7 +166,7 @@ src/
 │   ├── DecisionController.php      # /decide?action=confirm|reject (HMAC)
 │   └── AdminBookingController.php  # /admin/bookings + actions
 ├── Admin/
-│   ├── Capabilities.php            # trinity_booking_manage/view
+│   ├── Capabilities.php            # slashbooking_manage/view
 │   ├── AdminMenu.php               # Top-level menu WP
 │   ├── Assets.php                  # Enqueue React bundle
 │   └── react-app/                  # @wordpress/scripts SPA
@@ -214,20 +186,20 @@ src/
 
 | Hook | Quand | Payload |
 | --- | --- | --- |
-| `trinity_booking/booking_created` | après création (`CreateBooking`) | `int $bookingId` |
-| `trinity_booking/booking_confirmed` | après confirmation | `int $bookingId` |
-| `trinity_booking/booking_rejected` | après refus | `int $bookingId` |
-| `trinity_booking/booking_cancelled` | après annulation | `int $bookingId` |
-| `trinity_booking/booking_reminder_due` | cron J-1 trouve un RDV éligible | `int $bookingId` |
-| `tb_send_daily_reminders` | cron quotidien à 10h site TZ | — |
-| `tb/push_gcal_event` | Action Scheduler — push WP → GCal | `int $bookingId, string $action` (`create`/`confirm`/`delete`) |
-| `tb_purge_sync_log` | cron quotidien à 3h site TZ | — |
+| `slashbooking/booking_created` | après création (`CreateBooking`) | `int $bookingId` |
+| `slashbooking/booking_confirmed` | après confirmation | `int $bookingId` |
+| `slashbooking/booking_rejected` | après refus | `int $bookingId` |
+| `slashbooking/booking_cancelled` | après annulation | `int $bookingId` |
+| `slashbooking/booking_reminder_due` | cron J-1 trouve un RDV éligible | `int $bookingId` |
+| `sb_send_daily_reminders` | cron quotidien à 10h site TZ | — |
+| `sb/push_gcal_event` | Action Scheduler — push WP → GCal | `int $bookingId, string $action` (`create`/`confirm`/`delete`) |
+| `sb_purge_sync_log` | cron quotidien à 3h site TZ | — |
 
 ## Troubleshooting
 
 ### Le webhook Google n'arrive pas → `BusyBlock` n'apparaît pas
 
-1. Vérifier dans **Trinity Booking → Google → Synchronisation entrante** que le watch est actif (id de channel + `expires_at` futur).
+1. Vérifier dans **SlashBooking → Google → Synchronisation entrante** que le watch est actif (id de channel + `expires_at` futur).
 2. Vérifier que votre URL est HTTPS (Google rejette HTTP) :
 
    ```bash
@@ -237,7 +209,7 @@ src/
 3. Tester la réception webhook depuis l'extérieur :
 
    ```bash
-   curl -X POST https://votresite.fr/wp-json/trinity-booking/v1/google/webhook \
+   curl -X POST https://votresite.fr/wp-json/slashbooking/v1/google/webhook \
      -H "X-Goog-Resource-State: sync" \
      -H "X-Goog-Channel-Id: test" \
      -H "X-Goog-Channel-Token: <watch_token_secret>"
@@ -245,15 +217,15 @@ src/
 
    Attendu : `200`. Si `401` → le token ne correspond pas (re-créer le watch). Si timeout → firewall / WAF bloque, vérifier les logs du reverse proxy.
 
-4. Cron fallback : toutes les 15 min, `tb/google_pull_all` exécute un pull manuel. Vérifier avec :
+4. Cron fallback : toutes les 15 min, `sb/google_pull_all` exécute un pull manuel. Vérifier avec :
 
    ```bash
-   wp cron event list | grep tb_google_pull_all
+   wp cron event list | grep sb_google_pull_all
    ```
 
-### `wp trinity-booking doctor` signale `oauth_failed`
+### `wp slashbooking doctor` signale `oauth_failed`
 
-Le refresh token est invalide (révoqué côté Google, ou clé `TRINITY_BOOKING_ENC_KEY` modifiée). Reconnecter depuis **Trinity Booking → Google → Configuration OAuth → Reconnecter mon Google Calendar**.
+Le refresh token est invalide (révoqué côté Google, ou clé `SLASHBOOKING_ENC_KEY` modifiée). Reconnecter depuis **SlashBooking → Google → Configuration OAuth → Reconnecter mon Google Calendar**.
 
 ### `syncToken expired` (410 Gone) dans le sync log
 
@@ -262,8 +234,8 @@ Normal après une longue période sans pull (Google invalide les tokens > 7 jour
 ### L'e-mail admin "à valider" n'arrive pas
 
 1. Vérifier la config SMTP : `wp option get admin_email` + plugin SMTP installé (ex: WP Mail SMTP).
-2. Tester via **Trinity Booking → Templates → booking.pending.admin → Envoyer un test**.
-3. Si le test n'arrive pas : log dans **Trinity Booking → Journal** filtre `entity=booking action=mail_sent` — vérifier `error_message`.
+2. Tester via **SlashBooking → Templates → booking.pending.admin → Envoyer un test**.
+3. Si le test n'arrive pas : log dans **SlashBooking → Journal** filtre `entity=booking action=mail_sent` — vérifier `error_message`.
 
 ### Le SPA admin est vide / pas de tabs
 
@@ -274,8 +246,8 @@ Normal après une longue période sans pull (Google invalide les tokens > 7 jour
 **Outils → Désinstaller des extensions** ne supprime pas les données par défaut. Pour un nettoyage complet :
 
 ```bash
-wp db query "DROP TABLE wp_tb_services, wp_tb_bookings, wp_tb_busy_blocks, wp_tb_google_accounts, wp_tb_sync_log, wp_tb_mail_templates;"
-wp option delete tb_db_version tb_decision_secret tb_google_client_id tb_google_client_secret tb_legal_page_id tb_booking_retention_days TRINITY_BOOKING_ENC_KEY_FALLBACK
+wp db query "DROP TABLE wp_sb_services, wp_sb_bookings, wp_sb_busy_blocks, wp_sb_google_accounts, wp_sb_sync_log, wp_sb_mail_templates;"
+wp option delete sb_db_version sb_decision_secret sb_google_client_id sb_google_client_secret sb_legal_page_id sb_booking_retention_days SLASHBOOKING_ENC_KEY_FALLBACK
 ```
 
 ## Licence

@@ -1,4 +1,4 @@
-# trinity-booking — Plan 3 : Google OAuth + push WP → GCal
+# slashbooking — Plan 3 : Google OAuth + push WP → GCal
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -14,7 +14,7 @@
 
 **Tech Stack:** PHP 8.1+, WordPress 6.5+, sodium (libsodium bundled), `google/apiclient` v2.x, Action Scheduler v3.x, PHPUnit 10 + Brain Monkey.
 
-**Spec source:** `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`, sections 2 (sync GCal), 4 (Google/), 5 (`wp_tb_google_accounts`, `wp_tb_sync_log`), 6.1 (jobs push), 7 (REST OAuth), 9 (chiffrement OAuth), 12 (observabilité), 15 (risques quotas / scoping).
+**Spec source:** `docs/superpowers/specs/2026-05-19-slashbooking-design.md`, sections 2 (sync GCal), 4 (Google/), 5 (`wp_sb_google_accounts`, `wp_sb_sync_log`), 6.1 (jobs push), 7 (REST OAuth), 9 (chiffrement OAuth), 12 (observabilité), 15 (risques quotas / scoping).
 
 ---
 
@@ -24,17 +24,17 @@ Lire avant d'attaquer les tâches.
 
 1. **OAuth 2.0 "Authorization Code" avec refresh token long-vivant.** Le flow standard : on génère une `auth_url` avec `access_type=offline` + `prompt=consent` (Google ne renvoie un refresh token qu'avec ces deux paramètres), l'admin autorise, Google redirige vers `/admin/google/oauth/callback?code=...&state=...`, on échange `code` contre `(access_token, refresh_token, expires_in)`. Le refresh token est **long-vivant** ; on le chiffre et on s'en sert pour rafraîchir l'access token (1 h de TTL). On ne re-demande l'autorisation **que** si le refresh token est révoqué ou si l'utilisateur déconnecte.
 
-2. **Le `state` est notre garde CSRF.** Google ne signe rien : il renvoie le `state` qu'on lui a passé. On y met un HMAC SHA-256 de `"oauth|{user_id}|{exp}"` signé avec `tb_decision_secret` (déjà en place Plan 1). Expiration **10 minutes**. Vérifié dans le callback avant tout. Sans état valide → 403, on ne touche ni à `code` ni à Google.
+2. **Le `state` est notre garde CSRF.** Google ne signe rien : il renvoie le `state` qu'on lui a passé. On y met un HMAC SHA-256 de `"oauth|{user_id}|{exp}"` signé avec `sb_decision_secret` (déjà en place Plan 1). Expiration **10 minutes**. Vérifié dans le callback avant tout. Sans état valide → 403, on ne touche ni à `code` ni à Google.
 
-3. **Chiffrement des refresh tokens.** `sodium_crypto_secretbox` (AEAD, authentifié) avec clé 32 octets résolue dans cet ordre : (1) constante PHP `TRINITY_BOOKING_ENC_KEY` (64 hex chars) définie dans `wp-config.php`, (2) option WP `tb_enc_key` générée automatiquement à la première utilisation. Si on tombe en (2), on affiche un `admin_notice` de niveau warning : "Définissez `TRINITY_BOOKING_ENC_KEY` dans wp-config.php pour une sécurité optimale." Format stocké : `base64(nonce . ciphertext)` (nonce 24 octets en préfixe).
+3. **Chiffrement des refresh tokens.** `sodium_crypto_secretbox` (AEAD, authentifié) avec clé 32 octets résolue dans cet ordre : (1) constante PHP `SLASHBOOKING_ENC_KEY` (64 hex chars) définie dans `wp-config.php`, (2) option WP `sb_enc_key` générée automatiquement à la première utilisation. Si on tombe en (2), on affiche un `admin_notice` de niveau warning : "Définissez `SLASHBOOKING_ENC_KEY` dans wp-config.php pour une sécurité optimale." Format stocké : `base64(nonce . ciphertext)` (nonce 24 octets en préfixe).
 
-4. **`CalendarGateway` = interface étroite, 3 méthodes.** `insertEvent(calendarId, payload): array{id,etag}` / `patchEvent(calendarId, eventId, payload): array{id,etag}` / `deleteEvent(calendarId, eventId): void`. Impl réelle = `GoogleApiCalendarGateway` (utilise `Google\Service\Calendar`). Impl test = `FakeCalendarGateway` (in-memory `array<string, array>`). On ne testera **jamais** le SDK Google : on teste notre code via la fake. Le SDK réel est couvert par `wp trinity-booking doctor`.
+4. **`CalendarGateway` = interface étroite, 3 méthodes.** `insertEvent(calendarId, payload): array{id,etag}` / `patchEvent(calendarId, eventId, payload): array{id,etag}` / `deleteEvent(calendarId, eventId): void`. Impl réelle = `GoogleApiCalendarGateway` (utilise `Google\Service\Calendar`). Impl test = `FakeCalendarGateway` (in-memory `array<string, array>`). On ne testera **jamais** le SDK Google : on teste notre code via la fake. Le SDK réel est couvert par `wp slashbooking doctor`.
 
-5. **Action Scheduler.** Plugin librairie chargé via `require_once vendor/woocommerce/action-scheduler/action-scheduler.php`. Fournit `as_enqueue_async_action($hook, $args)` (file FIFO) et gère automatiquement le retry (3 tentatives par défaut). On enregistre nos callbacks via `add_action('tb/push_gcal_event', ...)`. Si la lib n'est pas chargée (test unitaire pur), `PushScheduler` doit fonctionner en mode no-op silencieux (détection `function_exists('as_enqueue_async_action')`).
+5. **Action Scheduler.** Plugin librairie chargé via `require_once vendor/woocommerce/action-scheduler/action-scheduler.php`. Fournit `as_enqueue_async_action($hook, $args)` (file FIFO) et gère automatiquement le retry (3 tentatives par défaut). On enregistre nos callbacks via `add_action('sb/push_gcal_event', ...)`. Si la lib n'est pas chargée (test unitaire pur), `PushScheduler` doit fonctionner en mode no-op silencieux (détection `function_exists('as_enqueue_async_action')`).
 
-6. **Idempotence du push.** Le job `tb/push_gcal_event` reçoit `[bookingId, action]` où `action ∈ {create, confirm, delete}`. Si le booking n'existe plus → no-op. Si l'action est `create` et `google_event_id` est déjà set → no-op (on a déjà créé l'event lors d'une tentative précédente). Si `confirm` et l'event n'existe pas (jamais créé) → fallback create. Si `delete` et pas d'event → no-op. Toutes ces branches sont loggées.
+6. **Idempotence du push.** Le job `sb/push_gcal_event` reçoit `[bookingId, action]` où `action ∈ {create, confirm, delete}`. Si le booking n'existe plus → no-op. Si l'action est `create` et `google_event_id` est déjà set → no-op (on a déjà créé l'event lors d'une tentative précédente). Si `confirm` et l'event n'existe pas (jamais créé) → fallback create. Si `delete` et pas d'event → no-op. Toutes ces branches sont loggées.
 
-7. **Color codes GCal.** `colorId` est un STRING. `6` = orange (`pending` → `[À VALIDER]` préfixé dans le summary). `10` = vert (`confirmed`, préfixe retiré). Options WP `tb_gcal_color_pending` et `tb_gcal_color_confirmed` permettent l'override (défauts `6` et `10`).
+7. **Color codes GCal.** `colorId` est un STRING. `6` = orange (`pending` → `[À VALIDER]` préfixé dans le summary). `10` = vert (`confirmed`, préfixe retiré). Options WP `sb_gcal_color_pending` et `sb_gcal_color_confirmed` permettent l'override (défauts `6` et `10`).
 
 8. **Mapping Booking → Google Event.** Le `EventFormatter::format(Booking, Service)` produit le payload :
    ```
@@ -47,10 +47,10 @@ Lire avant d'attaquer les tâches.
 
 9. **Backoff Action Scheduler.** En cas d'`GoogleApiError` (status 5xx ou réseau), on lève l'exception → Action Scheduler retry avec délai croissant. Pour les `4xx` métier (400 bad request, 404 event not found, 410 gone), on **n'échoue pas** : on logge en `failed` et on `return` proprement (pas de retry sur erreur déterministe).
 
-10. **Journal `wp_tb_sync_log`.** Une ligne par appel Google. Champs : `direction='wp_to_g'`, `entity='booking'`, `entity_id=$bookingId`, `action ∈ {create, update, delete, refresh_token, oauth_connect, oauth_disconnect}`, `status ∈ {ok, retry, failed}`, `payload` = JSON tronqué à 4 ko, `error_message` si échec. Purge `> 30 jours` par cron quotidien `tb_purge_sync_log`.
+10. **Journal `wp_sb_sync_log`.** Une ligne par appel Google. Champs : `direction='wp_to_g'`, `entity='booking'`, `entity_id=$bookingId`, `action ∈ {create, update, delete, refresh_token, oauth_connect, oauth_disconnect}`, `status ∈ {ok, retry, failed}`, `payload` = JSON tronqué à 4 ko, `error_message` si échec. Purge `> 30 jours` par cron quotidien `sb_purge_sync_log`.
 
 11. **REST OAuth — chemins publics vs protégés.**
-    - `POST /admin/google/oauth/start` — capability `trinity_booking_manage` + nonce. Retourne `{ auth_url }`.
+    - `POST /admin/google/oauth/start` — capability `slashbooking_manage` + nonce. Retourne `{ auth_url }`.
     - `GET /admin/google/oauth/callback` — **public** (Google redirige le browser ici, pas de cookie WP forcément valide selon configuration). Sécurité = HMAC sur `state`.
     - `GET /admin/google/status` — capability.
     - `POST /admin/google/disconnect` — capability + nonce.
@@ -65,8 +65,8 @@ Lire avant d'attaquer les tâches.
 plugins-booking/
 ├── composer.json                                # MODIFY — add google/apiclient + action-scheduler
 ├── composer.lock                                # AUTO — composer update
-├── README.md                                    # MODIFY — document Google OAuth + TRINITY_BOOKING_ENC_KEY
-├── trinity-booking.php                          # MODIFY — bootstrap Action Scheduler
+├── README.md                                    # MODIFY — document Google OAuth + SLASHBOOKING_ENC_KEY
+├── slashbooking.php                          # MODIFY — bootstrap Action Scheduler
 ├── src/
 │   ├── Plugin.php                               # MODIFY — wire Google services
 │   ├── Activator.php                            # MODIFY — schedule sync-log purge cron
@@ -104,7 +104,7 @@ plugins-booking/
 │   │       ├── GooglePage.jsx                   # NEW
 │   │       └── SyncLogPage.jsx                  # NEW
 │   └── Cli/
-│       └── DoctorCommand.php                    # NEW — wp trinity-booking doctor
+│       └── DoctorCommand.php                    # NEW — wp slashbooking doctor
 ├── tests/
 │   ├── Unit/
 │   │   ├── Google/
@@ -197,11 +197,11 @@ git commit -m "build: add google/apiclient + action-scheduler dependencies"
 ## Task 2 : Bootstrap Action Scheduler depuis le plugin
 
 **Files:**
-- Modify: `trinity-booking.php`
+- Modify: `slashbooking.php`
 
 Action Scheduler est une "library plugin" ; on charge son entry-point avant tout pour que `as_enqueue_async_action()` soit disponible.
 
-- [ ] **Step 1 : Lire `trinity-booking.php` et localiser le `require` de l'autoloader composer**
+- [ ] **Step 1 : Lire `slashbooking.php` et localiser le `require` de l'autoloader composer**
 
 - [ ] **Step 2 : Ajouter le bootstrap d'Action Scheduler juste après l'autoload composer**
 
@@ -209,11 +209,11 @@ Insérer après la ligne `require __DIR__ . '/vendor/autoload.php';` :
 
 ```php
 // Action Scheduler bootstrap — must run before plugins_loaded so other plugins can enqueue.
-$tb_as = __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
-if (is_readable($tb_as)) {
-    require_once $tb_as;
+$sb_as = __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
+if (is_readable($sb_as)) {
+    require_once $sb_as;
 }
-unset($tb_as);
+unset($sb_as);
 ```
 
 - [ ] **Step 3 : Vérifier**
@@ -226,7 +226,7 @@ Attendu : `OK` (la lib définit la fonction même hors WP réel).
 - [ ] **Step 4 : Commit**
 
 ```bash
-git add trinity-booking.php
+git add slashbooking.php
 git commit -m "build: bootstrap action-scheduler from plugin entry"
 ```
 
@@ -247,11 +247,11 @@ git commit -m "build: bootstrap action-scheduler from plugin entry"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\Encryption;
-use Trinity\Booking\Google\Exceptions\EncryptionFailure;
+use Slash\Booking\Google\Encryption;
+use Slash\Booking\Google\Exceptions\EncryptionFailure;
 
 final class EncryptionTest extends TestCase
 {
@@ -308,7 +308,7 @@ final class EncryptionTest extends TestCase
 ```bash
 composer test -- --filter EncryptionTest
 ```
-Attendu : `Class Trinity\Booking\Google\Encryption not found`.
+Attendu : `Class Slash\Booking\Google\Encryption not found`.
 
 - [ ] **Step 3 : Créer `src/Google/Exceptions/EncryptionFailure.php`**
 
@@ -316,7 +316,7 @@ Attendu : `Class Trinity\Booking\Google\Encryption not found`.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google\Exceptions;
+namespace Slash\Booking\Google\Exceptions;
 
 final class EncryptionFailure extends \RuntimeException
 {
@@ -329,9 +329,9 @@ final class EncryptionFailure extends \RuntimeException
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
-use Trinity\Booking\Google\Exceptions\EncryptionFailure;
+use Slash\Booking\Google\Exceptions\EncryptionFailure;
 
 final class Encryption
 {
@@ -402,14 +402,14 @@ Pas de test unitaire dédié : la résolution dépend de `defined()` + `get_opti
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
-use Trinity\Booking\Google\Exceptions\EncryptionFailure;
+use Slash\Booking\Google\Exceptions\EncryptionFailure;
 
 final class EncryptionKeyResolver
 {
-    public const CONSTANT = 'TRINITY_BOOKING_ENC_KEY';
-    public const OPTION   = 'tb_enc_key';
+    public const CONSTANT = 'SLASHBOOKING_ENC_KEY';
+    public const OPTION   = 'sb_enc_key';
 
     public function resolve(): string
     {
@@ -474,12 +474,12 @@ V1 = mono-compte, mais on garde un objet domain pour préparer V2 sans casser.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Domain;
+namespace Slash\Booking\Tests\Unit\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\GoogleAccount;
 
 final class GoogleAccountTest extends TestCase
 {
@@ -531,7 +531,7 @@ Attendu : classe manquante.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Domain;
+namespace Slash\Booking\Domain;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -677,13 +677,13 @@ V1 mono-compte → on expose `findSingle()` qui retourne le seul compte ou `null
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class GoogleAccountRepositoryTest extends TestCase
 {
@@ -693,7 +693,7 @@ final class GoogleAccountRepositoryTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit (run via composer test:integration).');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_google_accounts");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_google_accounts");
     }
 
     public function test_save_then_find_single_returns_account(): void
@@ -755,9 +755,9 @@ Attendu : skipped si wp-phpunit absent, sinon classe manquante.
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
-use Trinity\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\GoogleAccount;
 use wpdb;
 
 final class GoogleAccountRepository
@@ -766,7 +766,7 @@ final class GoogleAccountRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_google_accounts';
+        $this->table = $wpdb->prefix . 'sb_google_accounts';
     }
 
     public function save(GoogleAccount $account): void
@@ -854,10 +854,10 @@ git commit -m "feat(persistence): GoogleAccountRepository (mono-account V1)"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\OAuthState;
+use Slash\Booking\Google\OAuthState;
 
 final class OAuthStateTest extends TestCase
 {
@@ -905,7 +905,7 @@ final class OAuthStateTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 final class OAuthState
 {
@@ -981,7 +981,7 @@ git commit -m "feat(google): HMAC-signed OAuth state token (10min TTL)"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google\Exceptions;
+namespace Slash\Booking\Google\Exceptions;
 
 final class OAuthFailure extends \RuntimeException
 {
@@ -994,7 +994,7 @@ final class OAuthFailure extends \RuntimeException
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google\Exceptions;
+namespace Slash\Booking\Google\Exceptions;
 
 final class GoogleApiError extends \RuntimeException
 {
@@ -1011,7 +1011,7 @@ final class GoogleApiError extends \RuntimeException
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google\Exceptions;
+namespace Slash\Booking\Google\Exceptions;
 
 final class GoogleClientError extends \RuntimeException
 {
@@ -1028,9 +1028,9 @@ final class GoogleClientError extends \RuntimeException
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
 
 /**
  * @phpstan-type TokenResponse array{
@@ -1154,7 +1154,7 @@ git commit -m "feat(google): OAuthClient + Google error hierarchy"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 /**
  * @phpstan-type EventPayload array{
@@ -1191,10 +1191,10 @@ interface CalendarGateway
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Support;
+namespace Slash\Booking\Tests\Unit\Support;
 
-use Trinity\Booking\Google\CalendarGateway;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\CalendarGateway;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
 
 final class FakeCalendarGateway implements CalendarGateway
 {
@@ -1229,7 +1229,7 @@ final class FakeCalendarGateway implements CalendarGateway
             throw new GoogleApiError('Simulated 503', 503);
         }
         if (!isset($this->events[$eventId])) {
-            throw new \Trinity\Booking\Google\Exceptions\GoogleClientError('Event not found', 404);
+            throw new \Slash\Booking\Google\Exceptions\GoogleClientError('Event not found', 404);
         }
         $this->events[$eventId]['payload'] = $payload;
         $this->events[$eventId]['etag'] = '"etag_patched_' . (++$this->seq) . '"';
@@ -1250,7 +1250,7 @@ final class FakeCalendarGateway implements CalendarGateway
 
 - [ ] **Step 3 : Mettre à jour `composer.json` pour autoload de `tests/Unit/Support/`**
 
-Vérifier que `"autoload-dev"` inclut bien `"Trinity\\Booking\\Tests\\": "tests/"`. C'est déjà le cas — donc rien à faire. Régénérer :
+Vérifier que `"autoload-dev"` inclut bien `"Slash\\Booking\\Tests\\": "tests/"`. C'est déjà le cas — donc rien à faire. Régénérer :
 
 ```bash
 composer dump-autoload
@@ -1277,16 +1277,16 @@ git commit -m "feat(google): CalendarGateway interface + in-memory fake"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Google\EventFormatter;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Google\EventFormatter;
 
 final class EventFormatterTest extends TestCase
 {
@@ -1372,11 +1372,11 @@ final class EventFormatterTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\BookingStatus;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\BookingStatus;
+use Slash\Booking\Domain\Service;
 
 final class EventFormatter
 {
@@ -1465,12 +1465,12 @@ git commit -m "feat(google): EventFormatter maps Booking to Google Calendar payl
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Persistence\SyncLogRepository;
+use Slash\Booking\Persistence\SyncLogRepository;
 
 final class SyncLogRepositoryTest extends TestCase
 {
@@ -1480,7 +1480,7 @@ final class SyncLogRepositoryTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit.');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_sync_log");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_sync_log");
     }
 
     public function test_append_then_paginate(): void
@@ -1514,7 +1514,7 @@ final class SyncLogRepositoryTest extends TestCase
         $repo = new SyncLogRepository($wpdb);
         $repo->append('info', 'wp_to_g', 'booking', 1, null, 'create', 'ok', [], null);
         // Force-age the row 40 days back
-        $wpdb->query("UPDATE {$wpdb->prefix}tb_sync_log SET ts = DATE_SUB(NOW(), INTERVAL 40 DAY)");
+        $wpdb->query("UPDATE {$wpdb->prefix}sb_sync_log SET ts = DATE_SUB(NOW(), INTERVAL 40 DAY)");
 
         $repo->append('info', 'wp_to_g', 'booking', 2, null, 'create', 'ok', [], null);
 
@@ -1533,7 +1533,7 @@ final class SyncLogRepositoryTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Persistence;
+namespace Slash\Booking\Persistence;
 
 use DateTimeImmutable;
 use DateTimeZone;
@@ -1547,7 +1547,7 @@ final class SyncLogRepository
 
     public function __construct(private readonly wpdb $wpdb)
     {
-        $this->table = $wpdb->prefix . 'tb_sync_log';
+        $this->table = $wpdb->prefix . 'sb_sync_log';
     }
 
     /**
@@ -1658,7 +1658,7 @@ git commit -m "feat(persistence): SyncLogRepository (append, paginate, purge)"
 **Files:**
 - Create: `src/Google/GoogleApiCalendarGateway.php`
 
-Pas de test unitaire dédié : c'est un thin wrapper. Vérification manuelle via `wp trinity-booking doctor` (Task 21).
+Pas de test unitaire dédié : c'est un thin wrapper. Vérification manuelle via `wp slashbooking doctor` (Task 21).
 
 - [ ] **Step 1 : Créer la classe**
 
@@ -1666,14 +1666,14 @@ Pas de test unitaire dédié : c'est un thin wrapper. Vérification manuelle via
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Google\Client as GoogleClient;
 use Google\Service\Calendar as CalendarService;
 use Google\Service\Calendar\Event as CalendarEvent;
 use Google\Service\Exception as GoogleServiceException;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
 
 final class GoogleApiCalendarGateway implements CalendarGateway
 {
@@ -1762,10 +1762,10 @@ git commit -m "feat(google): CalendarGateway implementation backed by google/api
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\PushScheduler;
+use Slash\Booking\Google\PushScheduler;
 
 final class PushSchedulerTest extends TestCase
 {
@@ -1778,7 +1778,7 @@ final class PushSchedulerTest extends TestCase
         $scheduler = new PushScheduler($enqueue);
         $scheduler->onCreated(42);
 
-        self::assertSame([['tb/push_gcal_event', [42, 'create']]], $calls);
+        self::assertSame([['sb/push_gcal_event', [42, 'create']]], $calls);
     }
 
     public function test_on_confirmed_enqueues_confirm(): void
@@ -1788,7 +1788,7 @@ final class PushSchedulerTest extends TestCase
             $calls[] = [$hook, $args];
         });
         $scheduler->onConfirmed(42);
-        self::assertSame([['tb/push_gcal_event', [42, 'confirm']]], $calls);
+        self::assertSame([['sb/push_gcal_event', [42, 'confirm']]], $calls);
     }
 
     public function test_on_rejected_and_cancelled_enqueue_delete(): void
@@ -1801,8 +1801,8 @@ final class PushSchedulerTest extends TestCase
         $s->onRejected(42);
         $s->onCancelled(43);
         self::assertSame([
-            ['tb/push_gcal_event', [42, 'delete']],
-            ['tb/push_gcal_event', [43, 'delete']],
+            ['sb/push_gcal_event', [42, 'delete']],
+            ['sb/push_gcal_event', [43, 'delete']],
         ], $calls);
     }
 }
@@ -1816,13 +1816,13 @@ final class PushSchedulerTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 
 final class PushScheduler
 {
-    public const HOOK = 'tb/push_gcal_event';
+    public const HOOK = 'sb/push_gcal_event';
 
     /** @var Closure(string, array<int, mixed>): void */
     private Closure $enqueue;
@@ -1837,10 +1837,10 @@ final class PushScheduler
 
     public function register(): void
     {
-        add_action('trinity_booking/booking_created',   [$this, 'onCreated'],   20, 1);
-        add_action('trinity_booking/booking_confirmed', [$this, 'onConfirmed'], 20, 1);
-        add_action('trinity_booking/booking_rejected',  [$this, 'onRejected'],  20, 1);
-        add_action('trinity_booking/booking_cancelled', [$this, 'onCancelled'], 20, 1);
+        add_action('slashbooking/booking_created',   [$this, 'onCreated'],   20, 1);
+        add_action('slashbooking/booking_confirmed', [$this, 'onConfirmed'], 20, 1);
+        add_action('slashbooking/booking_rejected',  [$this, 'onRejected'],  20, 1);
+        add_action('slashbooking/booking_cancelled', [$this, 'onCancelled'], 20, 1);
     }
 
     public function onCreated(int $bookingId): void
@@ -1870,7 +1870,7 @@ final class PushScheduler
     {
         return static function (string $hook, array $args): void {
             if (function_exists('as_enqueue_async_action')) {
-                as_enqueue_async_action($hook, $args, 'trinity-booking');
+                as_enqueue_async_action($hook, $args, 'slashbooking');
                 return;
             }
             // Fallback synchronous (Action Scheduler not loaded — should not happen in production).
@@ -1907,18 +1907,18 @@ C'est la pièce centrale. Le job reçoit `[bookingId, action]`, charge le bookin
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Google\EventFormatter;
-use Trinity\Booking\Google\PushEventJob;
-use Trinity\Booking\Tests\Unit\Support\FakeCalendarGateway;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Google\EventFormatter;
+use Slash\Booking\Google\PushEventJob;
+use Slash\Booking\Tests\Unit\Support\FakeCalendarGateway;
 
 final class PushEventJobTest extends TestCase
 {
@@ -2016,14 +2016,14 @@ final class PushEventJobTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
 
 final class PushEventJob
 {
@@ -2230,7 +2230,7 @@ public function test_transient_5xx_is_logged_as_retry_and_rethrown(): void
 {
     $b = $this->pending(42);
     $this->gateway->failNext = true;
-    $this->expectException(\Trinity\Booking\Google\Exceptions\GoogleApiError::class);
+    $this->expectException(\Slash\Booking\Google\Exceptions\GoogleApiError::class);
     try {
         $this->job($b)->handle(42, 'create');
     } finally {
@@ -2299,11 +2299,11 @@ git commit -m "test(google): cover PushEventJob confirm/delete/retry/edge cases"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use WP_REST_Request;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class AdminGoogleControllerTest extends TestCase
 {
@@ -2316,12 +2316,12 @@ final class AdminGoogleControllerTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit.');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_google_accounts");
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_sync_log");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_google_accounts");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_sync_log");
 
-        update_option('tb_decision_secret', str_repeat('a', 64), false);
-        update_option('tb_google_client_id', 'cid');
-        update_option('tb_google_client_secret', 'csecret');
+        update_option('sb_decision_secret', str_repeat('a', 64), false);
+        update_option('sb_google_client_id', 'cid');
+        update_option('sb_google_client_secret', 'csecret');
 
         // Stub HTTP — intercept wp_remote_post to oauth2.googleapis.com/token.
         $this->httpStub = [];
@@ -2329,7 +2329,7 @@ final class AdminGoogleControllerTest extends TestCase
 
         wp_set_current_user(1);
         $user = wp_get_current_user();
-        $user->add_cap('trinity_booking_manage');
+        $user->add_cap('slashbooking_manage');
     }
 
     protected function tearDown(): void
@@ -2360,7 +2360,7 @@ final class AdminGoogleControllerTest extends TestCase
     public function test_start_returns_auth_url_with_state(): void
     {
         do_action('rest_api_init');
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/admin/google/oauth/start');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/admin/google/oauth/start');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
 
         $res = rest_do_request($req);
@@ -2377,9 +2377,9 @@ final class AdminGoogleControllerTest extends TestCase
         global $wpdb;
 
         // Issue a state token via OAuthState.
-        $state = (new \Trinity\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
+        $state = (new \Slash\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
 
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $req->set_query_params(['code' => 'auth-CODE', 'state' => $state]);
 
         $res = rest_do_request($req);
@@ -2396,7 +2396,7 @@ final class AdminGoogleControllerTest extends TestCase
     public function test_callback_rejects_invalid_state(): void
     {
         do_action('rest_api_init');
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $req->set_query_params(['code' => 'auth-CODE', 'state' => 'garbage']);
         $res = rest_do_request($req);
         self::assertSame(403, $res->get_status());
@@ -2407,12 +2407,12 @@ final class AdminGoogleControllerTest extends TestCase
         do_action('rest_api_init');
 
         // First, connect via callback.
-        $state = (new \Trinity\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
-        $cb = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $state = (new \Slash\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
+        $cb = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $cb->set_query_params(['code' => 'c', 'state' => $state]);
         rest_do_request($cb);
 
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/status');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/status');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
         $res = rest_do_request($req);
         $data = $res->get_data();
@@ -2424,12 +2424,12 @@ final class AdminGoogleControllerTest extends TestCase
     {
         do_action('rest_api_init');
 
-        $state = (new \Trinity\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
-        $cb = new WP_REST_Request('GET', '/trinity-booking/v1/admin/google/oauth/callback');
+        $state = (new \Slash\Booking\Google\OAuthState(str_repeat('a', 64)))->issue(1);
+        $cb = new WP_REST_Request('GET', '/slashbooking/v1/admin/google/oauth/callback');
         $cb->set_query_params(['code' => 'c', 'state' => $state]);
         rest_do_request($cb);
 
-        $req = new WP_REST_Request('POST', '/trinity-booking/v1/admin/google/disconnect');
+        $req = new WP_REST_Request('POST', '/slashbooking/v1/admin/google/disconnect');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
         $res = rest_do_request($req);
         self::assertSame(200, $res->get_status());
@@ -2449,18 +2449,18 @@ final class AdminGoogleControllerTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Encryption;
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
-use Trinity\Booking\Google\OAuthClient;
-use Trinity\Booking\Google\OAuthState;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Encryption;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Google\OAuthClient;
+use Slash\Booking\Google\OAuthState;
+use Slash\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Plugin;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -2575,7 +2575,7 @@ final class AdminGoogleController
         $this->accounts->save($account);
 
         // Redirect to admin SPA Google page.
-        $redirect = admin_url('admin.php?page=trinity-booking#/google?connected=1');
+        $redirect = admin_url('admin.php?page=slashbooking#/google?connected=1');
         return new WP_REST_Response(null, 302, ['Location' => $redirect]);
     }
 
@@ -2612,14 +2612,14 @@ final class AdminGoogleController
 Localiser la méthode `registerRoutes()`, juste avant la dernière ligne `(new AdminBookingController(...))->registerRoutes();`, ajouter :
 
 ```php
-$accounts   = new \Trinity\Booking\Persistence\GoogleAccountRepository($wpdb);
-$keyResolver = new \Trinity\Booking\Google\EncryptionKeyResolver();
-$encryption  = new \Trinity\Booking\Google\Encryption($keyResolver->resolve());
-$state       = new \Trinity\Booking\Google\OAuthState((string) get_option('tb_decision_secret'));
-$oauthClient = new \Trinity\Booking\Google\OAuthClient(
-    clientId: (string) get_option('tb_google_client_id', ''),
-    clientSecret: (string) get_option('tb_google_client_secret', ''),
-    redirectUri: rest_url(\Trinity\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
+$accounts   = new \Slash\Booking\Persistence\GoogleAccountRepository($wpdb);
+$keyResolver = new \Slash\Booking\Google\EncryptionKeyResolver();
+$encryption  = new \Slash\Booking\Google\Encryption($keyResolver->resolve());
+$state       = new \Slash\Booking\Google\OAuthState((string) get_option('sb_decision_secret'));
+$oauthClient = new \Slash\Booking\Google\OAuthClient(
+    clientId: (string) get_option('sb_google_client_id', ''),
+    clientSecret: (string) get_option('sb_google_client_secret', ''),
+    redirectUri: rest_url(\Slash\Booking\Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
 );
 (new AdminGoogleController($accounts, $oauthClient, $state, $encryption))->registerRoutes();
 ```
@@ -2652,11 +2652,11 @@ git commit -m "feat(http): AdminGoogleController for OAuth start/callback/status
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use WP_REST_Request;
-use Trinity\Booking\Persistence\SyncLogRepository;
+use Slash\Booking\Persistence\SyncLogRepository;
 
 final class AdminSyncLogControllerTest extends TestCase
 {
@@ -2666,10 +2666,10 @@ final class AdminSyncLogControllerTest extends TestCase
             $this->markTestSkipped('Requires wp-phpunit.');
         }
         global $wpdb;
-        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}tb_sync_log");
+        $wpdb->query("TRUNCATE TABLE {$wpdb->prefix}sb_sync_log");
 
         wp_set_current_user(1);
-        wp_get_current_user()->add_cap('trinity_booking_manage');
+        wp_get_current_user()->add_cap('slashbooking_manage');
     }
 
     public function test_list_returns_paginated_log(): void
@@ -2681,7 +2681,7 @@ final class AdminSyncLogControllerTest extends TestCase
             $repo->append('info', 'wp_to_g', 'booking', $i, 'evt_' . $i, 'create', 'ok', [], null);
         }
 
-        $req = new WP_REST_Request('GET', '/trinity-booking/v1/admin/sync-log');
+        $req = new WP_REST_Request('GET', '/slashbooking/v1/admin/sync-log');
         $req->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
         $req->set_query_params(['per_page' => 2, 'page' => 1]);
         $res = rest_do_request($req);
@@ -2699,11 +2699,11 @@ final class AdminSyncLogControllerTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Persistence\SyncLogRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Persistence\SyncLogRepository;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -2746,7 +2746,7 @@ final class AdminSyncLogController
 À la fin de `registerRoutes()`, ajouter :
 
 ```php
-$syncLog = new \Trinity\Booking\Persistence\SyncLogRepository($wpdb);
+$syncLog = new \Slash\Booking\Persistence\SyncLogRepository($wpdb);
 (new AdminSyncLogController($syncLog))->registerRoutes();
 ```
 
@@ -2777,11 +2777,11 @@ git commit -m "feat(http): AdminSyncLogController GET /admin/sync-log"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\SyncLogPurger;
+use Slash\Booking\Google\SyncLogPurger;
 
 final class SyncLogPurgerTest extends TestCase
 {
@@ -2810,7 +2810,7 @@ final class SyncLogPurgerTest extends TestCase
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 use DateTimeImmutable;
@@ -2818,7 +2818,7 @@ use DateTimeZone;
 
 final class SyncLogPurger
 {
-    public const HOOK = 'tb_purge_sync_log';
+    public const HOOK = 'sb_purge_sync_log';
     public const RETENTION_DAYS = 30;
 
     /** @var Closure(DateTimeImmutable): int */
@@ -2857,8 +2857,8 @@ final class SyncLogPurger
 Modifier la méthode `activate()` pour ajouter, après le cron des reminders :
 
 ```php
-if (!wp_next_scheduled(\Trinity\Booking\Google\SyncLogPurger::HOOK)) {
-    wp_schedule_event(self::tomorrowAt3SiteTz(), 'daily', \Trinity\Booking\Google\SyncLogPurger::HOOK);
+if (!wp_next_scheduled(\Slash\Booking\Google\SyncLogPurger::HOOK)) {
+    wp_schedule_event(self::tomorrowAt3SiteTz(), 'daily', \Slash\Booking\Google\SyncLogPurger::HOOK);
 }
 ```
 
@@ -2877,8 +2877,8 @@ Modifier `Deactivator.php` pour unschedule :
 ```php
 public static function deactivate(): void
 {
-    wp_clear_scheduled_hook(\Trinity\Booking\Notifications\ReminderScheduler::HOOK);
-    wp_clear_scheduled_hook(\Trinity\Booking\Google\SyncLogPurger::HOOK);
+    wp_clear_scheduled_hook(\Slash\Booking\Notifications\ReminderScheduler::HOOK);
+    wp_clear_scheduled_hook(\Slash\Booking\Google\SyncLogPurger::HOOK);
 }
 ```
 
@@ -2909,8 +2909,8 @@ $syncLogRepo = new Persistence\SyncLogRepository($wpdb);
 $keyResolver = new Google\EncryptionKeyResolver();
 $encryption  = new Google\Encryption($keyResolver->resolve());
 
-$pendingColor   = (string) get_option('tb_gcal_color_pending', '6');
-$confirmedColor = (string) get_option('tb_gcal_color_confirmed', '10');
+$pendingColor   = (string) get_option('sb_gcal_color_pending', '6');
+$confirmedColor = (string) get_option('sb_gcal_color_confirmed', '10');
 $formatter      = new Google\EventFormatter($pendingColor, $confirmedColor);
 
 (new Google\PushScheduler())->register();
@@ -2981,7 +2981,7 @@ if ($keyResolver->usingFallback()) {
         if (!current_user_can('manage_options')) {
             return;
         }
-        echo '<div class="notice notice-warning"><p><strong>Trinity Booking :</strong> définissez <code>TRINITY_BOOKING_ENC_KEY</code> dans <code>wp-config.php</code> pour chiffrer les tokens Google avec une clé hors base.</p></div>';
+        echo '<div class="notice notice-warning"><p><strong>SlashBooking :</strong> définissez <code>SLASHBOOKING_ENC_KEY</code> dans <code>wp-config.php</code> pour chiffrer les tokens Google avec une clé hors base.</p></div>';
     });
 }
 ```
@@ -2992,14 +2992,14 @@ if ($keyResolver->usingFallback()) {
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Google\Client as GoogleClient;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class GoogleClientBuilder
 {
@@ -3012,8 +3012,8 @@ final class GoogleClientBuilder
     public function buildGateway(GoogleAccount $account): CalendarGateway
     {
         $client = new GoogleClient();
-        $client->setClientId((string) get_option('tb_google_client_id', ''));
-        $client->setClientSecret((string) get_option('tb_google_client_secret', ''));
+        $client->setClientId((string) get_option('sb_google_client_id', ''));
+        $client->setClientSecret((string) get_option('sb_google_client_secret', ''));
         $client->addScope(OAuthClient::SCOPE);
 
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -3033,8 +3033,8 @@ final class GoogleClientBuilder
     private function refresh(GoogleAccount $account, GoogleClient $client): void
     {
         $oauth = new OAuthClient(
-            clientId: (string) get_option('tb_google_client_id', ''),
-            clientSecret: (string) get_option('tb_google_client_secret', ''),
+            clientId: (string) get_option('sb_google_client_id', ''),
+            clientSecret: (string) get_option('sb_google_client_secret', ''),
             redirectUri: '',
         );
         try {
@@ -3100,19 +3100,19 @@ Ajouter les fonctions :
 
 ```js
 export async function fetchGoogleStatus() {
-    return wp.apiFetch({ path: 'trinity-booking/v1/admin/google/status' });
+    return wp.apiFetch({ path: 'slashbooking/v1/admin/google/status' });
 }
 
 export async function startGoogleOAuth() {
     return wp.apiFetch({
-        path: 'trinity-booking/v1/admin/google/oauth/start',
+        path: 'slashbooking/v1/admin/google/oauth/start',
         method: 'POST',
     });
 }
 
 export async function disconnectGoogle() {
     return wp.apiFetch({
-        path: 'trinity-booking/v1/admin/google/disconnect',
+        path: 'slashbooking/v1/admin/google/disconnect',
         method: 'POST',
     });
 }
@@ -3121,7 +3121,7 @@ export async function fetchSyncLog({ page = 1, perPage = 50, level, status } = {
     const params = new URLSearchParams({ page, per_page: perPage });
     if (level) params.set('level', level);
     if (status) params.set('status', status);
-    return wp.apiFetch({ path: `trinity-booking/v1/admin/sync-log?${params}` });
+    return wp.apiFetch({ path: `slashbooking/v1/admin/sync-log?${params}` });
 }
 ```
 
@@ -3165,7 +3165,7 @@ export default function GooglePage() {
     };
 
     const disconnect = async () => {
-        if (!window.confirm(__('Vraiment déconnecter ce compte ?', 'trinity-booking'))) return;
+        if (!window.confirm(__('Vraiment déconnecter ce compte ?', 'slashbooking'))) return;
         try {
             await disconnectGoogle();
             await reload();
@@ -3179,28 +3179,28 @@ export default function GooglePage() {
     return (
         <Card>
             <CardHeader>
-                <h2>{__('Google Calendar', 'trinity-booking')}</h2>
+                <h2>{__('Google Calendar', 'slashbooking')}</h2>
             </CardHeader>
             <CardBody>
                 {error && <Notice status="error" isDismissible={false}>{error}</Notice>}
                 {status?.connected ? (
                     <>
                         <p>
-                            <strong>{__('Connecté', 'trinity-booking')} ✓</strong>
+                            <strong>{__('Connecté', 'slashbooking')} ✓</strong>
                             <br />
-                            {__('Calendrier :', 'trinity-booking')} <code>{status.calendar_id}</code>
+                            {__('Calendrier :', 'slashbooking')} <code>{status.calendar_id}</code>
                             <br />
-                            {__('Token expire :', 'trinity-booking')} {new Date(status.expires_at).toLocaleString()}
+                            {__('Token expire :', 'slashbooking')} {new Date(status.expires_at).toLocaleString()}
                         </p>
                         <Button variant="secondary" isDestructive onClick={disconnect}>
-                            {__('Déconnecter', 'trinity-booking')}
+                            {__('Déconnecter', 'slashbooking')}
                         </Button>
                     </>
                 ) : (
                     <>
-                        <p>{__('Aucun calendrier Google connecté.', 'trinity-booking')}</p>
+                        <p>{__('Aucun calendrier Google connecté.', 'slashbooking')}</p>
                         <Button variant="primary" onClick={connect}>
-                            {__('Connecter mon Google Calendar', 'trinity-booking')}
+                            {__('Connecter mon Google Calendar', 'slashbooking')}
                         </Button>
                     </>
                 )}
@@ -3225,11 +3225,11 @@ import SyncLogPage from './SyncLogPage';
 export default function App() {
     return (
         <TabPanel
-            className="tb-tabs"
+            className="sb-tabs"
             tabs={[
-                { name: 'bookings', title: __('Réservations', 'trinity-booking') },
-                { name: 'google',   title: __('Google', 'trinity-booking') },
-                { name: 'log',      title: __('Journal', 'trinity-booking') },
+                { name: 'bookings', title: __('Réservations', 'slashbooking') },
+                { name: 'google',   title: __('Google', 'slashbooking') },
+                { name: 'log',      title: __('Journal', 'slashbooking') },
             ]}
             initialTabName={location.hash.replace('#/', '') || 'bookings'}
             onSelect={(name) => { history.replaceState(null, '', `#/${name}`); }}
@@ -3312,10 +3312,10 @@ export default function SyncLogPage() {
 
     return (
         <div>
-            <h2>{__('Journal de synchronisation', 'trinity-booking')}</h2>
+            <h2>{__('Journal de synchronisation', 'slashbooking')}</h2>
             {error && <Notice status="error" isDismissible={false}>{error}</Notice>}
             <SelectControl
-                label={__('Statut', 'trinity-booking')}
+                label={__('Statut', 'slashbooking')}
                 value={status}
                 options={STATUS_FILTERS}
                 onChange={(v) => { setStatus(v); setPage(1); }}
@@ -3323,12 +3323,12 @@ export default function SyncLogPage() {
             <table className="wp-list-table widefat striped">
                 <thead>
                     <tr>
-                        <th>{__('Date', 'trinity-booking')}</th>
-                        <th>{__('Direction', 'trinity-booking')}</th>
-                        <th>{__('Entité', 'trinity-booking')}</th>
-                        <th>{__('Action', 'trinity-booking')}</th>
-                        <th>{__('Statut', 'trinity-booking')}</th>
-                        <th>{__('Erreur', 'trinity-booking')}</th>
+                        <th>{__('Date', 'slashbooking')}</th>
+                        <th>{__('Direction', 'slashbooking')}</th>
+                        <th>{__('Entité', 'slashbooking')}</th>
+                        <th>{__('Action', 'slashbooking')}</th>
+                        <th>{__('Statut', 'slashbooking')}</th>
+                        <th>{__('Erreur', 'slashbooking')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -3344,7 +3344,7 @@ export default function SyncLogPage() {
                     ))}
                 </tbody>
             </table>
-            <div className="tb-pagination">
+            <div className="sb-pagination">
                 <Button disabled={page <= 1}     onClick={() => setPage(page - 1)}>‹</Button>
                 <span>{page} / {pages}</span>
                 <Button disabled={page >= pages} onClick={() => setPage(page + 1)}>›</Button>
@@ -3369,7 +3369,7 @@ git commit -m "feat(admin-spa): SyncLogPage with filters + pagination"
 
 ---
 
-## Task 22 : `Cli\DoctorCommand` — `wp trinity-booking doctor`
+## Task 22 : `Cli\DoctorCommand` — `wp slashbooking doctor`
 
 **Files:**
 - Create: `src/Cli/DoctorCommand.php`
@@ -3381,13 +3381,13 @@ git commit -m "feat(admin-spa): SyncLogPage with filters + pagination"
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Cli;
+namespace Slash\Booking\Cli;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use Trinity\Booking\Google\Encryption;
-use Trinity\Booking\Google\GoogleClientBuilder;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Google\Encryption;
+use Slash\Booking\Google\GoogleClientBuilder;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class DoctorCommand
 {
@@ -3403,13 +3403,13 @@ final class DoctorCommand
      *
      * ## EXAMPLES
      *
-     *     wp trinity-booking doctor
+     *     wp slashbooking doctor
      *
      * @when after_wp_load
      */
     public function __invoke(array $args, array $assoc): void
     {
-        \WP_CLI::log('🩺 trinity-booking doctor');
+        \WP_CLI::log('🩺 slashbooking doctor');
         \WP_CLI::log('—————————————————');
 
         $account = $this->accounts->findSingle();
@@ -3440,7 +3440,7 @@ final class DoctorCommand
 
         // Smoke test: insert + delete a probe event.
         $probe = [
-            'summary'     => '[trinity-booking doctor probe — safe to delete]',
+            'summary'     => '[slashbooking doctor probe — safe to delete]',
             'description' => 'Self-test event. Will be deleted immediately.',
             'start'       => ['dateTime' => $now->modify('+1 hour')->format('Y-m-d\TH:i:sP'), 'timeZone' => 'UTC'],
             'end'         => ['dateTime' => $now->modify('+2 hours')->format('Y-m-d\TH:i:sP'), 'timeZone' => 'UTC'],
@@ -3463,7 +3463,7 @@ final class DoctorCommand
 
 ```php
 if (defined('WP_CLI') && WP_CLI) {
-    \WP_CLI::add_command('trinity-booking doctor', new Cli\DoctorCommand(
+    \WP_CLI::add_command('slashbooking doctor', new Cli\DoctorCommand(
         $accounts,
         $encryption,
         new Google\GoogleClientBuilder($encryption, $accounts),
@@ -3476,7 +3476,7 @@ if (defined('WP_CLI') && WP_CLI) {
 (Nécessite un WP local + un compte Google connecté.)
 
 ```bash
-wp trinity-booking doctor
+wp slashbooking doctor
 ```
 Attendu : 3 lignes ✓ (account, client, probe insert+delete).
 
@@ -3484,7 +3484,7 @@ Attendu : 3 lignes ✓ (account, client, probe insert+delete).
 
 ```bash
 git add src/Cli/DoctorCommand.php src/Plugin.php
-git commit -m "feat(cli): wp trinity-booking doctor diagnoses OAuth + calendar reachability"
+git commit -m "feat(cli): wp slashbooking doctor diagnoses OAuth + calendar reachability"
 ```
 
 ---
@@ -3504,10 +3504,10 @@ L'admin doit pouvoir saisir le `client_id` et le `client_secret` (créés sur co
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -3533,9 +3533,9 @@ final class AdminGoogleSettingsController
 
     public function read(): WP_REST_Response
     {
-        $secret = (string) get_option('tb_google_client_secret', '');
+        $secret = (string) get_option('sb_google_client_secret', '');
         return new WP_REST_Response([
-            'client_id'         => (string) get_option('tb_google_client_id', ''),
+            'client_id'         => (string) get_option('sb_google_client_id', ''),
             'has_client_secret' => $secret !== '',
             'redirect_uri'      => rest_url(Plugin::REST_NAMESPACE . '/admin/google/oauth/callback'),
         ], 200);
@@ -3545,9 +3545,9 @@ final class AdminGoogleSettingsController
     {
         $clientId = sanitize_text_field((string) $req->get_param('client_id'));
         $secret   = (string) $req->get_param('client_secret');
-        update_option('tb_google_client_id', $clientId, false);
+        update_option('sb_google_client_id', $clientId, false);
         if ($secret !== '') {
-            update_option('tb_google_client_secret', $secret, false);
+            update_option('sb_google_client_secret', $secret, false);
         }
         return new WP_REST_Response(['saved' => true], 200);
     }
@@ -3574,7 +3574,7 @@ const [settings, setSettings] = useState(null);
 const [secret, setSecret] = useState('');
 
 const loadSettings = async () => {
-    const s = await wp.apiFetch({ path: 'trinity-booking/v1/admin/google/settings' });
+    const s = await wp.apiFetch({ path: 'slashbooking/v1/admin/google/settings' });
     setSettings(s);
 };
 
@@ -3582,7 +3582,7 @@ useEffect(() => { loadSettings(); }, []);
 
 const saveSettings = async () => {
     await wp.apiFetch({
-        path: 'trinity-booking/v1/admin/google/settings',
+        path: 'slashbooking/v1/admin/google/settings',
         method: 'POST',
         data: { client_id: settings.client_id, client_secret: secret },
     });
@@ -3593,10 +3593,10 @@ const saveSettings = async () => {
 // ... dans le render, avant le Card de connexion :
 {settings && (
     <Card>
-        <CardHeader><h2>{__('Configuration OAuth', 'trinity-booking')}</h2></CardHeader>
+        <CardHeader><h2>{__('Configuration OAuth', 'slashbooking')}</h2></CardHeader>
         <CardBody>
             <p>
-                <strong>{__('URI de redirection à saisir dans Google Cloud Console :', 'trinity-booking')}</strong>
+                <strong>{__('URI de redirection à saisir dans Google Cloud Console :', 'slashbooking')}</strong>
                 <br /><code>{settings.redirect_uri}</code>
             </p>
             <TextControl
@@ -3605,12 +3605,12 @@ const saveSettings = async () => {
                 onChange={(v) => setSettings({ ...settings, client_id: v })}
             />
             <TextControl
-                label={settings.has_client_secret ? __('Client Secret (déjà défini — saisir pour remplacer)', 'trinity-booking') : 'Client Secret'}
+                label={settings.has_client_secret ? __('Client Secret (déjà défini — saisir pour remplacer)', 'slashbooking') : 'Client Secret'}
                 type="password"
                 value={secret}
                 onChange={setSecret}
             />
-            <Button variant="primary" onClick={saveSettings}>{__('Enregistrer', 'trinity-booking')}</Button>
+            <Button variant="primary" onClick={saveSettings}>{__('Enregistrer', 'slashbooking')}</Button>
         </CardBody>
     </Card>
 )}
@@ -3647,13 +3647,13 @@ Localiser la section "Quickstart" ou "Installation" et insérer après :
 2. **OAuth consent screen** : configurer en mode "External", ajouter votre adresse e-mail comme test user (V1, mono-commercial).
 3. **OAuth 2.0 Client ID** :
    - Type : Web application
-   - Authorized redirect URI : copier l'URI affichée dans **Trinity Booking → Google → Configuration OAuth** (typiquement `https://votresite.fr/wp-json/trinity-booking/v1/admin/google/oauth/callback`).
+   - Authorized redirect URI : copier l'URI affichée dans **SlashBooking → Google → Configuration OAuth** (typiquement `https://votresite.fr/wp-json/slashbooking/v1/admin/google/oauth/callback`).
 4. **Coller** le `Client ID` et le `Client secret` dans le formulaire admin du plugin et **Enregistrer**.
 5. Cliquer **Connecter mon Google Calendar** → autoriser → retour automatique sur la page admin avec `?connected=1`.
 6. (Recommandé) Définir dans `wp-config.php` :
 
    ```php
-   define('TRINITY_BOOKING_ENC_KEY', '<64-char hex string, ex: bin2hex(random_bytes(32))>');
+   define('SLASHBOOKING_ENC_KEY', '<64-char hex string, ex: bin2hex(random_bytes(32))>');
    ```
 
    Sinon une clé fallback est générée et stockée en option (warning visible côté admin).
@@ -3661,7 +3661,7 @@ Localiser la section "Quickstart" ou "Installation" et insérer après :
 ## CLI diagnostics
 
 ```bash
-wp trinity-booking doctor
+wp slashbooking doctor
 ```
 
 Vérifie : compte connecté, refresh token valide, accès Calendar API (insère puis supprime un event de test).
@@ -3690,7 +3690,7 @@ git commit -m "docs: document Google OAuth setup + doctor command"
 ## Task 25 : Vérification finale + self-review
 
 **Files:**
-- Read: spec sections 2 (sync), 5 (`wp_tb_google_accounts`/`wp_tb_sync_log`), 6.1 (jobs push), 7 (REST), 9 (chiffrement), 12 (observabilité)
+- Read: spec sections 2 (sync), 5 (`wp_sb_google_accounts`/`wp_sb_sync_log`), 6.1 (jobs push), 7 (REST), 9 (chiffrement), 12 (observabilité)
 
 - [ ] **Step 1 : Suite complète**
 
@@ -3722,20 +3722,20 @@ Cocher chaque exigence :
 - [ ] REST `/admin/google/oauth/start|callback|status|disconnect` (Task 16) ✓
 - [ ] REST `/admin/sync-log` (Task 17) ✓
 - [ ] React `GooglePage` + `SyncLogPage` + tab nav (Tasks 20, 21) ✓
-- [ ] `wp trinity-booking doctor` (Task 22) ✓
+- [ ] `wp slashbooking doctor` (Task 22) ✓
 - [ ] Settings OAuth client_id/secret (Task 23) ✓
 - [ ] README documenté (Task 24) ✓
 
 - [ ] **Step 3 : Test manuel bout-en-bout**
 
 1. WP local + plugin activé + `composer install` + `npm install && npm run build`.
-2. Aller dans **Trinity Booking → Google → Configuration OAuth**, saisir un `client_id` + `client_secret` valides.
+2. Aller dans **SlashBooking → Google → Configuration OAuth**, saisir un `client_id` + `client_secret` valides.
 3. Cliquer **Connecter** → autoriser → retour OK, statut "Connecté".
 4. Créer un booking via `POST /bookings` → un event apparaît dans Google Calendar (couleur orange, `[À VALIDER]` préfixé).
 5. Cliquer "Confirmer" dans l'e-mail admin → event devient vert, préfixe retiré.
 6. Cliquer le lien d'annulation client → event supprimé.
-7. Aller dans **Trinity Booking → Journal** → 3 lignes `ok`.
-8. `wp trinity-booking doctor` → 3 ✓.
+7. Aller dans **SlashBooking → Journal** → 3 lignes `ok`.
+8. `wp slashbooking doctor` → 3 ✓.
 
 - [ ] **Step 4 : Mettre à jour la mémoire**
 
@@ -3761,9 +3761,9 @@ git commit -m "docs: mark Plan 3 complete"
 - PHPStan niveau 8 : 0 erreur (ignores possibles pour les classes Google\\* si autoload absent en CI).
 - PHPCS : 0 erreur.
 - `npm run build` produit `assets/dist/admin.{js,css,asset.php}` sans erreur ; `npm run lint:js` clean.
-- Manuel : cycle complet booking → confirmation → annulation visible côté GCal et journalisé dans `wp_tb_sync_log`.
-- `wp trinity-booking doctor` réussit sur un environnement connecté.
-- README documente la procédure Google Cloud Console + la constante `TRINITY_BOOKING_ENC_KEY`.
+- Manuel : cycle complet booking → confirmation → annulation visible côté GCal et journalisé dans `wp_sb_sync_log`.
+- `wp slashbooking doctor` réussit sur un environnement connecté.
+- README documente la procédure Google Cloud Console + la constante `SLASHBOOKING_ENC_KEY`.
 
 ---
 
@@ -3785,10 +3785,10 @@ Activer le plugin, configurer Google OAuth depuis le menu admin, prendre un RDV 
 
 - §2 (sync bidirectionnelle, OAuth utilisateur, colorId 6/10) → Tasks 1, 10, 14 ✓ (push uniquement ; pull en Plan 4)
 - §4 (`Google/` module, séparation Domain/Persistence) → Tasks 5, 6, 9, 10, 12, 13, 14, 18 ✓
-- §5 (`wp_tb_google_accounts`, `wp_tb_sync_log`) → schéma déjà migré Plan 1, repositories Tasks 6, 11 ✓
-- §6.1 (jobs `tb/create_gcal_event`, push job, idempotence) → renommé `tb/push_gcal_event` avec discriminator action, Tasks 13, 14 ✓
+- §5 (`wp_sb_google_accounts`, `wp_sb_sync_log`) → schéma déjà migré Plan 1, repositories Tasks 6, 11 ✓
+- §6.1 (jobs `sb/create_gcal_event`, push job, idempotence) → renommé `sb/push_gcal_event` avec discriminator action, Tasks 13, 14 ✓
 - §7 (REST `/admin/google/oauth/start`, `callback`, `/admin/sync-log`) → Tasks 16, 17, 23 ✓
-- §9 (chiffrement OAuth via sodium + `TRINITY_BOOKING_ENC_KEY` fallback option avec warning) → Tasks 3, 4, 19 ✓
+- §9 (chiffrement OAuth via sodium + `SLASHBOOKING_ENC_KEY` fallback option avec warning) → Tasks 3, 4, 19 ✓
 - §12 (observabilité : journal + diagnostics CLI) → Tasks 11, 17, 21, 22 ✓
 - §15 (mitigation quotas Google : Action Scheduler avec backoff) → Tasks 13, 14 ✓ (3xx-4xx déterministes ne retentent pas)
 - §15 (scoping) → repoussé au Plan 5, documenté en Préambule §12
@@ -3797,7 +3797,7 @@ Activer le plugin, configurer Google OAuth depuis le menu admin, prendre un RDV 
 
 **Type consistency :**
 
-- `PushScheduler::HOOK = 'tb/push_gcal_event'` utilisé identiquement dans `PushScheduler` (enqueue), `Plugin::register()` (`add_action`).
+- `PushScheduler::HOOK = 'sb/push_gcal_event'` utilisé identiquement dans `PushScheduler` (enqueue), `Plugin::register()` (`add_action`).
 - `OAuthClient::SCOPE` utilisé dans `OAuthClient::authUrl()` et `GoogleClientBuilder` (add_scope).
 - Repository `findSingle()` (V1 mono-compte) appelé identiquement dans `AdminGoogleController::status/disconnect/callback`, `Plugin::register` action handler, `DoctorCommand`.
 - `EventFormatter` ctor signature `__construct(string $pendingColorId, string $confirmedColorId)` utilisée identiquement dans tests et `Plugin::register`.
@@ -3806,8 +3806,8 @@ Activer le plugin, configurer Google OAuth depuis le menu admin, prendre un RDV 
 
 **Hooks WP nommés :**
 
-- `trinity_booking/booking_created` / `_confirmed` / `_rejected` / `_cancelled` → écoutés par `PushScheduler::register()` à priorité 20 (après `BookingNotifier` à priorité 10).
-- `tb/push_gcal_event` → enregistré dans `Plugin::register()`, dispatché par Action Scheduler.
-- `tb_purge_sync_log` → cron quotidien, géré par `SyncLogPurger::runOnCron()`.
+- `slashbooking/booking_created` / `_confirmed` / `_rejected` / `_cancelled` → écoutés par `PushScheduler::register()` à priorité 20 (après `BookingNotifier` à priorité 10).
+- `sb/push_gcal_event` → enregistré dans `Plugin::register()`, dispatché par Action Scheduler.
+- `sb_purge_sync_log` → cron quotidien, géré par `SyncLogPurger::runOnCron()`.
 
 Tous nommés identiquement aux Plans 1 et 2 (cohérence préfixes).

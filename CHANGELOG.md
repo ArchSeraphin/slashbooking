@@ -1,6 +1,6 @@
 # Changelog
 
-Tous les changements notables de **trinity-booking** sont consignés ici.
+Tous les changements notables de **slashbooking** sont consignés ici.
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le projet utilise [Semantic Versioning](https://semver.org/).
 
@@ -32,12 +32,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 ### Added
 
 - **Calendrier visuel mois-par-mois** dans le formulaire public (remplace l'input date HTML5). Navigation prev/next, légende couleurs (Disponible vert plein / Partiel vert pâle / Complet rouge / Fermé gris), respect lead time 24 h + horizon 60 jours.
-- **Choix du projet inline** : `[trinity_booking]` (sans paramètre) affiche les services actifs en pills (`Photovoltaïque (1h30)` / `Bornes de charge (45 min)`) et le visiteur choisit avant la date. `[trinity_booking service="pv"]` continue à forcer un service (rétrocompat). `[trinity_booking service="pv,irve"]` propose une liste filtrée. La durée Google Calendar suit automatiquement le service sélectionné via `Service::duration_min`.
+- **Choix du projet inline** : `[slashbooking]` (sans paramètre) affiche les services actifs en pills (`Photovoltaïque (1h30)` / `Bornes de charge (45 min)`) et le visiteur choisit avant la date. `[slashbooking service="pv"]` continue à forcer un service (rétrocompat). `[slashbooking service="pv,irve"]` propose une liste filtrée. La durée Google Calendar suit automatiquement le service sélectionné via `Service::duration_min`.
 - Step indicator dynamique (3 ou 4 étapes selon la présence du picker projet).
 
 ### Changed
 
-- **Admin SPA background aligné WP** : `.tb-admin` passe en `background: transparent` pour hériter du gris natif de l'admin WordPress (`#f0f0f1`) au lieu de l'override `slate-50` plus blanc. Les cards conservent leur fond blanc pour le contraste.
+- **Admin SPA background aligné WP** : `.sb-admin` passe en `background: transparent` pour hériter du gris natif de l'admin WordPress (`#f0f0f1`) au lieu de l'override `slate-50` plus blanc. Les cards conservent leur fond blanc pour le contraste.
 
 ---
 
@@ -49,7 +49,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 - **Admin SPA** : header avec logo + titre + version, onglets en pills propres, KPI dashboard 4 cards en tête de la liste réservations (Total / À valider / Confirmés / À venir), table custom avec hover + status badges colorés (dot + pill), empty state illustré, boutons WP-components stylés.
 - **Formulaire public** : header trust signals (sécurité données + réponse 24h), step indicator vivant 1/2/3, cards séparées par étape avec hint contextuel, date picker stylé, slots cards avec hover+focus+selected, champs avec labels au-dessus + placeholders + autocomplete sémantique (mobile keyboard), consent box dédiée, CTA orange XXL avec spinner inline, écran de succès illustré, scroll automatique du formulaire à la sélection.
 - **Accessibility** : focus rings 2-3 px sur tous les controls, `prefers-reduced-motion` respecté, `role="progressbar"` + `aria-live` + `htmlFor` partout, autocomplete + types sémantiques (`tel`, `email`).
-- Design system persisté dans `design-system/trinity-booking/MASTER.md` pour future référence.
+- Design system persisté dans `design-system/slashbooking/MASTER.md` pour future référence.
 
 ---
 
@@ -57,7 +57,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ### Fixed
 
-- **Shortcode `[trinity_booking]` ne s'affichait pas.** Deux bugs cumulés :
+- **Shortcode `[slashbooking]` ne s'affichait pas.** Deux bugs cumulés :
   1. `scoper.inc.php` finder filtre `*.php` uniquement → `src/PublicFront/assets/booking.{js,css}` étaient absents du ZIP. Fix : `bin/build-release.sh` copie maintenant ce répertoire depuis l'arbre non-scopé.
   2. `Shortcode::maybeEnqueue()` lisait un flag global set dans `render()`, mais `wp_enqueue_scripts` fire AVANT que les shortcodes ne soient rendus → enqueue never triggered. Fix : `Shortcode::render()` appelle `wp_enqueue_script` / `wp_enqueue_style` directement (WP les queue et imprime en footer). Bug latent depuis Plan 1.
 
@@ -67,7 +67,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ### Fixed
 
-- **404 sur toutes les requêtes REST du SPA.** `setupApi()` ajoutait un `createRootURLMiddleware` pointant vers `wp-json/trinity-booking/v1/`. Notre middleware était exécuté en premier (LIFO), construisait l'URL correcte, mais laissait `options.path` intact. Le rootURL middleware natif de WP s'exécutait ensuite, voyait `path` toujours string, et **réécrivait l'URL** en `wp-json/<path>` — sans le namespace. Fix : on n'override plus le rootURL ; on injecte simplement `trinity-booking/v1/` dans le `path` avant que WP construise l'URL finale. Bug latent depuis Plan 2.
+- **404 sur toutes les requêtes REST du SPA.** `setupApi()` ajoutait un `createRootURLMiddleware` pointant vers `wp-json/slashbooking/v1/`. Notre middleware était exécuté en premier (LIFO), construisait l'URL correcte, mais laissait `options.path` intact. Le rootURL middleware natif de WP s'exécutait ensuite, voyait `path` toujours string, et **réécrivait l'URL** en `wp-json/<path>` — sans le namespace. Fix : on n'override plus le rootURL ; on injecte simplement `slashbooking/v1/` dans le `path` avant que WP construise l'URL finale. Bug latent depuis Plan 2.
 
 ---
 
@@ -91,62 +91,62 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ### Fixed
 
-- **Activation fatal sur fresh install.** `Plugin::register()` instanciait `DecisionTokenSigner` avec un secret vide avant que `register_activation_hook` n'ait pu seeder l'option `tb_decision_secret` → `InvalidArgumentException: Decision secret must be at least 16 characters`. Fix : `Activator::ensureDecisionSecret()` est maintenant publique et appelée en tête de `Plugin::register()` (idempotent). Bug latent depuis Plan 2.
+- **Activation fatal sur fresh install.** `Plugin::register()` instanciait `DecisionTokenSigner` avec un secret vide avant que `register_activation_hook` n'ait pu seeder l'option `sb_decision_secret` → `InvalidArgumentException: Decision secret must be at least 16 characters`. Fix : `Activator::ensureDecisionSecret()` est maintenant publique et appelée en tête de `Plugin::register()` (idempotent). Bug latent depuis Plan 2.
 
 ---
 
 ## [1.0.0] — 2026-05-20
 
-Première release stable. Périmètre V1 fermé selon `docs/superpowers/specs/2026-05-19-trinity-booking-design.md`.
+Première release stable. Périmètre V1 fermé selon `docs/superpowers/specs/2026-05-19-slashbooking-design.md`.
 
 ### Added — Plan 5 : Polish V1
 
 - Éditeur de templates e-mail dans le dashboard admin (CodeMirror 6 + preview live + insertion de tag + envoi d'un test + restauration du défaut) pour les 6 événements (`booking.pending.client/admin`, `booking.confirmed.client`, `booking.rejected.client`, `booking.cancelled.client`, `booking.reminder.client`).
-- Internationalisation complète : `languages/trinity-booking.pot` généré, traduction `fr_FR` fournie.
+- Internationalisation complète : `languages/slashbooking.pot` généré, traduction `fr_FR` fournie.
 - Conformité RGPD :
   - Privacy Exporter (`wp_privacy_personal_data_exporters`) — exporte tous les bookings matchant un e-mail.
   - Privacy Eraser (`wp_privacy_personal_data_erasers`) — anonymise via SHA-256 + `@anon.invalid`, conserve les agrégats.
   - Masquage e-mails dans `sync_log` (`a***@d***`).
-  - Option `tb_legal_page_id` pour lien "Mentions légales" sous case de consentement.
-  - Cron mensuel `tb/purge_old_bookings` (rétention par défaut 3 ans après `ends_at_utc`).
-- Isolation des dépendances vendor via PHP-Scoper (`Trinity\Booking\Vendor\Google\…`, etc.) — élimine le risque de collision avec d'autres plugins WordPress.
+  - Option `sb_legal_page_id` pour lien "Mentions légales" sous case de consentement.
+  - Cron mensuel `sb/purge_old_bookings` (rétention par défaut 3 ans après `ends_at_utc`).
+- Isolation des dépendances vendor via PHP-Scoper (`Slash\Booking\Vendor\Google\…`, etc.) — élimine le risque de collision avec d'autres plugins WordPress.
 - Script `bin/build-release.sh` produit un ZIP de release reproductible (composer no-dev + npm build + scoping + autoload classmap + checksum SHA-256).
 - Documentation `README.md` complète (walkthrough Google Cloud Console, troubleshooting).
 
 ### Added — Plan 4 : Webhook + pull Google → WP
 
 - Push notifications Google : `WatchChannelManager` (start/stop/renew) + endpoint REST `POST /google/webhook` (vérif HMAC `X-Goog-Channel-Token`).
-- Pull incrémental via `events.list` + `syncToken` : `SyncEngine` + handler Action Scheduler `tb/google_pull`.
+- Pull incrémental via `events.list` + `syncToken` : `SyncEngine` + handler Action Scheduler `sb/google_pull`.
 - Reflection : ignore les events GCal créés par notre propre push (Plan 3) via `BookingRepository::findByGoogleEventId`.
-- Cron `tb/watch_renew_check` (quotidien) + `tb/google_pull_all` (15 min fallback).
-- Diagnostics étendus : SPA `GooglePage` montre statut watch, dernier sync, sync token ; `wp trinity-booking doctor` étendu.
+- Cron `sb/watch_renew_check` (quotidien) + `sb/google_pull_all` (15 min fallback).
+- Diagnostics étendus : SPA `GooglePage` montre statut watch, dernier sync, sync token ; `wp slashbooking doctor` étendu.
 - Upgrade PHPStan 1.x → 2.x avec `treatPhpDocTypesAsCertain: false`.
 
 ### Added — Plan 3 : Google OAuth + push WP → GCal
 
 - OAuth 2.0 utilisateur (refresh token chiffré via `sodium_crypto_secretbox`).
-- Push WP → GCal via Action Scheduler `tb/push_gcal_event` (create / update / delete selon statut).
+- Push WP → GCal via Action Scheduler `sb/push_gcal_event` (create / update / delete selon statut).
 - Code couleur GCal : orange `colorId=6` (pending), vert `colorId=10` (confirmed), delete (rejected/cancelled).
-- Journal de synchronisation `wp_tb_sync_log` (cron quotidien `tb_purge_sync_log` 30j).
-- CLI `wp trinity-booking doctor` (état OAuth + probe create/delete event).
+- Journal de synchronisation `wp_sb_sync_log` (cron quotidien `sb_purge_sync_log` 30j).
+- CLI `wp slashbooking doctor` (état OAuth + probe create/delete event).
 - SPA admin : `GooglePage` (Configuration OAuth + Google Calendar) + `SyncLogPage`.
 
 ### Added — Plan 2 : Notifications e-mail + validation admin
 
-- 6 templates HTML personnalisables (`wp_tb_mail_templates`) + tags `{{...}}` + fallback texte auto via `wp_strip_all_tags`.
+- 6 templates HTML personnalisables (`wp_sb_mail_templates`) + tags `{{...}}` + fallback texte auto via `wp_strip_all_tags`.
 - Pièce jointe `.ics` RFC 5545 sur l'e-mail de confirmation.
-- Reminder J-1 (cron quotidien `tb_send_daily_reminders` à 10h00 site TZ).
+- Reminder J-1 (cron quotidien `sb_send_daily_reminders` à 10h00 site TZ).
 - Validation admin : boutons HMAC dans l'e-mail (72h, idempotent) + dashboard React minimal.
 - Annulation client via lien HMAC dans e-mail de confirmation.
-- Capabilities WP : `trinity_booking_manage`, `trinity_booking_view`.
+- Capabilities WP : `slashbooking_manage`, `slashbooking_view`.
 
 ### Added — Plan 1 : Fondations
 
 - Architecture modulaire (Domain / Persistence / Availability / Booking / Http / PublicFront / Cli).
-- Modèle de données : 6 tables `wp_tb_*` (`services`, `bookings`, `busy_blocks`, `google_accounts`, `sync_log`, `mail_templates`).
+- Modèle de données : 6 tables `wp_sb_*` (`services`, `bookings`, `busy_blocks`, `google_accounts`, `sync_log`, `mail_templates`).
 - 2 services seed à l'activation (`pv` 90min, `irve` 45min).
 - REST API publique : `GET /services`, `GET /availability`, `POST /bookings`.
-- Bloc Gutenberg + shortcode `[trinity_booking service="pv|irve"]`.
+- Bloc Gutenberg + shortcode `[slashbooking service="pv|irve"]`.
 - Anti-bot : honeypot + délai min + rate-limit transient.
 - Buffer 30 min + délai 24h + horizon 60 jours.
 

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 use DateTimeImmutable;
@@ -9,7 +9,7 @@ use DateTimeZone;
 
 final class SyncLogPurger
 {
-    public const HOOK = 'tb_purge_sync_log';
+    public const HOOK = 'sb_purge_sync_log';
     public const RETENTION_DAYS = 30;
 
     /** @var Closure(DateTimeImmutable): int */

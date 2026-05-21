@@ -1,17 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Google\Client as GoogleClient;
 use Google\Service\Calendar as CalendarService;
+use Google\Service\Calendar\CalendarListEntry;
 use Google\Service\Calendar\Channel as CalendarChannel;
 use Google\Service\Calendar\Event as CalendarEvent;
 use Google\Service\Calendar\Events as CalendarEvents;
 use Google\Service\Exception as GoogleServiceException;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
-use Trinity\Booking\Google\Exceptions\SyncTokenExpired;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Google\Exceptions\SyncTokenExpired;
 
 final class GoogleApiCalendarGateway implements CalendarGateway
 {
@@ -20,6 +21,36 @@ final class GoogleApiCalendarGateway implements CalendarGateway
     public function __construct(GoogleClient $client)
     {
         $this->service = new CalendarService($client);
+    }
+
+    public function listCalendars(): array
+    {
+        try {
+            $resp = $this->service->calendarList->listCalendarList([
+                'maxResults' => 250,
+                'showHidden' => false,
+            ]);
+        } catch (GoogleServiceException $e) {
+            $code = $e->getCode();
+            if ($code >= 500 || $code === 429) {
+                throw new GoogleApiError("Google calendarList transient ({$code}): {$e->getMessage()}", $code);
+            }
+            throw new GoogleClientError("Google calendarList client error ({$code}): {$e->getMessage()}", $code);
+        }
+
+        $out = [];
+        foreach ($resp->getItems() as $cal) {
+            /** @var CalendarListEntry $cal */
+            $out[] = [
+                'id'              => (string) $cal->getId(),
+                'summary'         => (string) ($cal->getSummaryOverride() ?: $cal->getSummary() ?: ''),
+                'primary'         => (bool) $cal->getPrimary(),
+                'accessRole'      => (string) ($cal->getAccessRole() ?: ''),
+                'timeZone'        => (string) ($cal->getTimeZone() ?: ''),
+                'backgroundColor' => $cal->getBackgroundColor() ?: null,
+            ];
+        }
+        return $out;
     }
 
     public function insertEvent(string $calendarId, array $payload): array

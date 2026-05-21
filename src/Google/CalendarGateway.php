@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 /**
  * @phpstan-type EventPayload array{
@@ -32,9 +32,24 @@ namespace Trinity\Booking\Google;
  *   resourceId: string,
  *   expiration: int
  * }
+ * @phpstan-type CalendarEntry array{
+ *   id: string,
+ *   summary: string,
+ *   primary: bool,
+ *   accessRole: string,
+ *   timeZone: string,
+ *   backgroundColor: ?string
+ * }
  */
 interface CalendarGateway
 {
+    /**
+     * List the calendars accessible to the connected account.
+     *
+     * @return list<CalendarEntry>
+     */
+    public function listCalendars(): array;
+
     /**
      * @param EventPayload $payload
      * @return EventRef

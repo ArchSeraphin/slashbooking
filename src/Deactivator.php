@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
 final class Deactivator
 {
     public static function deactivate(): void
     {
         foreach ([
-            \Trinity\Booking\Notifications\ReminderScheduler::HOOK,
-            \Trinity\Booking\Google\SyncLogPurger::HOOK,
-            'tb/watch_renew_check',
-            'tb/google_pull_all',
+            \Slash\Booking\Notifications\ReminderScheduler::HOOK,
+            \Slash\Booking\Google\SyncLogPurger::HOOK,
+            'sb/watch_renew_check',
+            'sb/google_pull_all',
         ] as $hook) {
             $ts = wp_next_scheduled($hook);
             if ($ts !== false) {
@@ -20,7 +20,7 @@ final class Deactivator
             }
         }
 
-        wp_clear_scheduled_hook(\Trinity\Booking\Privacy\BookingRetentionPurger::HOOK);
+        wp_clear_scheduled_hook(\Slash\Booking\Privacy\BookingRetentionPurger::HOOK);
 
         // Note: we don't call stopChannel() here because the deactivation context
         // doesn't guarantee a fully booted plugin (no service container, possibly

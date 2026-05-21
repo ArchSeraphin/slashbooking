@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 use Closure;
-use Trinity\Booking\Domain\Booking;
+use Slash\Booking\Domain\Booking;
 
 final class BookingExporter
 {
@@ -24,18 +24,18 @@ final class BookingExporter
         $data = [];
         foreach ($bookings as $b) {
             $data[] = [
-                'group_id'    => 'trinity-booking',
-                'group_label' => __('Réservations Trinity Booking', 'trinity-booking'),
+                'group_id'    => 'slashbooking',
+                'group_label' => __('Réservations SlashBooking', 'slashbooking'),
                 'item_id'     => (string) ($b->id() ?? 0),
                 'data'        => [
-                    ['name' => __('Nom', 'trinity-booking'),     'value' => $b->customerName()],
-                    ['name' => __('E-mail', 'trinity-booking'),  'value' => $b->customerEmail()],
-                    ['name' => __('Téléphone', 'trinity-booking'), 'value' => $b->customerPhone()],
-                    ['name' => __('Adresse', 'trinity-booking'), 'value' => $b->customerAddress()],
-                    ['name' => __('Notes', 'trinity-booking'),   'value' => $b->notes()],
-                    ['name' => __('Statut', 'trinity-booking'),  'value' => $b->status()->value],
-                    ['name' => __('Date du RDV', 'trinity-booking'), 'value' => $b->slot()->start->format('Y-m-d H:i')],
-                    ['name' => __('Fuseau', 'trinity-booking'),  'value' => $b->timezone()],
+                    ['name' => __('Nom', 'slashbooking'),     'value' => $b->customerName()],
+                    ['name' => __('E-mail', 'slashbooking'),  'value' => $b->customerEmail()],
+                    ['name' => __('Téléphone', 'slashbooking'), 'value' => $b->customerPhone()],
+                    ['name' => __('Adresse', 'slashbooking'), 'value' => $b->customerAddress()],
+                    ['name' => __('Notes', 'slashbooking'),   'value' => $b->notes()],
+                    ['name' => __('Statut', 'slashbooking'),  'value' => $b->status()->value],
+                    ['name' => __('Date du RDV', 'slashbooking'), 'value' => $b->slot()->start->format('Y-m-d H:i')],
+                    ['name' => __('Fuseau', 'slashbooking'),  'value' => $b->timezone()],
                 ],
             ];
         }

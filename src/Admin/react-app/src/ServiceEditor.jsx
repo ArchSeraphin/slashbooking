@@ -8,13 +8,13 @@ import { __ } from '@wordpress/i18n';
 import { fetchService, saveService } from './api';
 
 const DAYS = [
-	{ key: '1', label: __( 'Lundi',    'trinity-booking' ) },
-	{ key: '2', label: __( 'Mardi',    'trinity-booking' ) },
-	{ key: '3', label: __( 'Mercredi', 'trinity-booking' ) },
-	{ key: '4', label: __( 'Jeudi',    'trinity-booking' ) },
-	{ key: '5', label: __( 'Vendredi', 'trinity-booking' ) },
-	{ key: '6', label: __( 'Samedi',   'trinity-booking' ) },
-	{ key: '7', label: __( 'Dimanche', 'trinity-booking' ) },
+	{ key: '1', label: __( 'Lundi',    'slashbooking' ) },
+	{ key: '2', label: __( 'Mardi',    'slashbooking' ) },
+	{ key: '3', label: __( 'Mercredi', 'slashbooking' ) },
+	{ key: '4', label: __( 'Jeudi',    'slashbooking' ) },
+	{ key: '5', label: __( 'Vendredi', 'slashbooking' ) },
+	{ key: '6', label: __( 'Samedi',   'slashbooking' ) },
+	{ key: '7', label: __( 'Dimanche', 'slashbooking' ) },
 ];
 
 export default function ServiceEditor( { slug, onClose } ) {
@@ -98,7 +98,7 @@ export default function ServiceEditor( { slug, onClose } ) {
 			const updated = await saveService( slug, payload );
 			setService( updated );
 			setIsDirty( false );
-			setMessage( __( 'Service enregistré.', 'trinity-booking' ) );
+			setMessage( __( 'Service enregistré.', 'slashbooking' ) );
 		} catch ( e ) {
 			setError( e.message ?? String( e ) );
 		} finally {
@@ -109,7 +109,7 @@ export default function ServiceEditor( { slug, onClose } ) {
 	const close = () => {
 		if ( isDirty ) {
 			// eslint-disable-next-line no-alert
-			if ( ! window.confirm( __( 'Modifications non sauvegardées, quitter ?', 'trinity-booking' ) ) ) {
+			if ( ! window.confirm( __( 'Modifications non sauvegardées, quitter ?', 'slashbooking' ) ) ) {
 				return;
 			}
 		}
@@ -130,13 +130,13 @@ export default function ServiceEditor( { slug, onClose } ) {
 				<Flex>
 					<FlexItem>
 						<h2 style={ { margin: 0, fontSize: 16, fontWeight: 600 } }>
-							{ __( 'Édition : ', 'trinity-booking' ) }
+							{ __( 'Édition : ', 'slashbooking' ) }
 							<code>{ slug }</code>
 						</h2>
 					</FlexItem>
 					<FlexItem>
 						<Button variant="tertiary" onClick={ close }>
-							← { __( 'Retour aux services', 'trinity-booking' ) }
+							← { __( 'Retour aux services', 'slashbooking' ) }
 						</Button>
 					</FlexItem>
 				</Flex>
@@ -153,27 +153,27 @@ export default function ServiceEditor( { slug, onClose } ) {
 					</Notice>
 				) }
 
-				<div className="tb-service-form">
+				<div className="sb-service-form">
 
 					{/* Bloc identité */}
-					<section className="tb-form-section">
-						<h3 className="tb-form-section__title">
-							{ __( 'Identité du service', 'trinity-booking' ) }
+					<section className="sb-form-section">
+						<h3 className="sb-form-section__title">
+							{ __( 'Identité du service', 'slashbooking' ) }
 						</h3>
-						<div className="tb-form-grid">
+						<div className="sb-form-grid">
 							<TextControl
-								label={ __( 'Nom affiché', 'trinity-booking' ) }
+								label={ __( 'Nom affiché', 'slashbooking' ) }
 								value={ service.name }
 								onChange={ ( v ) => patch( { name: v } ) }
 							/>
 							<TextControl
-								label={ __( 'Couleur (hex)', 'trinity-booking' ) }
+								label={ __( 'Couleur (hex)', 'slashbooking' ) }
 								value={ service.color }
 								onChange={ ( v ) => patch( { color: v } ) }
 								type="text"
 							/>
 							<ToggleControl
-								label={ __( 'Service actif (visible sur le formulaire public)', 'trinity-booking' ) }
+								label={ __( 'Service actif (visible sur le formulaire public)', 'slashbooking' ) }
 								checked={ !! service.active }
 								onChange={ ( v ) => patch( { active: v } ) }
 							/>
@@ -181,41 +181,41 @@ export default function ServiceEditor( { slug, onClose } ) {
 					</section>
 
 					{/* Bloc durée + buffers */}
-					<section className="tb-form-section">
-						<h3 className="tb-form-section__title">
-							{ __( 'Durée & règles', 'trinity-booking' ) }
+					<section className="sb-form-section">
+						<h3 className="sb-form-section__title">
+							{ __( 'Durée & règles', 'slashbooking' ) }
 						</h3>
-						<div className="tb-form-grid">
+						<div className="sb-form-grid">
 							<TextControl
-								label={ __( 'Durée du RDV (minutes)', 'trinity-booking' ) }
+								label={ __( 'Durée du RDV (minutes)', 'slashbooking' ) }
 								type="number"
 								value={ service.duration_min }
 								onChange={ ( v ) => patch( { duration_min: parseInt( v, 10 ) || 0 } ) }
 								min={ 5 } max={ 600 }
 							/>
 							<TextControl
-								label={ __( 'Buffer avant (minutes)', 'trinity-booking' ) }
+								label={ __( 'Buffer avant (minutes)', 'slashbooking' ) }
 								type="number"
 								value={ service.buffer_before_min }
 								onChange={ ( v ) => patch( { buffer_before_min: parseInt( v, 10 ) || 0 } ) }
 								min={ 0 } max={ 240 }
 							/>
 							<TextControl
-								label={ __( 'Buffer après / trajet (minutes)', 'trinity-booking' ) }
+								label={ __( 'Buffer après / trajet (minutes)', 'slashbooking' ) }
 								type="number"
 								value={ service.buffer_after_min }
 								onChange={ ( v ) => patch( { buffer_after_min: parseInt( v, 10 ) || 0 } ) }
 								min={ 0 } max={ 240 }
 							/>
 							<TextControl
-								label={ __( 'Délai minimum avant RDV (heures)', 'trinity-booking' ) }
+								label={ __( 'Délai minimum avant RDV (heures)', 'slashbooking' ) }
 								type="number"
 								value={ service.min_lead_time_hours }
 								onChange={ ( v ) => patch( { min_lead_time_hours: parseInt( v, 10 ) || 0 } ) }
 								min={ 0 } max={ 720 }
 							/>
 							<TextControl
-								label={ __( 'Horizon de réservation (jours)', 'trinity-booking' ) }
+								label={ __( 'Horizon de réservation (jours)', 'slashbooking' ) }
 								type="number"
 								value={ service.max_horizon_days }
 								onChange={ ( v ) => patch( { max_horizon_days: parseInt( v, 10 ) || 0 } ) }
@@ -225,21 +225,21 @@ export default function ServiceEditor( { slug, onClose } ) {
 					</section>
 
 					{/* Bloc jours / horaires */}
-					<section className="tb-form-section">
-						<h3 className="tb-form-section__title">
-							{ __( 'Jours & horaires de travail', 'trinity-booking' ) }
+					<section className="sb-form-section">
+						<h3 className="sb-form-section__title">
+							{ __( 'Jours & horaires de travail', 'slashbooking' ) }
 						</h3>
-						<p className="tb-form-section__hint">
-							{ __( 'Cochez les jours travaillés et définissez les plages horaires. Vous pouvez ajouter plusieurs plages par jour (matin / après-midi).', 'trinity-booking' ) }
+						<p className="sb-form-section__hint">
+							{ __( 'Cochez les jours travaillés et définissez les plages horaires. Vous pouvez ajouter plusieurs plages par jour (matin / après-midi).', 'slashbooking' ) }
 						</p>
 
-						<div className="tb-week">
+						<div className="sb-week">
 							{ DAYS.map( ( d ) => {
 								const ranges = service.weekly_hours[ d.key ] || [];
 								const open = ranges.length > 0;
 								return (
 									<div key={ d.key } className={ `tb-day ${ open ? 'is-open' : 'is-closed' }` }>
-										<div className="tb-day__head">
+										<div className="sb-day__head">
 											<ToggleControl
 												label={ d.label }
 												checked={ open }
@@ -247,19 +247,19 @@ export default function ServiceEditor( { slug, onClose } ) {
 											/>
 										</div>
 										{ open && (
-											<div className="tb-day__ranges">
+											<div className="sb-day__ranges">
 												{ ranges.map( ( r, i ) => (
-													<div key={ i } className="tb-range">
+													<div key={ i } className="sb-range">
 														<input
 															type="time"
-															className="tb-time-input"
+															className="sb-time-input"
 															value={ r.open }
 															onChange={ ( e ) => setRange( d.key, i, 'open', e.target.value ) }
 														/>
-														<span className="tb-range__sep">→</span>
+														<span className="sb-range__sep">→</span>
 														<input
 															type="time"
-															className="tb-time-input"
+															className="sb-time-input"
 															value={ r.close }
 															onChange={ ( e ) => setRange( d.key, i, 'close', e.target.value ) }
 														/>
@@ -278,7 +278,7 @@ export default function ServiceEditor( { slug, onClose } ) {
 													size="small"
 													onClick={ () => addRange( d.key ) }
 												>
-													+ { __( 'Ajouter une plage', 'trinity-booking' ) }
+													+ { __( 'Ajouter une plage', 'slashbooking' ) }
 												</Button>
 											</div>
 										) }
@@ -296,12 +296,12 @@ export default function ServiceEditor( { slug, onClose } ) {
 								isBusy={ saving }
 								disabled={ ! isDirty || saving }
 							>
-								{ __( 'Enregistrer', 'trinity-booking' ) }
+								{ __( 'Enregistrer', 'slashbooking' ) }
 							</Button>
 						</FlexItem>
 						<FlexItem>
 							<Button variant="tertiary" onClick={ close }>
-								{ __( 'Annuler', 'trinity-booking' ) }
+								{ __( 'Annuler', 'slashbooking' ) }
 							</Button>
 						</FlexItem>
 					</Flex>

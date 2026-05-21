@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications\Events;
+namespace Slash\Booking\Notifications\Events;
 
 use DateTimeInterface;
 use DateTimeZone;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\Service;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\Service;
 
 /**
  * @phpstan-type Extra array{

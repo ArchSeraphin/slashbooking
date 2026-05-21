@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Notifications;
+namespace Slash\Booking\Notifications;
 
 use DateTimeImmutable;
 
@@ -20,7 +20,7 @@ final class IcsBuilder
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//Trinity Booking//FR',
+            'PRODID:-//SlashBooking//FR',
             'CALSCALE:GREGORIAN',
             'METHOD:REQUEST',
             'BEGIN:VEVENT',

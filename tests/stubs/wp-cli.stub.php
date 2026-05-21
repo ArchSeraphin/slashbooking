@@ -5,7 +5,7 @@
  *
  * The real WP_CLI class is loaded by WordPress only during CLI runs,
  * so PHPStan's static analysis can't see it. This stub declares the
- * methods we actually call from Trinity\Booking\Cli.
+ * methods we actually call from Slash\Booking\Cli.
  *
  * Not autoloaded — referenced via phpstan.neon `scanFiles`.
  */

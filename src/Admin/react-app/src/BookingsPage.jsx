@@ -7,11 +7,11 @@ import BookingRow from './BookingRow';
 setupApi();
 
 const STATUSES = [
-	{ value: '',          label: __( 'Tous statuts', 'trinity-booking' ) },
-	{ value: 'pending',   label: __( 'En attente',   'trinity-booking' ) },
-	{ value: 'confirmed', label: __( 'Confirmés',    'trinity-booking' ) },
-	{ value: 'rejected',  label: __( 'Refusés',      'trinity-booking' ) },
-	{ value: 'cancelled', label: __( 'Annulés',      'trinity-booking' ) },
+	{ value: '',          label: __( 'Tous statuts', 'slashbooking' ) },
+	{ value: 'pending',   label: __( 'En attente',   'slashbooking' ) },
+	{ value: 'confirmed', label: __( 'Confirmés',    'slashbooking' ) },
+	{ value: 'rejected',  label: __( 'Refusés',      'slashbooking' ) },
+	{ value: 'cancelled', label: __( 'Annulés',      'slashbooking' ) },
 ];
 
 const PER_PAGE = 20;
@@ -24,7 +24,7 @@ export default function BookingsPage() {
 	const [ busy, setBusy ]     = useState( false );
 	const [ error, setError ]   = useState( null );
 
-	// KPI counts derived from a separate unfiltered fetch (first page is enough for the small volumes Trinity handles).
+	// KPI counts derived from a separate unfiltered fetch (first page is enough for typical SMB volumes).
 	const [ kpi, setKpi ] = useState( { total: 0, pending: 0, confirmed: 0, upcoming: 0 } );
 
 	const computeKpis = ( rows ) => {
@@ -76,48 +76,48 @@ export default function BookingsPage() {
 
 	const kpiCards = useMemo( () => ( [
 		{
-			label: __( 'Total RDV', 'trinity-booking' ),
+			label: __( 'Total RDV', 'slashbooking' ),
 			value: kpi.total,
 			variant: 'primary',
-			hint:  __( 'Toutes périodes', 'trinity-booking' ),
+			hint:  __( 'Toutes périodes', 'slashbooking' ),
 		},
 		{
-			label: __( 'À valider', 'trinity-booking' ),
+			label: __( 'À valider', 'slashbooking' ),
 			value: kpi.pending,
 			variant: 'warning',
-			hint:  __( 'En attente de confirmation', 'trinity-booking' ),
+			hint:  __( 'En attente de confirmation', 'slashbooking' ),
 		},
 		{
-			label: __( 'Confirmés', 'trinity-booking' ),
+			label: __( 'Confirmés', 'slashbooking' ),
 			value: kpi.confirmed,
 			variant: 'accent',
-			hint:  __( 'Validés par l\'admin', 'trinity-booking' ),
+			hint:  __( 'Validés par l\'admin', 'slashbooking' ),
 		},
 		{
-			label: __( 'À venir', 'trinity-booking' ),
+			label: __( 'À venir', 'slashbooking' ),
 			value: kpi.upcoming,
 			variant: 'primary',
-			hint:  __( 'Confirmés futurs', 'trinity-booking' ),
+			hint:  __( 'Confirmés futurs', 'slashbooking' ),
 		},
 	] ), [ kpi ] );
 
 	return (
-		<section className="tb-bookings">
-			<div className="tb-kpi-grid">
+		<section className="sb-bookings">
+			<div className="sb-kpi-grid">
 				{ kpiCards.map( ( c ) => (
 					<div key={ c.label } className={ `tb-kpi tb-kpi--${ c.variant }` }>
-						<p className="tb-kpi__label">{ c.label }</p>
-						<p className="tb-kpi__value">{ c.value }</p>
-						<p className="tb-kpi__hint">{ c.hint }</p>
+						<p className="sb-kpi__label">{ c.label }</p>
+						<p className="sb-kpi__value">{ c.value }</p>
+						<p className="sb-kpi__hint">{ c.hint }</p>
 					</div>
 				) ) }
 			</div>
 
 			<Card>
 				<CardBody>
-					<div className="tb-bookings__toolbar">
+					<div className="sb-bookings__toolbar">
 						<SelectControl
-							label={ __( 'Filtrer par statut', 'trinity-booking' ) }
+							label={ __( 'Filtrer par statut', 'slashbooking' ) }
 							value={ status }
 							options={ STATUSES }
 							onChange={ ( v ) => { setPage( 1 ); setStatus( v ); } }
@@ -133,25 +133,25 @@ export default function BookingsPage() {
 					{ busy ? (
 						<div style={ { padding: 32, textAlign: 'center' } }><Spinner /></div>
 					) : items.length === 0 ? (
-						<div className="tb-empty">
-							<svg className="tb-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+						<div className="sb-empty">
+							<svg className="sb-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 								<rect x="3" y="4" width="18" height="18" rx="2"/>
 								<path d="M16 2v4M8 2v4M3 10h18"/>
 							</svg>
-							<p className="tb-empty__title">{ __( 'Aucune réservation', 'trinity-booking' ) }</p>
-							<p className="tb-empty__hint">
-								{ __( 'Les RDV apparaîtront ici dès la première prise via le formulaire public.', 'trinity-booking' ) }
+							<p className="sb-empty__title">{ __( 'Aucune réservation', 'slashbooking' ) }</p>
+							<p className="sb-empty__hint">
+								{ __( 'Les RDV apparaîtront ici dès la première prise via le formulaire public.', 'slashbooking' ) }
 							</p>
 						</div>
 					) : (
-						<table className="tb-table">
+						<table className="sb-table">
 							<thead>
 								<tr>
-									<th>{ __( 'Date',    'trinity-booking' ) }</th>
-									<th>{ __( 'Service', 'trinity-booking' ) }</th>
-									<th>{ __( 'Client',  'trinity-booking' ) }</th>
-									<th>{ __( 'Statut',  'trinity-booking' ) }</th>
-									<th style={ { textAlign: 'right' } }>{ __( 'Actions', 'trinity-booking' ) }</th>
+									<th>{ __( 'Date',    'slashbooking' ) }</th>
+									<th>{ __( 'Service', 'slashbooking' ) }</th>
+									<th>{ __( 'Client',  'slashbooking' ) }</th>
+									<th>{ __( 'Statut',  'slashbooking' ) }</th>
+									<th style={ { textAlign: 'right' } }>{ __( 'Actions', 'slashbooking' ) }</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -163,15 +163,15 @@ export default function BookingsPage() {
 					) }
 
 					{ items.length > 0 && (
-						<div className="tb-bookings__pager">
+						<div className="sb-bookings__pager">
 							<Button disabled={ page <= 1 } onClick={ () => setPage( page - 1 ) }>
-								{ __( '← Précédent', 'trinity-booking' ) }
+								{ __( '← Précédent', 'slashbooking' ) }
 							</Button>
 							<span>
-								{ __( 'Page', 'trinity-booking' ) } { page } / { lastPage }
+								{ __( 'Page', 'slashbooking' ) } { page } / { lastPage }
 							</span>
 							<Button disabled={ page >= lastPage } onClick={ () => setPage( page + 1 ) }>
-								{ __( 'Suivant →', 'trinity-booking' ) }
+								{ __( 'Suivant →', 'slashbooking' ) }
 							</Button>
 						</div>
 					) }

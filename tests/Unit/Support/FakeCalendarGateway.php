@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Support;
+namespace Slash\Booking\Tests\Unit\Support;
 
-use Trinity\Booking\Google\CalendarGateway;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
-use Trinity\Booking\Google\Exceptions\SyncTokenExpired;
+use Slash\Booking\Google\CalendarGateway;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Google\Exceptions\SyncTokenExpired;
 
 final class FakeCalendarGateway implements CalendarGateway
 {
@@ -32,6 +32,19 @@ final class FakeCalendarGateway implements CalendarGateway
 
     /** @var list<array{calendarId:string, channelId:string, address:string, token:string, ttl:int}> */
     public array $startedChannels = [];
+
+    /** @var list<array{id:string, summary:string, primary:bool, accessRole:string, timeZone:string, backgroundColor:?string}> */
+    public array $calendars = [];
+
+    public function listCalendars(): array
+    {
+        $this->calls[] = ['op' => 'listCalendars'];
+        if ($this->failNext) {
+            $this->failNext = false;
+            throw new GoogleApiError('Simulated 503', 503);
+        }
+        return $this->calendars;
+    }
 
     public function insertEvent(string $calendarId, array $payload): array
     {

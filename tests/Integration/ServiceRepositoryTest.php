@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Integration;
+namespace Slash\Booking\Tests\Integration;
 
 use WP_UnitTestCase;
-use Trinity\Booking\Activator;
-use Trinity\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Activator;
+use Slash\Booking\Persistence\ServiceRepository;
 
 final class ServiceRepositoryTest extends WP_UnitTestCase
 {

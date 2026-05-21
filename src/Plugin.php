@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.9';
-    public const TEXT_DOMAIN = 'trinity-booking';
+    public const VERSION = '1.0.0';
+    public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
-    public const REST_NAMESPACE = 'trinity-booking/v1';
+    public const REST_NAMESPACE = 'slashbooking/v1';
 
     private static ?self $instance = null;
 
@@ -104,8 +104,8 @@ final class Plugin
             findByEmail: fn (string $email) => $bookings->findByCustomerEmail($email),
         );
         add_filter('wp_privacy_personal_data_exporters', static function (array $exporters) use ($privacyExporter): array {
-            $exporters['trinity-booking'] = [
-                'exporter_friendly_name' => __('Trinity Booking', 'trinity-booking'),
+            $exporters['slashbooking'] = [
+                'exporter_friendly_name' => __('SlashBooking', 'slashbooking'),
                 'callback'               => static fn (string $email, int $page = 1) => $privacyExporter->export($email, $page),
             ];
             return $exporters;
@@ -115,8 +115,8 @@ final class Plugin
             anonymizeByEmail: fn (string $email) => $bookings->anonymizeByEmail($email),
         );
         add_filter('wp_privacy_personal_data_erasers', static function (array $erasers) use ($privacyEraser): array {
-            $erasers['trinity-booking'] = [
-                'eraser_friendly_name' => __('Trinity Booking', 'trinity-booking'),
+            $erasers['slashbooking'] = [
+                'eraser_friendly_name' => __('SlashBooking', 'slashbooking'),
                 'callback'             => static fn (string $email, int $page = 1) => $privacyEraser->erase($email, $page),
             ];
             return $erasers;
@@ -124,10 +124,10 @@ final class Plugin
 
         // Cron interval must also be present at runtime, not just at activation.
         add_filter('cron_schedules', static function (array $s): array {
-            if (!isset($s['tb_monthly'])) {
-                $s['tb_monthly'] = [
+            if (!isset($s['sb_monthly'])) {
+                $s['sb_monthly'] = [
                     'interval' => 2_592_000,
-                    'display'  => 'Once every 30 days (Trinity Booking)',
+                    'display'  => 'Once every 30 days (SlashBooking)',
                 ];
             }
             return $s;
@@ -135,7 +135,7 @@ final class Plugin
 
         Privacy\BookingRetentionPurger::register();
 
-        $signer = new Booking\DecisionTokenSigner((string) get_option('tb_decision_secret'));
+        $signer = new Booking\DecisionTokenSigner((string) get_option('sb_decision_secret'));
         // Lazy URL resolver — rest_url() requires $wp_rewrite which is not yet
         // initialized at plugin file load time. The closure fires later, when
         // BookingNotifier callbacks actually need to build a URL.
@@ -162,8 +162,8 @@ final class Plugin
         $keyResolver = new Google\EncryptionKeyResolver();
         $encryption  = new Google\Encryption($keyResolver->resolve());
 
-        $pendingColor   = (string) get_option('tb_gcal_color_pending', '6');
-        $confirmedColor = (string) get_option('tb_gcal_color_confirmed', '10');
+        $pendingColor   = (string) get_option('sb_gcal_color_pending', '6');
+        $confirmedColor = (string) get_option('sb_gcal_color_confirmed', '10');
         $formatter      = new Google\EventFormatter($pendingColor, $confirmedColor);
 
         (new Google\PushScheduler())->register();
@@ -260,10 +260,10 @@ final class Plugin
         // Custom 15-minute cron interval. Filter must be present at every boot
         // (cron itself fires from WP-Cron which calls these filters at runtime).
         add_filter('cron_schedules', static function (array $s): array {
-            if (!isset($s['tb_fifteen_minutes'])) {
-                $s['tb_fifteen_minutes'] = [
+            if (!isset($s['sb_fifteen_minutes'])) {
+                $s['sb_fifteen_minutes'] = [
                     'interval' => 900,
-                    'display'  => 'Every 15 minutes (Trinity Booking)',
+                    'display'  => 'Every 15 minutes (SlashBooking)',
                 ];
             }
             return $s;
@@ -297,10 +297,10 @@ final class Plugin
 
         // Action Scheduler handler for inbound pulls.
         // Producers (webhook controller, admin "pull now", cron fallback) call:
-        //   as_schedule_single_action(time() + 5, 'tb/google_pull', [$accountId], 'trinity-booking')
+        //   as_schedule_single_action(time() + 5, 'sb/google_pull', [$accountId], 'slashbooking')
         // RestRouter constructs its own enqueuePull closure with the same hook name — keeps the
         // producer-side wiring close to the controllers without dragging Plugin.php into them.
-        add_action('tb/google_pull', static function (int $accountId) use (
+        add_action('sb/google_pull', static function (int $accountId) use (
             $accounts,
             $clientBuilder,
             $buildSyncEngine,
@@ -328,7 +328,7 @@ final class Plugin
         }, 10, 1);
 
         // Daily watch renewal check: renew if expiration < now+1 day.
-        add_action('tb/watch_renew_check', static function () use ($accounts, $clientBuilder, $watchMgr, $syncLogRepo): void {
+        add_action('sb/watch_renew_check', static function () use ($accounts, $clientBuilder, $watchMgr, $syncLogRepo): void {
             $account = $accounts->findSingle();
             if ($account === null) {
                 return;
@@ -370,16 +370,16 @@ final class Plugin
         });
 
         // 15-min cron fallback: enqueue one pull per account (V1: a single account).
-        add_action('tb/google_pull_all', static function () use ($accounts): void {
+        add_action('sb/google_pull_all', static function () use ($accounts): void {
             $account = $accounts->findSingle();
             if ($account === null) {
                 return;
             }
             if (function_exists('as_schedule_single_action')) {
-                as_schedule_single_action(time() + 5, 'tb/google_pull', [(int) $account->id()], 'trinity-booking');
+                as_schedule_single_action(time() + 5, 'sb/google_pull', [(int) $account->id()], 'slashbooking');
                 return;
             }
-            do_action('tb/google_pull', (int) $account->id());
+            do_action('sb/google_pull', (int) $account->id());
         });
 
         // Admin notice if encryption key falls back to option.
@@ -388,7 +388,7 @@ final class Plugin
                 if (!current_user_can('manage_options')) {
                     return;
                 }
-                echo '<div class="notice notice-warning"><p><strong>Trinity Booking :</strong> définissez <code>TRINITY_BOOKING_ENC_KEY</code> dans <code>wp-config.php</code> pour chiffrer les tokens Google avec une clé hors base.</p></div>';
+                echo '<div class="notice notice-warning"><p><strong>SlashBooking :</strong> définissez <code>SLASHBOOKING_ENC_KEY</code> dans <code>wp-config.php</code> pour chiffrer les tokens Google avec une clé hors base.</p></div>';
             });
         }
 
@@ -401,7 +401,7 @@ final class Plugin
                 return $buildSyncEngine()->pull($account, $gateway);
             };
             /** @phpstan-ignore-next-line Class.NotFound (WP_CLI conditionally available) */
-            \WP_CLI::add_command('trinity-booking doctor', new Cli\DoctorCommand(
+            \WP_CLI::add_command('slashbooking doctor', new Cli\DoctorCommand(
                 $accounts,
                 $clientBuilder,
                 $pullNow,

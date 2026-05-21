@@ -5,6 +5,7 @@ import {
 	CardBody,
 	CardHeader,
 	Notice,
+	SelectControl,
 	Spinner,
 	TextControl,
 } from '@wordpress/components';
@@ -19,6 +20,8 @@ import {
 	startWatch,
 	stopWatch,
 	forcePullNow,
+	fetchGoogleCalendars,
+	setGoogleCalendar,
 } from './api';
 
 export default function GooglePage() {
@@ -30,6 +33,10 @@ export default function GooglePage() {
 	const [ diag, setDiag ] = useState( null );
 	const [ busy, setBusy ] = useState( false );
 	const [ panelMsg, setPanelMsg ] = useState( '' );
+	const [ calendars, setCalendars ] = useState( null );
+	const [ calendarsLoading, setCalendarsLoading ] = useState( false );
+	const [ calendarChoice, setCalendarChoice ] = useState( '' );
+	const [ calendarMsg, setCalendarMsg ] = useState( '' );
 
 	const reload = async () => {
 		setLoading( true );
@@ -53,9 +60,51 @@ export default function GooglePage() {
 			setDiag( await fetchGoogleDiagnostics() );
 		} catch ( e ) {
 			setPanelMsg(
-				__( 'Erreur diagnostics : ', 'trinity-booking' ) +
+				__( 'Erreur diagnostics : ', 'slashbooking' ) +
 					( e.message ?? String( e ) )
 			);
+		}
+	};
+
+	const loadCalendars = async () => {
+		setCalendarsLoading( true );
+		setCalendarMsg( '' );
+		try {
+			const r = await fetchGoogleCalendars();
+			setCalendars( r.calendars ?? [] );
+			setCalendarChoice( r.selected ?? '' );
+		} catch ( e ) {
+			setCalendarMsg(
+				__( 'Erreur chargement calendriers : ', 'slashbooking' ) +
+					( e.message ?? String( e ) )
+			);
+		} finally {
+			setCalendarsLoading( false );
+		}
+	};
+
+	const onSaveCalendar = async () => {
+		if ( ! calendarChoice ) {
+			return;
+		}
+		setBusy( true );
+		setCalendarMsg( '' );
+		try {
+			await setGoogleCalendar( calendarChoice );
+			setCalendarMsg(
+				__(
+					'Calendrier enregistré. Le watch a été réinitialisé : pense à le redémarrer.',
+					'slashbooking'
+				)
+			);
+			await Promise.all( [ reload(), refreshDiag() ] );
+		} catch ( e ) {
+			setCalendarMsg(
+				__( 'Erreur : ', 'slashbooking' ) +
+					( e.message ?? String( e ) )
+			);
+		} finally {
+			setBusy( false );
 		}
 	};
 
@@ -63,6 +112,12 @@ export default function GooglePage() {
 		reload();
 		refreshDiag();
 	}, [] );
+
+	useEffect( () => {
+		if ( status?.connected && calendars === null ) {
+			loadCalendars();
+		}
+	}, [ status?.connected ] );
 
 	const connect = async () => {
 		try {
@@ -77,7 +132,7 @@ export default function GooglePage() {
 		if (
 			// eslint-disable-next-line no-alert
 			! window.confirm(
-				__( 'Vraiment déconnecter ce compte ?', 'trinity-booking' )
+				__( 'Vraiment déconnecter ce compte ?', 'slashbooking' )
 			)
 		) {
 			return;
@@ -109,10 +164,10 @@ export default function GooglePage() {
 		try {
 			const r = await startWatch();
 			setPanelMsg(
-				__( 'Watch activé. Channel : ', 'trinity-booking' ) +
+				__( 'Watch activé. Channel : ', 'slashbooking' ) +
 					r.channelId +
 					' (' +
-					__( 'expire', 'trinity-booking' ) +
+					__( 'expire', 'slashbooking' ) +
 					' ' +
 					r.expiresAt +
 					')'
@@ -120,7 +175,7 @@ export default function GooglePage() {
 			await refreshDiag();
 		} catch ( e ) {
 			setPanelMsg(
-				__( 'Erreur : ', 'trinity-booking' ) +
+				__( 'Erreur : ', 'slashbooking' ) +
 					( e.message ?? String( e ) )
 			);
 		} finally {
@@ -131,7 +186,7 @@ export default function GooglePage() {
 	const onStopWatch = async () => {
 		if (
 			// eslint-disable-next-line no-alert
-			! window.confirm( __( 'Arrêter le watch ?', 'trinity-booking' ) )
+			! window.confirm( __( 'Arrêter le watch ?', 'slashbooking' ) )
 		) {
 			return;
 		}
@@ -139,11 +194,11 @@ export default function GooglePage() {
 		setPanelMsg( '' );
 		try {
 			await stopWatch();
-			setPanelMsg( __( 'Watch arrêté.', 'trinity-booking' ) );
+			setPanelMsg( __( 'Watch arrêté.', 'slashbooking' ) );
 			await refreshDiag();
 		} catch ( e ) {
 			setPanelMsg(
-				__( 'Erreur : ', 'trinity-booking' ) +
+				__( 'Erreur : ', 'slashbooking' ) +
 					( e.message ?? String( e ) )
 			);
 		} finally {
@@ -159,12 +214,12 @@ export default function GooglePage() {
 			setPanelMsg(
 				__(
 					'Pull enfilé. Vérifie le Journal dans quelques secondes.',
-					'trinity-booking'
+					'slashbooking'
 				)
 			);
 		} catch ( e ) {
 			setPanelMsg(
-				__( 'Erreur : ', 'trinity-booking' ) +
+				__( 'Erreur : ', 'slashbooking' ) +
 					( e.message ?? String( e ) )
 			);
 		} finally {
@@ -188,7 +243,7 @@ export default function GooglePage() {
 				<Card>
 					<CardHeader>
 						<h2>
-							{ __( 'Configuration OAuth', 'trinity-booking' ) }
+							{ __( 'Configuration OAuth', 'slashbooking' ) }
 						</h2>
 					</CardHeader>
 					<CardBody>
@@ -196,14 +251,14 @@ export default function GooglePage() {
 							<strong>
 								{ __(
 									'URI de redirection à saisir dans Google Cloud Console :',
-									'trinity-booking'
+									'slashbooking'
 								) }
 							</strong>
 							<br />
 							<code>{ settings.redirect_uri }</code>
 						</p>
 						<TextControl
-							label={ __( 'Client ID', 'trinity-booking' ) }
+							label={ __( 'Client ID', 'slashbooking' ) }
 							value={ settings.client_id }
 							onChange={ ( v ) =>
 								setSettings( { ...settings, client_id: v } )
@@ -214,16 +269,16 @@ export default function GooglePage() {
 								settings.has_client_secret
 									? __(
 											'Client Secret (déjà défini — saisir pour remplacer)',
-											'trinity-booking'
+											'slashbooking'
 									  )
-									: __( 'Client Secret', 'trinity-booking' )
+									: __( 'Client Secret', 'slashbooking' )
 							}
 							type="password"
 							value={ secret }
 							onChange={ setSecret }
 						/>
 						<Button variant="primary" onClick={ saveSettings }>
-							{ __( 'Enregistrer', 'trinity-booking' ) }
+							{ __( 'Enregistrer', 'slashbooking' ) }
 						</Button>
 					</CardBody>
 				</Card>
@@ -231,36 +286,137 @@ export default function GooglePage() {
 
 			<Card>
 				<CardHeader>
-					<h2>{ __( 'Google Calendar', 'trinity-booking' ) }</h2>
+					<h2>{ __( 'Google Calendar', 'slashbooking' ) }</h2>
 				</CardHeader>
 				<CardBody>
 					{ status?.connected ? (
 						<>
 							<p>
 								<strong>
-									{ __( 'Connecté', 'trinity-booking' ) } ✓
+									{ __( 'Connecté', 'slashbooking' ) } ✓
 								</strong>
 								<br />
 								{ __(
-									'Calendrier :',
-									'trinity-booking'
-								) }{ ' ' }
-								<code>{ status.calendar_id }</code>
-								<br />
-								{ __(
 									'Token expire :',
-									'trinity-booking'
+									'slashbooking'
 								) }{ ' ' }
 								{ new Date(
 									status.expires_at
 								).toLocaleString() }
 							</p>
+
+							<hr style={ { margin: '12px 0' } } />
+
+							<p>
+								<strong>
+									{ __(
+										'Calendrier cible',
+										'slashbooking'
+									) }
+								</strong>
+								<br />
+								<span style={ { color: '#6b7280' } }>
+									{ __(
+										'Le calendrier dans lequel les RDV sont créés et dont les événements bloquent les créneaux.',
+										'slashbooking'
+									) }
+								</span>
+							</p>
+
+							{ calendarsLoading && <Spinner /> }
+							{ ! calendarsLoading && calendars !== null && (
+								<>
+									<SelectControl
+										label={ __(
+											'Choisir un calendrier',
+											'slashbooking'
+										) }
+										value={ calendarChoice }
+										options={ [
+											...calendars.map( ( c ) => ( {
+												label:
+													( c.primary ? '★ ' : '' ) +
+													( c.summary || c.id ) +
+													( c.accessRole &&
+													c.accessRole !== 'owner'
+														? ' (' +
+														  c.accessRole +
+														  ')'
+														: '' ),
+												value: c.id,
+											} ) ),
+										] }
+										onChange={ setCalendarChoice }
+										__nextHasNoMarginBottom
+									/>
+									<div
+										style={ {
+											display: 'flex',
+											gap: '8px',
+											marginTop: '8px',
+											flexWrap: 'wrap',
+										} }
+									>
+										<Button
+											variant="primary"
+											onClick={ onSaveCalendar }
+											disabled={
+												busy ||
+												! calendarChoice ||
+												calendarChoice ===
+													status.calendar_id
+											}
+										>
+											{ __(
+												'Enregistrer le calendrier',
+												'slashbooking'
+											) }
+										</Button>
+										<Button
+											variant="tertiary"
+											onClick={ loadCalendars }
+											disabled={ busy }
+										>
+											{ __(
+												'Rafraîchir la liste',
+												'slashbooking'
+											) }
+										</Button>
+									</div>
+									<p
+										style={ {
+											fontSize: '12px',
+											color: '#6b7280',
+											marginTop: '4px',
+										} }
+									>
+										{ __( 'Actuel : ', 'slashbooking' ) }
+										<code>{ status.calendar_id }</code>
+									</p>
+								</>
+							) }
+							{ calendarMsg && (
+								<Notice
+									status={
+										calendarMsg.startsWith( 'Erreur' )
+											? 'error'
+											: 'success'
+									}
+									isDismissible={ false }
+									style={ { marginTop: '12px' } }
+								>
+									{ calendarMsg }
+								</Notice>
+							) }
+
+							<hr style={ { margin: '12px 0' } } />
+
 							<Button
 								variant="secondary"
 								isDestructive
 								onClick={ disconnect }
 							>
-								{ __( 'Déconnecter', 'trinity-booking' ) }
+								{ __( 'Déconnecter', 'slashbooking' ) }
 							</Button>
 						</>
 					) : (
@@ -268,13 +424,13 @@ export default function GooglePage() {
 							<p>
 								{ __(
 									'Aucun calendrier Google connecté.',
-									'trinity-booking'
+									'slashbooking'
 								) }
 							</p>
 							<Button variant="primary" onClick={ connect }>
 								{ __(
 									'Connecter mon Google Calendar',
-									'trinity-booking'
+									'slashbooking'
 								) }
 							</Button>
 						</>
@@ -287,7 +443,7 @@ export default function GooglePage() {
 					<h2>
 						{ __(
 							'Synchronisation entrante (Google → WP)',
-							'trinity-booking'
+							'slashbooking'
 						) }
 					</h2>
 				</CardHeader>
@@ -297,7 +453,7 @@ export default function GooglePage() {
 						<p>
 							{ __(
 								"Connectez d'abord un compte Google ci-dessus.",
-								'trinity-booking'
+								'slashbooking'
 							) }
 						</p>
 					) }
@@ -307,40 +463,40 @@ export default function GooglePage() {
 								<strong>
 									{ __(
 										'Watch channel :',
-										'trinity-booking'
+										'slashbooking'
 									) }{ ' ' }
 								</strong>
 								{ diag.watch?.channelId
 									? diag.watch.channelId +
 									  ' (' +
-									  __( 'expire', 'trinity-booking' ) +
+									  __( 'expire', 'slashbooking' ) +
 									  ' ' +
 									  diag.watch.expiresAt +
 									  ')'
-									: __( 'aucun', 'trinity-booking' ) }
+									: __( 'aucun', 'slashbooking' ) }
 							</p>
 							<p>
 								<strong>
 									{ __(
 										'Dernier full sync :',
-										'trinity-booking'
+										'slashbooking'
 									) }{ ' ' }
 								</strong>
 								{ diag.lastFullSyncAt ??
-									__( 'jamais', 'trinity-booking' ) }
+									__( 'jamais', 'slashbooking' ) }
 							</p>
 							<p>
 								<strong>
-									{ __( 'Sync token :', 'trinity-booking' ) }{ ' ' }
+									{ __( 'Sync token :', 'slashbooking' ) }{ ' ' }
 								</strong>
 								{ diag.syncToken
 									? __(
 											'présent (sync incrémental actif)',
-											'trinity-booking'
+											'slashbooking'
 									  )
 									: __(
 											'absent (prochain pull = full sync)',
-											'trinity-booking'
+											'slashbooking'
 									  ) }
 							</p>
 							<div
@@ -358,7 +514,7 @@ export default function GooglePage() {
 									>
 										{ __(
 											'Démarrer le watch',
-											'trinity-booking'
+											'slashbooking'
 										) }
 									</Button>
 								) }
@@ -371,7 +527,7 @@ export default function GooglePage() {
 									>
 										{ __(
 											'Arrêter le watch',
-											'trinity-booking'
+											'slashbooking'
 										) }
 									</Button>
 								) }
@@ -382,7 +538,7 @@ export default function GooglePage() {
 								>
 									{ __(
 										'Forcer un pull maintenant',
-										'trinity-booking'
+										'slashbooking'
 									) }
 								</Button>
 							</div>

@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use DateTimeImmutable;
 use DateTimeZone;
 use Google\Client as GoogleClient;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Google\Exceptions\OAuthFailure;
-use Trinity\Booking\Persistence\GoogleAccountRepository;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Google\Exceptions\OAuthFailure;
+use Slash\Booking\Persistence\GoogleAccountRepository;
 
 final class GoogleClientBuilder
 {
@@ -21,8 +21,8 @@ final class GoogleClientBuilder
     public function buildGateway(GoogleAccount $account): CalendarGateway
     {
         $client = new GoogleClient();
-        $client->setClientId((string) get_option('tb_google_client_id', ''));
-        $client->setClientSecret((string) get_option('tb_google_client_secret', ''));
+        $client->setClientId((string) get_option('sb_google_client_id', ''));
+        $client->setClientSecret((string) get_option('sb_google_client_secret', ''));
         $client->addScope(OAuthClient::SCOPE);
 
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -42,8 +42,8 @@ final class GoogleClientBuilder
     private function refresh(GoogleAccount $account, GoogleClient $client): void
     {
         $oauth = new OAuthClient(
-            clientId: (string) get_option('tb_google_client_id', ''),
-            clientSecret: (string) get_option('tb_google_client_secret', ''),
+            clientId: (string) get_option('sb_google_client_id', ''),
+            clientSecret: (string) get_option('sb_google_client_secret', ''),
             redirectUri: '',
         );
         try {

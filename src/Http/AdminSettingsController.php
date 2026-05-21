@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Admin\Capabilities;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Admin\Capabilities;
+use Slash\Booking\Plugin;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -30,12 +30,12 @@ final class AdminSettingsController
 
     public function read(): WP_REST_Response
     {
-        $legalId = (int) get_option('tb_legal_page_id', 0);
+        $legalId = (int) get_option('sb_legal_page_id', 0);
         $url     = $legalId > 0 ? (string) get_permalink($legalId) : '';
         return new WP_REST_Response([
             'legal_page_id'          => $legalId,
             'legal_url'              => $url,
-            'booking_retention_days' => (int) get_option('tb_booking_retention_days', 1095),
+            'booking_retention_days' => (int) get_option('sb_booking_retention_days', 1095),
         ], 200);
     }
 
@@ -44,9 +44,9 @@ final class AdminSettingsController
         $legalId   = (int) $req->get_param('legal_page_id');
         $retention = (int) $req->get_param('booking_retention_days');
 
-        update_option('tb_legal_page_id', max(0, $legalId), false);
+        update_option('sb_legal_page_id', max(0, $legalId), false);
         if ($retention >= 30 && $retention <= 3650) {
-            update_option('tb_booking_retention_days', $retention, false);
+            update_option('sb_booking_retention_days', $retention, false);
         }
 
         return new WP_REST_Response(['saved' => true], 200);

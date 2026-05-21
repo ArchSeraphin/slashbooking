@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Http;
+namespace Slash\Booking\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Http\TagRegistryController;
-use Trinity\Booking\Notifications\TagRegistry;
+use Slash\Booking\Http\TagRegistryController;
+use Slash\Booking\Notifications\TagRegistry;
 
 final class TagRegistryControllerTest extends TestCase
 {

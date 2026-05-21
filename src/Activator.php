@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Trinity\Booking;
+namespace Slash\Booking;
 
-use Trinity\Booking\Persistence\Migrator;
+use Slash\Booking\Persistence\Migrator;
 
 final class Activator
 {
@@ -17,48 +17,48 @@ final class Activator
         self::seedServices($wpdb);
         Admin\Capabilities::install();
 
-        if (!wp_next_scheduled(\Trinity\Booking\Notifications\ReminderScheduler::HOOK)) {
-            wp_schedule_event(self::tomorrowAt10SiteTz(), 'daily', \Trinity\Booking\Notifications\ReminderScheduler::HOOK);
+        if (!wp_next_scheduled(\Slash\Booking\Notifications\ReminderScheduler::HOOK)) {
+            wp_schedule_event(self::tomorrowAt10SiteTz(), 'daily', \Slash\Booking\Notifications\ReminderScheduler::HOOK);
         }
 
-        if (!wp_next_scheduled(\Trinity\Booking\Google\SyncLogPurger::HOOK)) {
-            wp_schedule_event(self::tomorrowAt3SiteTz(), 'daily', \Trinity\Booking\Google\SyncLogPurger::HOOK);
+        if (!wp_next_scheduled(\Slash\Booking\Google\SyncLogPurger::HOOK)) {
+            wp_schedule_event(self::tomorrowAt3SiteTz(), 'daily', \Slash\Booking\Google\SyncLogPurger::HOOK);
         }
 
-        if (!wp_next_scheduled('tb/watch_renew_check')) {
-            wp_schedule_event(self::tomorrowAt4SiteTz(), 'daily', 'tb/watch_renew_check');
+        if (!wp_next_scheduled('sb/watch_renew_check')) {
+            wp_schedule_event(self::tomorrowAt4SiteTz(), 'daily', 'sb/watch_renew_check');
         }
 
         // 15-minute cron interval: filter must be registered before scheduling.
         add_filter('cron_schedules', static function (array $s): array {
-            if (!isset($s['tb_fifteen_minutes'])) {
-                $s['tb_fifteen_minutes'] = [
+            if (!isset($s['sb_fifteen_minutes'])) {
+                $s['sb_fifteen_minutes'] = [
                     'interval' => 900,
-                    'display'  => 'Every 15 minutes (Trinity Booking)',
+                    'display'  => 'Every 15 minutes (SlashBooking)',
                 ];
             }
             return $s;
         });
-        if (!wp_next_scheduled('tb/google_pull_all')) {
-            wp_schedule_event(time() + 900, 'tb_fifteen_minutes', 'tb/google_pull_all');
+        if (!wp_next_scheduled('sb/google_pull_all')) {
+            wp_schedule_event(time() + 900, 'sb_fifteen_minutes', 'sb/google_pull_all');
         }
 
         // Custom monthly interval (WP doesn't ship one by default).
         add_filter('cron_schedules', static function (array $s): array {
-            if (!isset($s['tb_monthly'])) {
-                $s['tb_monthly'] = [
+            if (!isset($s['sb_monthly'])) {
+                $s['sb_monthly'] = [
                     'interval' => 2_592_000, // 30 days in seconds
-                    'display'  => 'Once every 30 days (Trinity Booking)',
+                    'display'  => 'Once every 30 days (SlashBooking)',
                 ];
             }
             return $s;
         });
 
-        if (!wp_next_scheduled(\Trinity\Booking\Privacy\BookingRetentionPurger::HOOK)) {
+        if (!wp_next_scheduled(\Slash\Booking\Privacy\BookingRetentionPurger::HOOK)) {
             wp_schedule_event(
                 self::firstDayNextMonthAt0330SiteTz(),
-                'tb_monthly',
-                \Trinity\Booking\Privacy\BookingRetentionPurger::HOOK
+                'sb_monthly',
+                \Slash\Booking\Privacy\BookingRetentionPurger::HOOK
             );
         }
     }
@@ -90,9 +90,9 @@ final class Activator
 
     public static function ensureDecisionSecret(): void
     {
-        $existing = get_option('tb_decision_secret');
+        $existing = get_option('sb_decision_secret');
         if (!is_string($existing) || strlen($existing) !== 64) {
-            update_option('tb_decision_secret', bin2hex(random_bytes(32)), false);
+            update_option('sb_decision_secret', bin2hex(random_bytes(32)), false);
         }
     }
 
@@ -129,7 +129,7 @@ final class Activator
 
         $now = current_time('mysql', true);
 
-        $table = $wpdb->prefix . 'tb_services';
+        $table = $wpdb->prefix . 'sb_services';
 
         foreach ($defaults as $row) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -142,7 +142,7 @@ final class Activator
             }
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
             $wpdb->insert(
-                "{$wpdb->prefix}tb_services",
+                "{$wpdb->prefix}sb_services",
                 [
                     'slug'              => $row['slug'],
                     'name'              => $row['name'],

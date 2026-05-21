@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="trinity-booking">
-    <description>Coding standards for trinity-booking (modern PHP style, WP security/i18n rules)</description>
+<ruleset name="slashbooking">
+    <description>Coding standards for slashbooking (modern PHP style, WP security/i18n rules)</description>
     <file>src</file>
     <file>tests</file>
     <arg name="basepath" value="." />
@@ -27,7 +27,7 @@
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="trinity-booking" />
+                <element value="slashbooking" />
             </property>
         </properties>
     </rule>

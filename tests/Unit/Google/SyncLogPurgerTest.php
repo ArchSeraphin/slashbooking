@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Tests\Unit\Google;
+namespace Slash\Booking\Tests\Unit\Google;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use Trinity\Booking\Google\SyncLogPurger;
+use Slash\Booking\Google\SyncLogPurger;
 
 final class SyncLogPurgerTest extends TestCase
 {

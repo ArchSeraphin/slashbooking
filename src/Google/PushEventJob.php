@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
-use Trinity\Booking\Domain\Booking;
-use Trinity\Booking\Domain\GoogleAccount;
-use Trinity\Booking\Domain\Service;
-use Trinity\Booking\Google\Exceptions\GoogleApiError;
-use Trinity\Booking\Google\Exceptions\GoogleClientError;
+use Slash\Booking\Domain\Booking;
+use Slash\Booking\Domain\GoogleAccount;
+use Slash\Booking\Domain\Service;
+use Slash\Booking\Google\Exceptions\GoogleApiError;
+use Slash\Booking\Google\Exceptions\GoogleClientError;
 
 final class PushEventJob
 {

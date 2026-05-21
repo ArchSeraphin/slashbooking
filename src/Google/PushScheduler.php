@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Google;
+namespace Slash\Booking\Google;
 
 use Closure;
 
 final class PushScheduler
 {
-    public const HOOK = 'tb/push_gcal_event';
+    public const HOOK = 'sb/push_gcal_event';
 
     /** @var Closure(string, array<int, mixed>): void */
     private Closure $enqueue;
@@ -22,10 +22,10 @@ final class PushScheduler
 
     public function register(): void
     {
-        add_action('trinity_booking/booking_created',   [$this, 'onCreated'],   20, 1);
-        add_action('trinity_booking/booking_confirmed', [$this, 'onConfirmed'], 20, 1);
-        add_action('trinity_booking/booking_rejected',  [$this, 'onRejected'],  20, 1);
-        add_action('trinity_booking/booking_cancelled', [$this, 'onCancelled'], 20, 1);
+        add_action('slashbooking/booking_created',   [$this, 'onCreated'],   20, 1);
+        add_action('slashbooking/booking_confirmed', [$this, 'onConfirmed'], 20, 1);
+        add_action('slashbooking/booking_rejected',  [$this, 'onRejected'],  20, 1);
+        add_action('slashbooking/booking_cancelled', [$this, 'onCancelled'], 20, 1);
     }
 
     public function onCreated(int $bookingId): void
@@ -55,7 +55,7 @@ final class PushScheduler
     {
         return static function (string $hook, array $args): void {
             if (function_exists('as_enqueue_async_action')) {
-                as_enqueue_async_action($hook, $args, 'trinity-booking');
+                as_enqueue_async_action($hook, $args, 'slashbooking');
                 return;
             }
             // Fallback synchronous (Action Scheduler not loaded — should not happen in production).

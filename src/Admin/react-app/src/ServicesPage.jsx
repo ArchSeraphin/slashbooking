@@ -19,7 +19,7 @@ function daysSummary( weekly ) {
 		const ranges = weekly[ String( d ) ] || weekly[ d ] || [];
 		if ( ranges.length > 0 ) open.push( DAY_LABELS[ d - 1 ] );
 	}
-	return open.length === 0 ? __( 'Aucun jour', 'trinity-booking' ) : open.join( ' · ' );
+	return open.length === 0 ? __( 'Aucun jour', 'slashbooking' ) : open.join( ' · ' );
 }
 
 export default function ServicesPage() {
@@ -56,7 +56,7 @@ export default function ServicesPage() {
 		<Card>
 			<CardHeader>
 				<h2 style={ { margin: 0, fontSize: 16, fontWeight: 600 } }>
-					{ __( 'Services & horaires', 'trinity-booking' ) }
+					{ __( 'Services & horaires', 'slashbooking' ) }
 				</h2>
 			</CardHeader>
 			<CardBody>
@@ -65,17 +65,17 @@ export default function ServicesPage() {
 					<Notice status="error" isDismissible={ false }>{ error }</Notice>
 				) }
 				{ items && items.length === 0 && (
-					<p>{ __( 'Aucun service.', 'trinity-booking' ) }</p>
+					<p>{ __( 'Aucun service.', 'slashbooking' ) }</p>
 				) }
 				{ items && items.length > 0 && (
-					<table className="tb-table">
+					<table className="sb-table">
 						<thead>
 							<tr>
-								<th>{ __( 'Service', 'trinity-booking' ) }</th>
-								<th>{ __( 'Durée', 'trinity-booking' ) }</th>
-								<th>{ __( 'Buffer', 'trinity-booking' ) }</th>
-								<th>{ __( 'Jours ouverts', 'trinity-booking' ) }</th>
-								<th>{ __( 'Statut', 'trinity-booking' ) }</th>
+								<th>{ __( 'Service', 'slashbooking' ) }</th>
+								<th>{ __( 'Durée', 'slashbooking' ) }</th>
+								<th>{ __( 'Buffer', 'slashbooking' ) }</th>
+								<th>{ __( 'Jours ouverts', 'slashbooking' ) }</th>
+								<th>{ __( 'Statut', 'slashbooking' ) }</th>
 								<th style={ { textAlign: 'right' } }></th>
 							</tr>
 						</thead>
@@ -83,15 +83,15 @@ export default function ServicesPage() {
 							{ items.map( ( s ) => (
 								<tr key={ s.slug }>
 									<td>
-										<div className="tb-table__customer">{ s.name }</div>
-										<div className="tb-table__customer-meta">
+										<div className="sb-table__customer">{ s.name }</div>
+										<div className="sb-table__customer-meta">
 											<code>{ s.slug }</code>
 										</div>
 									</td>
-									<td className="tb-table__time">
+									<td className="sb-table__time">
 										{ formatDuration( s.duration_min ) }
 									</td>
-									<td className="tb-table__time">
+									<td className="sb-table__time">
 										{ s.buffer_after_min > 0
 											? `+${ s.buffer_after_min } min`
 											: '—' }
@@ -100,13 +100,13 @@ export default function ServicesPage() {
 									<td>
 										<span className={ `tb-status tb-status--${ s.active ? 'confirmed' : 'cancelled' }` }>
 											{ s.active
-												? __( 'Actif', 'trinity-booking' )
-												: __( 'Désactivé', 'trinity-booking' ) }
+												? __( 'Actif', 'slashbooking' )
+												: __( 'Désactivé', 'slashbooking' ) }
 										</span>
 									</td>
 									<td style={ { textAlign: 'right' } }>
 										<Button variant="secondary" size="small" onClick={ () => setSelected( s.slug ) }>
-											{ __( 'Modifier', 'trinity-booking' ) }
+											{ __( 'Modifier', 'slashbooking' ) }
 										</Button>
 									</td>
 								</tr>

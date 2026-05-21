@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Privacy;
+namespace Slash\Booking\Privacy;
 
 use Closure;
 
@@ -25,7 +25,7 @@ final class BookingEraser
             ? [
                 sprintf(
                     /* translators: %d: number of bookings anonymized */
-                    __('Trinity Booking : %d réservation(s) anonymisée(s) (les agrégats sont conservés).', 'trinity-booking'),
+                    __('SlashBooking : %d réservation(s) anonymisée(s) (les agrégats sont conservés).', 'slashbooking'),
                     $count
                 ),
             ]

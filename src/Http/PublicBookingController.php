@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Trinity\Booking\Http;
+namespace Slash\Booking\Http;
 
-use Trinity\Booking\Availability\AvailabilityCalculator;
-use Trinity\Booking\Availability\SlotGenerator;
-use Trinity\Booking\Booking\CreateBooking;
-use Trinity\Booking\Domain\TimeSlot;
-use Trinity\Booking\Persistence\BookingRepository;
-use Trinity\Booking\Persistence\BusyBlockRepository;
-use Trinity\Booking\Persistence\ServiceRepository;
-use Trinity\Booking\Plugin;
+use Slash\Booking\Availability\AvailabilityCalculator;
+use Slash\Booking\Availability\SlotGenerator;
+use Slash\Booking\Booking\CreateBooking;
+use Slash\Booking\Domain\TimeSlot;
+use Slash\Booking\Persistence\BookingRepository;
+use Slash\Booking\Persistence\BusyBlockRepository;
+use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Plugin;
 use DateTimeImmutable;
 use DateTimeZone;
 use WP_Error;
@@ -88,7 +88,7 @@ final class PublicBookingController
     {
         $svc = $this->services->findBySlug((string) $request['service']);
         if ($svc === null) {
-            return new WP_Error('tb_service_not_found', __('Service introuvable', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_service_not_found', __('Service introuvable', 'slashbooking'), ['status' => 404]);
         }
 
         try {
@@ -96,10 +96,10 @@ final class PublicBookingController
             $from = new DateTimeImmutable((string) $request['from'], $tz);
             $to   = new DateTimeImmutable((string) $request['to'], $tz);
         } catch (\Exception $e) {
-            return new WP_Error('tb_invalid_date', __('Date invalide', 'trinity-booking'), ['status' => 400]);
+            return new WP_Error('sb_invalid_date', __('Date invalide', 'slashbooking'), ['status' => 400]);
         }
         if ($from >= $to) {
-            return new WP_Error('tb_invalid_date', __('from doit précéder to', 'trinity-booking'), ['status' => 400]);
+            return new WP_Error('sb_invalid_date', __('from doit précéder to', 'slashbooking'), ['status' => 400]);
         }
 
         $candidates = $this->slotGenerator->generate($svc, $from, $to);
@@ -144,19 +144,19 @@ final class PublicBookingController
         }
 
         if ($this->isRateLimited()) {
-            return new WP_Error('tb_rate_limited', __('Trop de requêtes', 'trinity-booking'), ['status' => 429]);
+            return new WP_Error('sb_rate_limited', __('Trop de requêtes', 'slashbooking'), ['status' => 429]);
         }
 
         $svc = $this->services->findBySlug((string) ($params['service'] ?? ''));
         if ($svc === null) {
-            return new WP_Error('tb_service_not_found', __('Service introuvable', 'trinity-booking'), ['status' => 404]);
+            return new WP_Error('sb_service_not_found', __('Service introuvable', 'slashbooking'), ['status' => 404]);
         }
 
         try {
             $start = new DateTimeImmutable((string) ($params['start'] ?? ''), new DateTimeZone('UTC'));
             $start = $start->setTimezone(new DateTimeZone('UTC'));
         } catch (\Exception $e) {
-            return new WP_Error('tb_invalid_date', __('start invalide', 'trinity-booking'), ['status' => 400]);
+            return new WP_Error('sb_invalid_date', __('start invalide', 'slashbooking'), ['status' => 400]);
         }
         $end = $start->modify('+' . $svc->durationMin . ' minutes');
         $slot = new TimeSlot($start, $end);
@@ -176,10 +176,10 @@ final class PublicBookingController
 
         try {
             $booking = $this->createBooking->execute($cmd);
-        } catch (\Trinity\Booking\Booking\Exceptions\InvalidBookingInput $e) {
-            return new WP_Error('tb_invalid_input', __('Champs invalides', 'trinity-booking'), ['status' => 422, 'errors' => $e->errors]);
-        } catch (\Trinity\Booking\Booking\Exceptions\SlotUnavailable $e) {
-            return new WP_Error('tb_slot_unavailable', __('Créneau indisponible', 'trinity-booking'), ['status' => 409]);
+        } catch (\Slash\Booking\Booking\Exceptions\InvalidBookingInput $e) {
+            return new WP_Error('sb_invalid_input', __('Champs invalides', 'slashbooking'), ['status' => 422, 'errors' => $e->errors]);
+        } catch (\Slash\Booking\Booking\Exceptions\SlotUnavailable $e) {
+            return new WP_Error('sb_slot_unavailable', __('Créneau indisponible', 'slashbooking'), ['status' => 409]);
         }
 
         return new WP_REST_Response([
@@ -195,7 +195,7 @@ final class PublicBookingController
         if ($ip === '') {
             return false;
         }
-        $key = 'tb_rate_' . md5($ip);
+        $key = 'sb_rate_' . md5($ip);
         $count = (int) get_transient($key);
         if ($count >= 5) {
             return true;

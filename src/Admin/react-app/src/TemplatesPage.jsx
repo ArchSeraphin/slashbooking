@@ -49,10 +49,10 @@ export default function TemplatesPage() {
 	}
 
 	return (
-		<div className="tb-templates-page">
+		<div className="sb-templates-page">
 			<Card>
 				<CardHeader>
-					<h2>{ __( 'Templates e-mail', 'trinity-booking' ) }</h2>
+					<h2>{ __( 'Templates e-mail', 'slashbooking' ) }</h2>
 				</CardHeader>
 				<CardBody>
 					{ loading && <Spinner /> }
@@ -65,9 +65,9 @@ export default function TemplatesPage() {
 						<table className="widefat striped tb-templates-table">
 							<thead>
 								<tr>
-									<th>{ __( 'Évènement', 'trinity-booking' ) }</th>
-									<th>{ __( 'Sujet', 'trinity-booking' ) }</th>
-									<th>{ __( 'État', 'trinity-booking' ) }</th>
+									<th>{ __( 'Évènement', 'slashbooking' ) }</th>
+									<th>{ __( 'Sujet', 'slashbooking' ) }</th>
+									<th>{ __( 'État', 'slashbooking' ) }</th>
 									<th></th>
 								</tr>
 							</thead>
@@ -86,12 +86,12 @@ export default function TemplatesPage() {
 										<td>{ t.subject }</td>
 										<td>
 											{ t.is_custom ? (
-												<span className="tb-badge tb-badge-custom">
-													{ __( 'Personnalisé', 'trinity-booking' ) }
+												<span className="sb-badge tb-badge-custom">
+													{ __( 'Personnalisé', 'slashbooking' ) }
 												</span>
 											) : (
-												<span className="tb-badge tb-badge-default">
-													{ __( 'Défaut', 'trinity-booking' ) }
+												<span className="sb-badge tb-badge-default">
+													{ __( 'Défaut', 'slashbooking' ) }
 												</span>
 											) }
 										</td>
@@ -100,7 +100,7 @@ export default function TemplatesPage() {
 												variant="secondary"
 												onClick={ () => setSelected( t.event_key ) }
 											>
-												{ __( 'Modifier', 'trinity-booking' ) }
+												{ __( 'Modifier', 'slashbooking' ) }
 											</Button>
 										</td>
 									</tr>
