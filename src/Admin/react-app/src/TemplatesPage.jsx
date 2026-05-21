@@ -4,6 +4,7 @@ import { __ } from '@wordpress/i18n';
 import { listMailTemplates } from './api';
 import TemplateEditor from './TemplateEditor';
 import EmailSettings from './EmailSettings';
+import FormSettings from './FormSettings';
 
 const EVENT_LABELS = {
 	'booking.pending.client'   : 'Demande reçue (client)',
@@ -52,6 +53,7 @@ export default function TemplatesPage() {
 	return (
 		<div className="sb-templates-page">
 			<EmailSettings />
+			<FormSettings />
 
 			<Card>
 				<CardHeader>

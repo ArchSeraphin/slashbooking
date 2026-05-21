@@ -542,6 +542,25 @@
 
 .sb-honeypot { position: absolute; left: -9999px; }
 
+.sb-turnstile {
+	margin: 16px 0 8px;
+	display: flex;
+	justify-content: center;
+	/* Reserve space so the form doesn't jump when the widget renders. */
+	min-height: 65px;
+}
+
+.sb-form-disclaimer {
+	margin: 12px 0 16px;
+	padding: 12px 14px;
+	background: var(--sb-c-surface-alt);
+	border-left: 3px solid var(--sb-c-primary);
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--sb-c-text-soft);
+}
+
 /* ============================================================
    Button (submit)
    ============================================================ */

@@ -44,7 +44,10 @@ final class RestRouter
             },
         );
 
-        (new PublicBookingController($services, $bookings, $busy, $generator, $createBooking))->registerRoutes();
+        $turnstile = new \Slash\Booking\PublicFront\TurnstileVerifier(
+            (string) get_option('sb_turnstile_secret_key', ''),
+        );
+        (new PublicBookingController($services, $bookings, $busy, $generator, $createBooking, $turnstile))->registerRoutes();
 
         $signer = new \Slash\Booking\Booking\DecisionTokenSigner((string) get_option('sb_decision_secret'));
         $cancel = new \Slash\Booking\Booking\CancelBooking(

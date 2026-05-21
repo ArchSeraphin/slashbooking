@@ -40,6 +40,10 @@ final class AdminSettingsController
             'admin_email_fallback'   => (string) get_option('admin_email', ''),
             'company_logo'           => (string) get_option('sb_company_logo', ''),
             'company_phone'          => (string) get_option('sb_company_phone', ''),
+            'form_disclaimer'        => (string) get_option('sb_form_disclaimer', ''),
+            'turnstile_site_key'     => (string) get_option('sb_turnstile_site_key', ''),
+            // Don't expose the secret in cleartext — caller only needs to know if it's configured.
+            'turnstile_secret_set'   => get_option('sb_turnstile_secret_key', '') !== '',
         ], 200);
     }
 
@@ -72,6 +76,28 @@ final class AdminSettingsController
         if ($req->has_param('company_phone')) {
             $phone = trim((string) $req->get_param('company_phone'));
             update_option('sb_company_phone', sanitize_text_field($phone), false);
+        }
+
+        if ($req->has_param('form_disclaimer')) {
+            $disclaimer = (string) $req->get_param('form_disclaimer');
+            // Allow line breaks + basic punctuation; strip dangerous HTML.
+            update_option('sb_form_disclaimer', wp_kses_post(trim($disclaimer)), false);
+        }
+
+        if ($req->has_param('turnstile_site_key')) {
+            $key = trim((string) $req->get_param('turnstile_site_key'));
+            update_option('sb_turnstile_site_key', sanitize_text_field($key), false);
+        }
+
+        // Secret key is write-only: empty string means "keep current"; non-empty
+        // overwrites. The explicit sentinel "__CLEAR__" wipes the stored secret.
+        if ($req->has_param('turnstile_secret_key')) {
+            $secret = trim((string) $req->get_param('turnstile_secret_key'));
+            if ($secret === '__CLEAR__') {
+                delete_option('sb_turnstile_secret_key');
+            } elseif ($secret !== '') {
+                update_option('sb_turnstile_secret_key', sanitize_text_field($secret), false);
+            }
         }
 
         return new WP_REST_Response(['saved' => true], 200);

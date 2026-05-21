@@ -67,10 +67,26 @@ final class Shortcode
             Plugin::VERSION
         );
 
+        $turnstileKey = (string) get_option('sb_turnstile_site_key', '');
+        $deps         = [];
+
+        if ($turnstileKey !== '') {
+            // Cloudflare Turnstile API — explicit render lets us insert the widget
+            // after the booking form is built by booking.js.
+            wp_enqueue_script(
+                'sb-turnstile',
+                'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit',
+                [],
+                null,
+                true
+            );
+            $deps[] = 'sb-turnstile';
+        }
+
         wp_enqueue_script(
             'slashbooking-public',
             $pluginUrl . 'src/PublicFront/assets/booking.js',
-            [],
+            $deps,
             Plugin::VERSION,
             true
         );
@@ -79,9 +95,11 @@ final class Shortcode
         $legalUrl = $legalId > 0 ? (string) get_permalink($legalId) : '';
 
         wp_localize_script('slashbooking-public', 'SlashBooking', [
-            'nonce'    => wp_create_nonce('wp_rest'),
-            'locale'   => get_locale(),
-            'legalUrl' => $legalUrl,
+            'nonce'           => wp_create_nonce('wp_rest'),
+            'locale'          => get_locale(),
+            'legalUrl'        => $legalUrl,
+            'disclaimer'      => (string) get_option('sb_form_disclaimer', ''),
+            'turnstileSiteKey'=> $turnstileKey,
         ]);
     }
 }

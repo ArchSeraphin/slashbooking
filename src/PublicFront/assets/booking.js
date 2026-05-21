@@ -480,6 +480,22 @@
 			consentWrap.append(consent, consentLabel);
 			els.formStep.append(consentWrap);
 
+			// Cloudflare Turnstile widget — rendered only if a site key is configured.
+			var turnstileKey = (window.SlashBooking && window.SlashBooking.turnstileSiteKey) || '';
+			if (turnstileKey) {
+				els.turnstileWrap = el('div', 'sb-turnstile');
+				els.formStep.append(els.turnstileWrap);
+				renderTurnstile(turnstileKey);
+			}
+
+			// Disclaimer text — shown above the submit button, configurable in admin.
+			var disclaimer = (window.SlashBooking && window.SlashBooking.disclaimer) || '';
+			if (disclaimer) {
+				els.disclaimer = el('p', 'sb-form-disclaimer');
+				els.disclaimer.textContent = disclaimer;
+				els.formStep.append(els.disclaimer);
+			}
+
 			els.submitBtn = el('button', 'sb-button');
 			els.submitBtn.type = 'button';
 			els.submitBtn.textContent = 'Confirmer la demande';
@@ -487,6 +503,30 @@
 			els.formStep.append(els.submitBtn);
 
 			return els.formStep;
+		}
+
+		function renderTurnstile(sitekey) {
+			// Poll for the Turnstile API to be ready (the api.js loads `?render=explicit`).
+			var tries = 0;
+			var maxTries = 50; // ~5s at 100ms
+			var interval = setInterval(function () {
+				tries++;
+				if (window.turnstile && typeof window.turnstile.render === 'function') {
+					clearInterval(interval);
+					try {
+						els.turnstileWidgetId = window.turnstile.render(els.turnstileWrap, {
+							sitekey: sitekey,
+							callback: function (token) { state.turnstileToken = token; },
+							'expired-callback': function () { state.turnstileToken = ''; },
+							'error-callback':   function () { state.turnstileToken = ''; },
+						});
+					} catch (e) {
+						// Bad sitekey or DOM removed — silent; submit will fail server-side.
+					}
+				} else if (tries >= maxTries) {
+					clearInterval(interval);
+				}
+			}, 100);
 		}
 
 		function feedbackEl() {
@@ -499,6 +539,13 @@
 		function submit() {
 			if (state.submitting) return;
 			if (!state.start) { showError('Choisissez un créneau.'); return; }
+
+			var turnstileKey = (window.SlashBooking && window.SlashBooking.turnstileSiteKey) || '';
+			if (turnstileKey && !state.turnstileToken) {
+				showError('Veuillez compléter la vérification anti-robot.');
+				return;
+			}
+
 			var data = {
 				service: state.service,
 				start: state.start,
@@ -509,6 +556,7 @@
 				notes: els.formStep.querySelector('[name=notes]').value.trim(),
 				consent: els.formStep.querySelector('[name=consent]').checked,
 				website: els.formStep.querySelector('[name=website]').value,
+				cf_turnstile_response: state.turnstileToken || '',
 			};
 			state.submitting = true;
 			els.submitBtn.disabled = true;
@@ -533,6 +581,11 @@
 						return;
 					}
 					resetSubmit();
+					// Turnstile tokens are single-use — reset the widget so user can re-validate.
+					if (window.turnstile && els.turnstileWidgetId !== undefined) {
+						try { window.turnstile.reset(els.turnstileWidgetId); } catch (e) { /* noop */ }
+						state.turnstileToken = '';
+					}
 					if (res.status === 422) {
 						var errs = (res.body && res.body.data && res.body.data.errors) || {};
 						showError(Object.values(errs).join(' ') || 'Veuillez vérifier les champs du formulaire.');
@@ -542,6 +595,10 @@
 						showError("Désolé, ce créneau vient d'être pris. Choisissez-en un autre.");
 						loadSlots();
 						loadMonth();
+						return;
+					}
+					if (res.body && res.body.code === 'sb_captcha_failed') {
+						showError('Vérification anti-robot échouée. Merci de la refaire.');
 						return;
 					}
 					showError(res.body && res.body.message ? res.body.message : 'Erreur inattendue. Réessayez.');
