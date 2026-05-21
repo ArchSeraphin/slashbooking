@@ -311,21 +311,36 @@ export default function GooglePage() {
 				<CardBody>
 					{ status?.connected ? (
 						<>
-							<p>
+							<p style={ { marginTop: 0 } }>
 								<strong>
 									{ __( 'Connecté', 'slashbooking' ) } ✓
 								</strong>
-								<br />
-								{ __(
-									'Token expire :',
+							</p>
+							<p
+								style={ {
+									display: 'inline-flex',
+									alignItems: 'center',
+									gap: 6,
+									margin: '8px 0 0',
+									padding: '4px 10px',
+									background: 'var(--sb-c-surface-alt, #f1f5f9)',
+									border: '1px solid var(--sb-c-border, #e2e8f0)',
+									borderRadius: 999,
+									fontSize: 12,
+									color: 'var(--sb-c-text-soft, #475569)',
+								} }
+								title={ __(
+									'L\'access token Google a une durée de vie de 1h. SlashBooking utilise le refresh token (longue durée) pour le régénérer automatiquement avant chaque appel API. Aucune action de votre part.',
 									'slashbooking'
-								) }{ ' ' }
-								{ new Date(
-									status.expires_at
-								).toLocaleString() }
+								) }
+							>
+								↻ { __( 'Renouvellement auto :', 'slashbooking' ) }{ ' ' }
+								<strong style={ { color: 'var(--sb-c-text, #0f172a)' } }>
+									{ new Date( status.expires_at ).toLocaleString() }
+								</strong>
 							</p>
 
-							<hr style={ { margin: '12px 0' } } />
+							<hr style={ { margin: '16px 0 12px' } } />
 
 							<p>
 								<strong>
