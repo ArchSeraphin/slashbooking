@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politique de confidentialité — SlashBooking</title>
+<meta name="description" content="Politique de confidentialité du plugin WordPress SlashBooking, conforme RGPD et à la Google API Services User Data Policy (Limited Use).">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+	<div class="site-header__inner">
+		<a class="site-header__brand" href="./">
+			<img src="assets/logo.png" alt="SlashBooking">
+			<span class="site-header__brand-text">SlashBooking</span>
+		</a>
+		<nav class="site-nav">
+			<a href="./">Accueil</a>
+			<a href="privacy.html" class="is-active">Confidentialité</a>
+			<a href="terms.html">Conditions</a>
+		</nav>
+	</div>
+</header>
+
+<div class="section">
+	<article class="legal">
+		<h1>Politique de confidentialité</h1>
+		<p class="legal__meta">Dernière mise à jour : 21 mai 2026</p>
+
+		<div class="toc">
+			<h2>Sommaire</h2>
+			<ul>
+				<li><a href="#preambule">1. Préambule</a></li>
+				<li><a href="#editeur">2. Éditeur du plugin</a></li>
+				<li><a href="#donnees-collectees">3. Données collectées</a></li>
+				<li><a href="#google-data">4. Utilisation des données Google (OAuth)</a></li>
+				<li><a href="#stockage">5. Stockage et localisation</a></li>
+				<li><a href="#partage">6. Partage avec des tiers</a></li>
+				<li><a href="#retention">7. Durée de conservation</a></li>
+				<li><a href="#droits">8. Vos droits</a></li>
+				<li><a href="#revocation">9. Révoquer l'accès Google</a></li>
+				<li><a href="#cookies">10. Cookies et trackers</a></li>
+				<li><a href="#contact">11. Contact</a></li>
+				<li><a href="#modifications">12. Modifications</a></li>
+			</ul>
+		</div>
+
+		<h2 id="preambule">1. Préambule</h2>
+		<p>
+			La présente politique de confidentialité décrit comment <strong>SlashBooking</strong> (ci-après « le plugin ») traite les données personnelles.
+			SlashBooking est un plugin WordPress libre, sous licence GPL v2 ou ultérieure, distribué via <a href="./">slashbox.fr/slashbooking</a>.
+		</p>
+		<p>
+			<strong>Important :</strong> SlashBooking est un plugin <em>auto-hébergé</em>. Toutes les données (réservations, comptes Google connectés, e-mails clients) sont stockées dans la base de données WordPress de l'installation où il est activé. L'éditeur du plugin <strong>ne collecte ni ne reçoit aucune donnée</strong> des installations en production. Le présent document décrit le comportement du plugin lui-même ; chaque exploitant du plugin reste responsable du traitement effectué sur sa propre installation au sens du RGPD.
+		</p>
+
+		<h2 id="editeur">2. Éditeur du plugin</h2>
+		<p>
+			SlashBooking est édité et distribué par <strong>Slashbox</strong>, dont les coordonnées de contact sont fournies en section <a href="#contact">Contact</a>. L'éditeur fournit le code source du plugin mais n'opère aucun service hébergé en lien avec celui-ci.
+		</p>
+
+		<h2 id="donnees-collectees">3. Données collectées par le plugin</h2>
+		<p>Lorsque vous installez SlashBooking sur votre WordPress, le plugin enregistre les données suivantes dans <strong>votre propre base de données</strong> :</p>
+
+		<h3>3.1 Données saisies par les visiteurs du formulaire de réservation</h3>
+		<ul>
+			<li>Nom et prénom (ou raison sociale)</li>
+			<li>Adresse e-mail</li>
+			<li>Numéro de téléphone</li>
+			<li>Adresse postale (si demandée par le service)</li>
+			<li>Notes libres ajoutées par le client</li>
+			<li>Service choisi, date et heure du rendez-vous</li>
+			<li>Horodatage du consentement RGPD coché par le visiteur</li>
+		</ul>
+		<p>
+			Ces données sont stockées dans la table <code>wp_sb_bookings</code> de votre WordPress. Elles sont nécessaires à la finalité du plugin : gérer la prise de rendez-vous et permettre le contact post-réservation.
+		</p>
+
+		<h3>3.2 Données techniques</h3>
+		<ul>
+			<li>Adresse IP du visiteur — utilisée uniquement pour le rate-limiting du formulaire (5 demandes par minute par IP), conservée sous forme de hash MD5 dans un transient WordPress expirant en 60 secondes.</li>
+			<li>Token de vérification Cloudflare Turnstile (si activé) — transmis à Cloudflare pour vérification puis détruit. Voir la <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">politique de confidentialité Cloudflare</a>.</li>
+		</ul>
+
+		<h2 id="google-data">4. Utilisation des données Google (Limited Use)</h2>
+		<p>
+			Lorsque l'administrateur du site connecte un compte Google au plugin pour activer la synchronisation Google Calendar, SlashBooking demande l'accès aux scopes OAuth suivants :
+		</p>
+		<ul>
+			<li><code>https://www.googleapis.com/auth/calendar.events</code> — lecture et écriture des événements de calendrier, pour créer/modifier/supprimer les rendez-vous dans le calendrier Google connecté.</li>
+			<li><code>https://www.googleapis.com/auth/calendar.readonly</code> — lecture de la liste des calendriers du compte, pour permettre à l'administrateur de choisir dans quel calendrier les RDV doivent être synchronisés.</li>
+		</ul>
+
+		<p><strong>Conformité Google API Services User Data Policy (Limited Use) :</strong></p>
+		<p>
+			L'utilisation et le transfert vers toute autre application des informations reçues depuis les API Google par SlashBooking se conforment à la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, y compris les <em>Limited Use requirements</em>.
+		</p>
+		<p>Concrètement, SlashBooking :</p>
+		<ul>
+			<li><strong>N'utilise les données Google que pour la fonctionnalité utilisateur visible</strong> qu'est la synchronisation de calendrier (créer des événements à la validation d'un RDV, marquer les créneaux occupés à partir d'événements existants).</li>
+			<li><strong>Ne transfère jamais</strong> les données Google à des tiers, sauf si l'utilisateur a explicitement initié le transfert, ou si la loi l'exige (procédure judiciaire, sécurité, fraude).</li>
+			<li><strong>N'utilise pas les données Google à des fins de publicité</strong>, de profilage, d'agrégation à des fins marketing ou de vente à des courtiers de données.</li>
+			<li><strong>Ne permet pas la lecture humaine</strong> des données Google, sauf si l'utilisateur a explicitement donné son accord pour des données spécifiques (par exemple, journal de synchronisation consulté par l'administrateur dans l'admin WP).</li>
+		</ul>
+
+		<p><strong>Stockage des credentials Google :</strong></p>
+		<ul>
+			<li>Le <em>refresh token</em> Google est chiffré avec libsodium (<code>crypto_secretbox</code>) et stocké dans la table <code>wp_sb_google_accounts</code> de votre WordPress.</li>
+			<li>La clé de chiffrement est définie dans <code>wp-config.php</code> via la constante <code>SLASHBOOKING_ENC_KEY</code>, en dehors de la base de données.</li>
+			<li>Les <em>access tokens</em> (durée de vie 1 h) sont également chiffrés et renouvelés automatiquement.</li>
+		</ul>
+
+		<h2 id="stockage">5. Stockage et localisation</h2>
+		<p>
+			Toutes les données collectées par le plugin sont stockées dans <strong>la base de données MySQL/MariaDB de votre installation WordPress</strong>. Aucune donnée ne quitte votre infrastructure, à l'exception :
+		</p>
+		<ul>
+			<li>Des appels aux API Google nécessaires à la synchronisation Google Calendar (chez Google LLC, USA — couvert par le Data Privacy Framework UE-USA).</li>
+			<li>Des appels de vérification anti-bot à Cloudflare Turnstile (si activé).</li>
+			<li>Des e-mails transactionnels envoyés via votre serveur SMTP WordPress.</li>
+		</ul>
+
+		<h2 id="partage">6. Partage avec des tiers</h2>
+		<p>
+			L'éditeur du plugin <strong>ne reçoit ni ne traite aucune donnée</strong> des installations en production de SlashBooking. Le plugin n'envoie aucune télémétrie, aucun ping, aucune statistique d'usage à l'éditeur ni à aucun tiers.
+		</p>
+		<p>
+			Sur votre installation, les seuls tiers contactés par le plugin sont ceux que vous avez explicitement configurés (Google, Cloudflare, votre serveur SMTP).
+		</p>
+
+		<h2 id="retention">7. Durée de conservation</h2>
+		<p>
+			Les réservations sont conservées par défaut <strong>1 095 jours (3 ans)</strong> à compter de la date du rendez-vous, durée modifiable par l'administrateur dans les paramètres du plugin (entre 30 et 3 650 jours). Une tâche planifiée mensuelle purge automatiquement les réservations dont la date est antérieure à ce seuil.
+		</p>
+		<p>
+			Les journaux de synchronisation Google sont purgés quotidiennement après 30 jours.
+		</p>
+
+		<h2 id="droits">8. Vos droits (RGPD)</h2>
+		<p>Les visiteurs ayant pris rendez-vous via SlashBooking disposent des droits suivants au titre du RGPD :</p>
+		<ul>
+			<li><strong>Droit d'accès</strong> aux données les concernant — utiliser <em>Outils → Exporter les données personnelles</em> dans l'admin WP (connecteur officiel implémenté par le plugin).</li>
+			<li><strong>Droit à l'effacement</strong> — utiliser <em>Outils → Effacer les données personnelles</em> dans l'admin WP (le plugin anonymise les réservations correspondantes, l'historique métier est préservé sans données identifiantes).</li>
+			<li><strong>Droit de rectification</strong> — par e-mail à l'éditeur du site.</li>
+			<li><strong>Droit d'opposition et à la limitation</strong> — par e-mail à l'éditeur du site.</li>
+		</ul>
+
+		<h2 id="revocation">9. Révoquer l'accès Google</h2>
+		<p>
+			L'administrateur du site peut révoquer l'accès Google à tout moment :
+		</p>
+		<ul>
+			<li>Depuis l'admin WP : <strong>SlashBooking → Google → Déconnecter</strong>. Le refresh token est supprimé localement.</li>
+			<li>Depuis votre compte Google : <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a> → repérez « SlashBooking » dans la liste des applications tierces et cliquez sur « Supprimer l'accès ». Cette opération invalide immédiatement le refresh token côté Google.</li>
+		</ul>
+
+		<h2 id="cookies">10. Cookies et trackers</h2>
+		<p>
+			SlashBooking <strong>ne dépose aucun cookie</strong> sur le navigateur des visiteurs et n'effectue aucun tracking publicitaire. Aucun script tiers (Google Analytics, Facebook Pixel, etc.) n'est chargé par le plugin.
+		</p>
+		<p>
+			Si l'anti-bot Cloudflare Turnstile est activé par l'administrateur, Cloudflare peut déposer un cookie technique de session lié à la vérification anti-robot. Voir la <a href="https://www.cloudflare.com/cookie-policy/" target="_blank" rel="noopener">politique de cookies Cloudflare</a>.
+		</p>
+
+		<h2 id="contact">11. Contact</h2>
+		<p>Pour toute question relative à cette politique de confidentialité ou au traitement des données par le plugin :</p>
+		<ul>
+			<li><strong>E-mail :</strong> <a href="mailto:contact@slashbox.fr">contact@slashbox.fr</a></li>
+			<li><strong>Site :</strong> <a href="./">slashbox.fr/slashbooking</a></li>
+		</ul>
+		<p>
+			Pour toute question relative au traitement des données effectué sur une installation spécifique de SlashBooking, veuillez contacter directement l'exploitant de cette installation (le responsable de traitement au sens du RGPD), dont les coordonnées figurent sur le site concerné.
+		</p>
+
+		<h2 id="modifications">12. Modifications</h2>
+		<p>
+			La présente politique peut être mise à jour pour refléter des évolutions du plugin ou des obligations légales. La date de dernière mise à jour est affichée en tête de document. Les changements significatifs feront l'objet d'une annonce sur la page d'accueil.
+		</p>
+
+	</article>
+</div>
+
+<footer class="site-footer">
+	<div class="site-footer__inner">
+		<div>&copy; 2026 SlashBooking &middot; Plugin libre sous licence GPL v2+</div>
+		<div class="site-footer__links">
+			<a href="privacy.html">Confidentialité</a>
+			<a href="terms.html">Conditions d'utilisation</a>
+		</div>
+	</div>
+</footer>
+
+</body>
+</html>

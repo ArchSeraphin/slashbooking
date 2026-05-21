@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SlashBooking — Plugin WordPress de prise de rendez-vous</title>
+<meta name="description" content="Plugin WordPress open source de prise de rendez-vous en ligne, avec synchronisation bidirectionnelle Google Calendar. Auto-hébergé sur votre WordPress.">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="site-header">
+	<div class="site-header__inner">
+		<a class="site-header__brand" href="./">
+			<img src="assets/logo.png" alt="SlashBooking">
+			<span class="site-header__brand-text">SlashBooking</span>
+		</a>
+		<nav class="site-nav">
+			<a href="./" class="is-active">Accueil</a>
+			<a href="privacy.html">Confidentialité</a>
+			<a href="terms.html">Conditions</a>
+		</nav>
+	</div>
+</header>
+
+<section class="hero">
+	<div class="hero__inner">
+		<img class="hero__logo" src="assets/logo.png" alt="">
+		<h1>Prenez des rendez-vous sur votre WordPress</h1>
+		<p class="lede">
+			SlashBooking est un plugin WordPress open source qui ajoute un calendrier de
+			réservation à votre site, synchronisé en temps réel avec votre Google Calendar.
+			Vos clients réservent, vous validez, et tout reste dans votre infrastructure.
+		</p>
+		<div class="hero__cta">
+			<a class="btn btn--primary" href="#telecharger">
+				⬇ Télécharger
+			</a>
+			<a class="btn btn--secondary" href="#fonctionnalites">
+				En savoir plus
+			</a>
+		</div>
+	</div>
+</section>
+
+<section class="section" id="fonctionnalites">
+	<h2>Fonctionnalités principales</h2>
+	<p class="section-sub">Tout ce qu'il faut pour gérer vos rendez-vous, rien de superflu.</p>
+
+	<div class="features">
+		<div class="feature">
+			<div class="feature__icon">📅</div>
+			<h3>Calendrier visuel</h3>
+			<p>Un calendrier mensuel avec créneaux disponibles, partiels, complets ou fermés affichés en un coup d'œil pour vos visiteurs.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">🔄</div>
+			<h3>Sync Google Calendar bidirectionnelle</h3>
+			<p>Les RDV créés sur le formulaire apparaissent dans votre Google Calendar. Les événements que vous créez dans Google bloquent automatiquement les créneaux.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">✉️</div>
+			<h3>E-mails transactionnels personnalisables</h3>
+			<p>6 templates HTML modifiables depuis le panneau admin (réception, confirmation, refus, annulation, rappel J-1) avec aperçu live.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">👍</div>
+			<h3>Validation 1-clic</h3>
+			<p>Validez ou refusez les demandes en cliquant directement dans l'e-mail de notification. Liens signés HMAC, expirent en 72h.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">⚙️</div>
+			<h3>Services configurables</h3>
+			<p>Durée, jours et plages horaires d'ouverture, délai minimum de prise, horizon de réservation — tout se règle par service depuis l'admin.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">🛡️</div>
+			<h3>Anti-spam Cloudflare Turnstile</h3>
+			<p>Protection optionnelle du formulaire public contre les bots, sans capture de données personnelles ni casse-tête CAPTCHA.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">🇪🇺</div>
+			<h3>RGPD-compliant</h3>
+			<p>Données auto-hébergées sur votre WordPress. Connecteurs d'export et d'effacement WP intégrés. Rétention configurable.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">🔐</div>
+			<h3>Tokens chiffrés</h3>
+			<p>Les refresh tokens Google sont stockés chiffrés (sodium) avec une clé hors base de données. Aucune donnée Google n'est exfiltrée vers un service tiers.</p>
+		</div>
+	</div>
+</section>
+
+<section class="download-band" id="telecharger">
+	<div class="section">
+		<h2>Télécharger SlashBooking</h2>
+		<p class="section-sub">Plugin gratuit, sous licence GPL v2 ou ultérieure.</p>
+
+		<a class="btn btn--primary" href="download/slashbooking-latest.zip">
+			⬇ Télécharger la dernière version (.zip)
+		</a>
+
+		<p class="download-meta">
+			Compatible WordPress 6.5+ &middot; PHP 8.1+ &middot;
+			MySQL/MariaDB &middot; Installation en 3 minutes
+		</p>
+
+		<div style="margin-top: 32px; text-align: left; max-width: 540px; margin-left: auto; margin-right: auto;">
+			<h3 style="font-size: 16px; margin: 0 0 10px;">Installation</h3>
+			<ol style="font-size: 14px; color: var(--c-text-soft); line-height: 1.8;">
+				<li>Téléchargez le fichier <code>.zip</code> ci-dessus.</li>
+				<li>WordPress Admin → <strong>Extensions → Ajouter → Téléverser</strong>.</li>
+				<li>Activez le plugin. Six tables <code>wp_sb_*</code> sont créées automatiquement.</li>
+				<li>Configurez votre Google Calendar dans <strong>SlashBooking → Google</strong>.</li>
+				<li>Insérez le shortcode <code>[slashbooking]</code> dans n'importe quelle page.</li>
+			</ol>
+		</div>
+	</div>
+</section>
+
+<section class="section">
+	<h2>Comment ça marche</h2>
+	<p class="section-sub">Un parcours utilisateur sobre, conçu pour la conversion.</p>
+
+	<div class="features">
+		<div class="feature">
+			<div class="feature__icon">1</div>
+			<h3>Le visiteur choisit un créneau</h3>
+			<p>Sur votre site WordPress, le visiteur ouvre le calendrier visuel, sélectionne un jour disponible, puis un créneau.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">2</div>
+			<h3>Il remplit le formulaire</h3>
+			<p>Nom, e-mail, téléphone, adresse, notes éventuelles. Consentement RGPD requis. Anti-bot Turnstile si activé.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">3</div>
+			<h3>Vous recevez un e-mail</h3>
+			<p>Un e-mail vous notifie immédiatement. Vous validez ou refusez d'un clic, ou utilisez le tableau de bord admin.</p>
+		</div>
+		<div class="feature">
+			<div class="feature__icon">4</div>
+			<h3>Sync automatique</h3>
+			<p>À la validation, l'événement est créé dans votre Google Calendar. Le client reçoit la confirmation avec un fichier .ics joint.</p>
+		</div>
+	</div>
+</section>
+
+<footer class="site-footer">
+	<div class="site-footer__inner">
+		<div>&copy; 2026 SlashBooking &middot; Plugin libre sous licence GPL v2+</div>
+		<div class="site-footer__links">
+			<a href="privacy.html">Confidentialité</a>
+			<a href="terms.html">Conditions d'utilisation</a>
+		</div>
+	</div>
+</footer>
+
+</body>
+</html>
