@@ -108,8 +108,19 @@ final class BookingNotifier
         return BookingContext::fromBooking($b, $svc, $extra);
     }
 
+    /**
+     * Returns the inbox that should receive admin-side booking notifications.
+     * Resolution order:
+     *   1. sb_notification_email option (set in admin Settings — overrides WP admin email)
+     *   2. admin_email from the rendered context (test fixtures may set it)
+     *   3. WP option admin_email (fallback)
+     */
     private function adminEmail(BookingContext $ctx): string
     {
+        $override = trim((string) get_option('sb_notification_email', ''));
+        if ($override !== '') {
+            return $override;
+        }
         $email = (string) ($ctx->toArray()['admin_email'] ?? '');
         return $email !== '' ? $email : (string) get_option('admin_email', '');
     }

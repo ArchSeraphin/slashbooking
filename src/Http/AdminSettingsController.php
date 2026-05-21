@@ -36,6 +36,10 @@ final class AdminSettingsController
             'legal_page_id'          => $legalId,
             'legal_url'              => $url,
             'booking_retention_days' => (int) get_option('sb_booking_retention_days', 1095),
+            'notification_email'     => (string) get_option('sb_notification_email', ''),
+            'admin_email_fallback'   => (string) get_option('admin_email', ''),
+            'company_logo'           => (string) get_option('sb_company_logo', ''),
+            'company_phone'          => (string) get_option('sb_company_phone', ''),
         ], 200);
     }
 
@@ -47,6 +51,27 @@ final class AdminSettingsController
         update_option('sb_legal_page_id', max(0, $legalId), false);
         if ($retention >= 30 && $retention <= 3650) {
             update_option('sb_booking_retention_days', $retention, false);
+        }
+
+        // Notification email — empty string clears the override (= fall back to admin_email).
+        if ($req->has_param('notification_email')) {
+            $email = trim((string) $req->get_param('notification_email'));
+            if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                update_option('sb_notification_email', $email, false);
+            }
+        }
+
+        if ($req->has_param('company_logo')) {
+            $logo = trim((string) $req->get_param('company_logo'));
+            // Allow empty (clear) or a URL — light validation only.
+            if ($logo === '' || filter_var($logo, FILTER_VALIDATE_URL)) {
+                update_option('sb_company_logo', esc_url_raw($logo), false);
+            }
+        }
+
+        if ($req->has_param('company_phone')) {
+            $phone = trim((string) $req->get_param('company_phone'));
+            update_option('sb_company_phone', sanitize_text_field($phone), false);
         }
 
         return new WP_REST_Response(['saved' => true], 200);

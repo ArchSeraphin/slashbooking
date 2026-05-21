@@ -36,28 +36,30 @@ final class MailDispatcher
                 ? $this->renderer->render($tpl['text_body'], $data)
                 : $this->text->fromHtml($html);
 
-            $boundary = 'sb-' . bin2hex(random_bytes(8));
             $headers = [
                 'From: ' . $this->fromHeader(),
                 'Reply-To: ' . $this->replyTo($recipient, $context),
-                'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+                'Content-Type: text/html; charset=UTF-8',
             ];
-
-            $body  = "--{$boundary}\r\n";
-            $body .= "Content-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n";
-            $body .= $textBody . "\r\n";
-            $body .= "--{$boundary}\r\n";
-            $body .= "Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n";
-            $body .= $html . "\r\n";
-            $body .= "--{$boundary}--\r\n";
 
             $attachments = [];
             if ($withIcsFor !== null) {
                 $attachments[] = $this->writeIcsTempFile($withIcsFor, $subject);
             }
 
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- wp_mail is the WP-recommended mail function; used correctly here.
-            $sent = wp_mail($recipient, $subject, $body, $headers, $attachments);
+            // Tell PHPMailer to send multipart/alternative with the plain-text AltBody.
+            // Manual multipart body construction passed to wp_mail() leaks boundary markers
+            // because PHPMailer rewraps the whole thing as a single body part.
+            $altBodyHook = static function ($phpmailer) use ($textBody): void {
+                $phpmailer->AltBody = $textBody;
+            };
+            add_action('phpmailer_init', $altBodyHook);
+            try {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- wp_mail is the WP-recommended mail function; used correctly here.
+                $sent = wp_mail($recipient, $subject, $html, $headers, $attachments);
+            } finally {
+                remove_action('phpmailer_init', $altBodyHook);
+            }
 
             foreach ($attachments as $path) {
                 if (file_exists($path)) {

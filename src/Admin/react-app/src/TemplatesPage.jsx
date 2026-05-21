@@ -3,6 +3,7 @@ import { Card, CardBody, CardHeader, Notice, Spinner, Button } from '@wordpress/
 import { __ } from '@wordpress/i18n';
 import { listMailTemplates } from './api';
 import TemplateEditor from './TemplateEditor';
+import EmailSettings from './EmailSettings';
 
 const EVENT_LABELS = {
 	'booking.pending.client'   : 'Demande reçue (client)',
@@ -50,6 +51,8 @@ export default function TemplatesPage() {
 
 	return (
 		<div className="sb-templates-page">
+			<EmailSettings />
+
 			<Card>
 				<CardHeader>
 					<h2>{ __( 'Templates e-mail', 'slashbooking' ) }</h2>

@@ -175,14 +175,23 @@ export async function fetchSettings() {
 	return apiFetch( { path: 'admin/settings' } );
 }
 
-export async function saveSettings( { legalPageId, bookingRetentionDays } ) {
+export async function saveSettings( {
+	legalPageId,
+	bookingRetentionDays,
+	notificationEmail,
+	companyLogo,
+	companyPhone,
+} = {} ) {
+	const data = {};
+	if ( legalPageId !== undefined )          data.legal_page_id          = legalPageId;
+	if ( bookingRetentionDays !== undefined ) data.booking_retention_days = bookingRetentionDays;
+	if ( notificationEmail !== undefined )    data.notification_email     = notificationEmail;
+	if ( companyLogo !== undefined )          data.company_logo           = companyLogo;
+	if ( companyPhone !== undefined )         data.company_phone          = companyPhone;
 	return apiFetch( {
 		path: 'admin/settings',
 		method: 'POST',
-		data: {
-			legal_page_id: legalPageId,
-			booking_retention_days: bookingRetentionDays,
-		},
+		data,
 	} );
 }
 
