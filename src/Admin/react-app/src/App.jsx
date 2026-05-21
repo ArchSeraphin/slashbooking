@@ -5,6 +5,7 @@ import ServicesPage from './ServicesPage';
 import GooglePage from './GooglePage';
 import SyncLogPage from './SyncLogPage';
 import TemplatesPage from './TemplatesPage';
+import Logo from './Logo';
 
 export default function App() {
 	const initial = window.location.hash.replace( '#/', '' ) || 'bookings';
@@ -15,14 +16,14 @@ export default function App() {
 		<div className="sb-admin">
 			<header className="sb-app-header">
 				<div className="sb-app-header__brand">
-					<div className="sb-app-header__logo" aria-hidden="true">
-						TB
+					<div className="sb-app-header__logo">
+						<Logo size={ 40 } />
 					</div>
 					<div>
 						<h1 className="sb-app-header__title">SlashBooking</h1>
 						<p className="sb-app-header__subtitle">
 							{ __(
-								'Prise de RDV photovoltaïque & bornes IRVE',
+								'Réservations en ligne, synchronisées avec Google Calendar',
 								'slashbooking'
 							) }
 						</p>

@@ -88,14 +88,11 @@
 	&__logo {
 		width: 40px;
 		height: 40px;
+		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(135deg, var(--sb-c-primary), var(--sb-c-accent));
-		color: #fff;
-		border-radius: var(--sb-radius);
-		font-weight: 700;
-		font-size: var(--sb-fs-18);
+		/* The SVG carries its own gradient + rounding — wrapper is just a sizing slot. */
 	}
 
 	&__title {
