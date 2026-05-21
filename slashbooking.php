@@ -3,7 +3,7 @@
  * Plugin Name:       SlashBooking
  * Plugin URI:        https://slashbooking.example/
  * Description:       Online appointment booking with Google Calendar sync.
- * Version:           1.0.4
+ * Version:           1.0.5
  * Requires at least: 6.5
  * Requires PHP:      8.1
  * Author:            SlashBooking

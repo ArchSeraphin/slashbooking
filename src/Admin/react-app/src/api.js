@@ -212,3 +212,18 @@ export async function saveService( slug, data ) {
 		data,
 	} );
 }
+
+export async function createService( { name, slug } ) {
+	return apiFetch( {
+		path: 'admin/services',
+		method: 'POST',
+		data: { name, slug },
+	} );
+}
+
+export async function deleteService( slug ) {
+	return apiFetch( {
+		path: `admin/services/${ slug }`,
+		method: 'DELETE',
+	} );
+}

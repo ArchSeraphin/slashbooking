@@ -77,4 +77,36 @@ final class ServiceRepository
         $res = $this->wpdb->update($this->table, $row, ['id' => $service->id]);
         return $res !== false;
     }
+
+    /**
+     * Inserts a new service. Returns the new id, or null on failure.
+     * Caller is responsible for ensuring slug uniqueness.
+     */
+    public function create(Service $service): ?int
+    {
+        if ($service->id !== null) {
+            return null;
+        }
+        $row = $service->toRow();
+        $row['sort_order'] = 999;
+        $row['created_at'] = current_time('mysql', true);
+        $row['updated_at'] = current_time('mysql', true);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $res = $this->wpdb->insert($this->table, $row);
+        if ($res === false) {
+            return null;
+        }
+        return (int) $this->wpdb->insert_id;
+    }
+
+    /**
+     * Deletes a service by id. Returns true on success.
+     * Caller must check there are no bookings referencing this service first.
+     */
+    public function delete(int $id): bool
+    {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $res = $this->wpdb->delete($this->table, ['id' => $id]);
+        return $res !== false && $res > 0;
+    }
 }

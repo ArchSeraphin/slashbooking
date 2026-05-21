@@ -9,7 +9,7 @@ export default function ShortcodeMemo() {
 
 	useEffect( () => {
 		listServices()
-			.then( ( res ) => setServices( Array.isArray( res ) ? res : ( res?.items ?? [] ) ) )
+			.then( ( res ) => setServices( Array.isArray( res ) ? res : ( res?.services ?? [] ) ) )
 			.catch( () => setServices( [] ) );
 	}, [] );
 

@@ -1,7 +1,21 @@
 import { useEffect, useState } from '@wordpress/element';
-import { Card, CardBody, CardHeader, Notice, Spinner, Button } from '@wordpress/components';
+import {
+	Card,
+	CardBody,
+	CardHeader,
+	Modal,
+	Notice,
+	Spinner,
+	Button,
+	TextControl,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { listServices } from './api';
+import {
+	listServices,
+	saveService,
+	createService,
+	deleteService,
+} from './api';
 import ServiceEditor from './ServiceEditor';
 
 function formatDuration( min ) {
@@ -23,10 +37,16 @@ function daysSummary( weekly ) {
 }
 
 export default function ServicesPage() {
-	const [ items, setItems ]     = useState( null );
-	const [ loading, setLoading ] = useState( true );
-	const [ error, setError ]     = useState( null );
+	const [ items, setItems ]       = useState( null );
+	const [ loading, setLoading ]   = useState( true );
+	const [ error, setError ]       = useState( null );
 	const [ selected, setSelected ] = useState( null );
+	const [ busySlug, setBusySlug ] = useState( '' );
+	const [ showAdd, setShowAdd ]   = useState( false );
+	const [ newName, setNewName ]   = useState( '' );
+	const [ newSlug, setNewSlug ]   = useState( '' );
+	const [ addErr, setAddErr ]     = useState( null );
+	const [ addBusy, setAddBusy ]   = useState( false );
 
 	const reload = async () => {
 		setLoading( true );
@@ -43,6 +63,63 @@ export default function ServicesPage() {
 
 	useEffect( () => { reload(); }, [] );
 
+	const toggleActive = async ( svc ) => {
+		setBusySlug( svc.slug );
+		setError( null );
+		try {
+			await saveService( svc.slug, { active: ! svc.active } );
+			await reload();
+		} catch ( e ) {
+			setError( e.message ?? String( e ) );
+		} finally {
+			setBusySlug( '' );
+		}
+	};
+
+	const onDelete = async ( svc ) => {
+		// eslint-disable-next-line no-alert
+		if ( ! window.confirm(
+			__( 'Supprimer définitivement ce service ? Cette action est irréversible.', 'slashbooking' )
+		) ) {
+			return;
+		}
+		setBusySlug( svc.slug );
+		setError( null );
+		try {
+			await deleteService( svc.slug );
+			await reload();
+		} catch ( e ) {
+			setError( e.message ?? String( e ) );
+		} finally {
+			setBusySlug( '' );
+		}
+	};
+
+	const submitAdd = async () => {
+		if ( newName.trim() === '' ) {
+			setAddErr( __( 'Le nom est requis.', 'slashbooking' ) );
+			return;
+		}
+		setAddBusy( true );
+		setAddErr( null );
+		try {
+			const created = await createService( {
+				name: newName.trim(),
+				slug: newSlug.trim() || undefined,
+			} );
+			setShowAdd( false );
+			setNewName( '' );
+			setNewSlug( '' );
+			await reload();
+			// Open editor for fine-tuning duration/hours/etc.
+			setSelected( created.slug );
+		} catch ( e ) {
+			setAddErr( e.message ?? String( e ) );
+		} finally {
+			setAddBusy( false );
+		}
+	};
+
 	if ( selected ) {
 		return (
 			<ServiceEditor
@@ -55,9 +132,14 @@ export default function ServicesPage() {
 	return (
 		<Card>
 			<CardHeader>
-				<h2 style={ { margin: 0, fontSize: 16, fontWeight: 600 } }>
-					{ __( 'Services & horaires', 'slashbooking' ) }
-				</h2>
+				<div style={ { display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' } }>
+					<h2 style={ { margin: 0, fontSize: 16, fontWeight: 600 } }>
+						{ __( 'Services & horaires', 'slashbooking' ) }
+					</h2>
+					<Button variant="primary" onClick={ () => setShowAdd( true ) }>
+						+ { __( 'Ajouter un service', 'slashbooking' ) }
+					</Button>
+				</div>
 			</CardHeader>
 			<CardBody>
 				{ loading && <Spinner /> }
@@ -105,9 +187,35 @@ export default function ServicesPage() {
 										</span>
 									</td>
 									<td style={ { textAlign: 'right' } }>
-										<Button variant="secondary" size="small" onClick={ () => setSelected( s.slug ) }>
-											{ __( 'Modifier', 'slashbooking' ) }
-										</Button>
+										<div style={ { display: 'inline-flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' } }>
+											<Button
+												variant="secondary"
+												size="small"
+												onClick={ () => setSelected( s.slug ) }
+												disabled={ busySlug === s.slug }
+											>
+												{ __( 'Modifier', 'slashbooking' ) }
+											</Button>
+											<Button
+												variant="tertiary"
+												size="small"
+												onClick={ () => toggleActive( s ) }
+												disabled={ busySlug === s.slug }
+											>
+												{ s.active
+													? __( 'Désactiver', 'slashbooking' )
+													: __( 'Activer', 'slashbooking' ) }
+											</Button>
+											<Button
+												variant="tertiary"
+												size="small"
+												isDestructive
+												onClick={ () => onDelete( s ) }
+												disabled={ busySlug === s.slug }
+											>
+												{ __( 'Supprimer', 'slashbooking' ) }
+											</Button>
+										</div>
 									</td>
 								</tr>
 							) ) }
@@ -115,6 +223,68 @@ export default function ServicesPage() {
 					</table>
 				) }
 			</CardBody>
+
+			{ showAdd && (
+				<Modal
+					title={ __( 'Ajouter un service', 'slashbooking' ) }
+					onRequestClose={ () => {
+						if ( ! addBusy ) {
+							setShowAdd( false );
+							setAddErr( null );
+						}
+					} }
+				>
+					<p style={ { marginTop: 0, color: '#475569' } }>
+						{ __(
+							'Choisis un nom (et éventuellement un identifiant). Tu pourras configurer la durée et les horaires juste après.',
+							'slashbooking'
+						) }
+					</p>
+
+					{ addErr && (
+						<Notice status="error" isDismissible={ false }>{ addErr }</Notice>
+					) }
+
+					<TextControl
+						label={ __( 'Nom du service', 'slashbooking' ) }
+						value={ newName }
+						onChange={ setNewName }
+						placeholder={ __( 'Ex : Audit énergétique', 'slashbooking' ) }
+						__nextHasNoMarginBottom
+					/>
+					<div style={ { height: 12 } } />
+					<TextControl
+						label={ __( 'Identifiant (slug) — optionnel', 'slashbooking' ) }
+						help={ __(
+							'Laisse vide pour générer automatiquement depuis le nom. Caractères autorisés : a-z, 0-9, tirets.',
+							'slashbooking'
+						) }
+						value={ newSlug }
+						onChange={ setNewSlug }
+						placeholder={ __( 'auto', 'slashbooking' ) }
+						__nextHasNoMarginBottom
+					/>
+
+					<div style={ { marginTop: 20, display: 'flex', gap: 8, justifyContent: 'flex-end' } }>
+						<Button
+							variant="tertiary"
+							onClick={ () => { setShowAdd( false ); setAddErr( null ); } }
+							disabled={ addBusy }
+						>
+							{ __( 'Annuler', 'slashbooking' ) }
+						</Button>
+						<Button
+							variant="primary"
+							onClick={ submitAdd }
+							disabled={ addBusy || newName.trim() === '' }
+						>
+							{ addBusy
+								? __( 'Création…', 'slashbooking' )
+								: __( 'Créer et configurer', 'slashbooking' ) }
+						</Button>
+					</div>
+				</Modal>
+			) }
 		</Card>
 	);
 }

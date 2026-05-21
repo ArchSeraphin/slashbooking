@@ -131,7 +131,7 @@ final class RestRouter
         (new \Slash\Booking\Http\AdminMailTemplateController($mailRepo, $renderer, $dispatcher))->registerRoutes();
         (new \Slash\Booking\Http\TagRegistryController($tagRegistry))->registerRoutes();
         (new \Slash\Booking\Http\AdminSettingsController())->registerRoutes();
-        (new \Slash\Booking\Http\AdminServiceController($services))->registerRoutes();
+        (new \Slash\Booking\Http\AdminServiceController($services, $bookings))->registerRoutes();
     }
 
     private function resolveMailDispatcher(

@@ -222,6 +222,22 @@ final class BookingRepository
     }
 
     /**
+     * Count bookings referencing a given service (any status, including cancelled).
+     * Used to refuse hard-deletion of a service that still has historical data.
+     */
+    public function countByServiceId(int $serviceId): int
+    {
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $count = $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table} WHERE service_id = %d",
+                $serviceId
+            )
+        );
+        return (int) $count;
+    }
+
+    /**
      * @return list<Booking>
      */
     public function findOverlapping(int $serviceId, TimeSlot $slot): array
