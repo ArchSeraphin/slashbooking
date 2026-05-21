@@ -434,17 +434,31 @@
 	grid-template-columns: 1fr 1fr;
 	gap: var(--sb-space-6);
 
-	@media (max-width: 1100px) {
+	/* Without min-width:0 on grid children, CodeMirror's wide content forces the
+	   edit column to expand beyond its 1fr share, pushing the preview off-screen. */
+	> .sb-template-edit,
+	> .sb-template-preview {
+		min-width: 0;
+	}
+
+	@media (max-width: 1280px) {
 		grid-template-columns: 1fr;
 	}
 }
 
 .sb-template-edit {
+	min-width: 0;
+
 	.sb-codemirror-wrap {
 		border: 1px solid var(--sb-c-border);
 		border-radius: var(--sb-radius-sm);
 		margin-bottom: var(--sb-space-4);
 		overflow: hidden;
+		max-width: 100%;
+
+		/* CodeMirror sometimes blows past its container without these. */
+		.cm-editor   { max-width: 100%; }
+		.cm-scroller { overflow-x: auto; }
 	}
 	.sb-cm-label {
 		display: block;
@@ -464,6 +478,7 @@
 }
 
 .sb-template-preview {
+	min-width: 0;
 	border: 1px solid var(--sb-c-border);
 	border-radius: var(--sb-radius-sm);
 	padding: var(--sb-space-4);
