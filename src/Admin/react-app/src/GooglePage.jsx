@@ -23,6 +23,7 @@ import {
 	fetchGoogleCalendars,
 	setGoogleCalendar,
 } from './api';
+import GoogleSetupWizard from './GoogleSetupWizard';
 
 export default function GooglePage() {
 	const [ status, setStatus ] = useState( null );
@@ -239,6 +240,11 @@ export default function GooglePage() {
 				</Notice>
 			) }
 
+			{ /* Show the guided setup only while the account is NOT connected. */ }
+			{ settings && ! status?.connected && (
+				<GoogleSetupWizard redirectUri={ settings.redirect_uri } />
+			) }
+
 			{ settings && (
 				<Card>
 					<CardHeader>
@@ -250,13 +256,27 @@ export default function GooglePage() {
 						<p>
 							<strong>
 								{ __(
-									'URI de redirection à saisir dans Google Cloud Console :',
+									'URI de redirection (à coller dans Google Cloud Console) :',
 									'slashbooking'
 								) }
 							</strong>
-							<br />
-							<code>{ settings.redirect_uri }</code>
 						</p>
+						<div className="sb-redirect-uri-box">
+							<code>{ settings.redirect_uri }</code>
+							<Button
+								variant="secondary"
+								size="small"
+								onClick={ async () => {
+									try {
+										await navigator.clipboard.writeText( settings.redirect_uri );
+										setPanelMsg( __( '✓ URI copiée dans le presse-papiers.', 'slashbooking' ) );
+										setTimeout( () => setPanelMsg( '' ), 1500 );
+									} catch ( e ) { /* noop */ }
+								} }
+							>
+								📋 { __( 'Copier', 'slashbooking' ) }
+							</Button>
+						</div>
 						<TextControl
 							label={ __( 'Client ID', 'slashbooking' ) }
 							value={ settings.client_id }
@@ -427,12 +447,29 @@ export default function GooglePage() {
 									'slashbooking'
 								) }
 							</p>
-							<Button variant="primary" onClick={ connect }>
-								{ __(
-									'Connecter mon Google Calendar',
-									'slashbooking'
-								) }
-							</Button>
+							{ ( ! settings?.client_id || ! settings?.has_client_secret ) ? (
+								<>
+									<Notice status="warning" isDismissible={ false }>
+										{ __(
+											'Renseigne le Client ID + Secret dans la carte « Configuration OAuth » ci-dessus avant de te connecter.',
+											'slashbooking'
+										) }
+									</Notice>
+									<Button variant="primary" disabled style={ { marginTop: 10 } }>
+										{ __(
+											'Connecter mon Google Calendar',
+											'slashbooking'
+										) }
+									</Button>
+								</>
+							) : (
+								<Button variant="primary" onClick={ connect }>
+									{ __(
+										'Connecter mon Google Calendar',
+										'slashbooking'
+									) }
+								</Button>
+							) }
 						</>
 					) }
 				</CardBody>
