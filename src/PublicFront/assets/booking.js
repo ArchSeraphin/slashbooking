@@ -83,8 +83,23 @@
 			root.append(formStepEl());
 			root.append(feedbackEl());
 
+			// When a project picker is shown but no service is chosen yet,
+			// hide everything past the picker so visitors aren't confused by
+			// an empty calendar / placeholder slots.
+			if (needsProjectStep() && !state.service) {
+				if (els.dateStep)  els.dateStep.classList.add('sb-step--hidden');
+				if (els.slotsStep) els.slotsStep.classList.add('sb-step--hidden');
+				if (els.formStep)  els.formStep.classList.add('sb-step--hidden');
+			}
+
 			updateSteps();
 			refreshCalendar();
+		}
+
+		function revealStepsAfterProjectPick() {
+			if (els.dateStep)  els.dateStep.classList.remove('sb-step--hidden');
+			if (els.slotsStep) els.slotsStep.classList.remove('sb-step--hidden');
+			if (els.formStep)  els.formStep.classList.remove('sb-step--hidden');
 		}
 
 		function needsProjectStep() {
@@ -175,6 +190,7 @@
 					state.date = null;
 					state.start = null;
 					state.dayStates = {};
+					revealStepsAfterProjectPick();
 					updateSteps();
 					loadMonth();
 					// Scroll to date step for context.
@@ -627,6 +643,11 @@
 			msgWrap.append(title, body);
 			ok.append(iconWrap.firstChild, msgWrap);
 			root.append(ok);
+			// Scroll the user back to the top of the widget so the success
+			// message is visible without them having to scroll up manually.
+			setTimeout(function () {
+				root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}, 30);
 		}
 
 		function showError(msg) {

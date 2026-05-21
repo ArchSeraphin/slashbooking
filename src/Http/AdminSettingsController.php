@@ -41,6 +41,8 @@ final class AdminSettingsController
             'company_logo'           => (string) get_option('sb_company_logo', ''),
             'company_phone'          => (string) get_option('sb_company_phone', ''),
             'form_disclaimer'        => (string) get_option('sb_form_disclaimer', ''),
+            'form_primary_color'     => (string) get_option('sb_form_primary_color', ''),
+            'form_accent_color'      => (string) get_option('sb_form_accent_color', ''),
             'turnstile_site_key'     => (string) get_option('sb_turnstile_site_key', ''),
             // Don't expose the secret in cleartext — caller only needs to know if it's configured.
             'turnstile_secret_set'   => get_option('sb_turnstile_secret_key', '') !== '',
@@ -82,6 +84,21 @@ final class AdminSettingsController
             $disclaimer = (string) $req->get_param('form_disclaimer');
             // Allow line breaks + basic punctuation; strip dangerous HTML.
             update_option('sb_form_disclaimer', wp_kses_post(trim($disclaimer)), false);
+        }
+
+        foreach (['form_primary_color', 'form_accent_color'] as $colorField) {
+            if ($req->has_param($colorField)) {
+                $raw = trim((string) $req->get_param($colorField));
+                // Empty string clears the override and restores the brand default.
+                if ($raw === '') {
+                    delete_option('sb_' . $colorField);
+                } else {
+                    $sanitized = sanitize_hex_color($raw);
+                    if ($sanitized !== null && $sanitized !== '') {
+                        update_option('sb_' . $colorField, $sanitized, false);
+                    }
+                }
+            }
         }
 
         if ($req->has_param('turnstile_site_key')) {

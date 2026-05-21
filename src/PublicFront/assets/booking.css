@@ -169,6 +169,9 @@
 	box-shadow: var(--sb-shadow-sm);
 }
 
+/* Hidden steps before a service has been picked (multi-service shortcode). */
+.sb-step--hidden { display: none; }
+
 @media (max-width: 480px) {
 	.sb-step { padding: 14px; }
 }
