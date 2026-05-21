@@ -1,0 +1,89 @@
+<!--
+  SlashBooking — template A2C Énergies.
+  Événement : booking.pending.client (accusé de réception envoyé au client)
+  Sujet suggéré : "Nous avons bien reçu votre demande — A2C Énergies"
+
+  Tags utilisés :
+  - {{customer_name}}
+  - {{service_name}}, {{service_duration}}
+  - {{appointment_date}}, {{appointment_time}}, {{appointment_end}}
+  - {{cancel_url}}, {{site_url}}
+-->
+<table style="background-color: #f5f3ee; padding: 40px 16px;" border="0" width="100%" cellspacing="0" cellpadding="0">
+  <tbody>
+    <tr>
+      <td align="center">
+        <table style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden;" border="0" width="600" cellspacing="0" cellpadding="0">
+          <tbody>
+
+            <!-- Header -->
+            <tr>
+              <td style="background-color: #1a1a14; padding: 36px 40px 28px; text-align: center;">
+                <img style="margin: 0 auto 20px;" src="https://a2cenergies.fr/wp-content/uploads/2026/05/a2c-logo-blanc-couelurs.png" alt="A2C Énergies" width="160" />
+                <div>
+                  <span style="background-color: #fcc300; color: #1a1a14; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 14px; border-radius: 100px;">
+                    Demande reçue
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="height: 4px; background: linear-gradient(90deg,#fcc300 0%,#fdd84d 50%,#fff3cc 100%);">&nbsp;</td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding: 40px 40px 32px;">
+
+                <h1 style="margin: 0 0 8px; font-family: Georgia,serif; font-weight: 400; font-size: 26px; color: #1a1a0a; line-height: 1.2;">
+                  Bonjour {{customer_name}},
+                </h1>
+                <p style="margin: 0 0 28px; font-size: 15px; color: #6b6a5a; line-height: 1.6;">
+                  Merci pour votre demande de rendez-vous. Notre équipe la traite et reviendra vers vous très rapidement par e-mail pour la confirmer.
+                </p>
+
+                <!-- Booking summary -->
+                <table style="background-color: #fffdf0; border-left: 3px solid #fcc300; border-radius: 0 8px 8px 0; margin-bottom: 28px;" border="0" width="100%" cellspacing="0" cellpadding="0">
+                  <tbody>
+                    <tr>
+                      <td style="padding: 20px 24px;">
+                        <p style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #fcc300;">Votre demande</p>
+                        <p style="margin: 0 0 12px; font-size: 17px; font-weight: 600; color: #1a1a0a;">{{service_name}} <span style="color:#8a8a7a; font-weight:400;">— {{service_duration}}</span></p>
+                        <p style="margin: 0; font-size: 15px; color: #3a3a2a;">
+                          {{appointment_date}}<br />
+                          <span style="color:#6b6a5a;">de {{appointment_time}} à {{appointment_end}}</span>
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p style="margin: 0 0 24px; font-size: 14px; color: #6b6a5a; line-height: 1.6;">
+                  ⏳ <strong style="color:#1a1a0a;">Statut :</strong> en attente de validation par notre équipe.
+                </p>
+
+                <!-- Discrete cancel link -->
+                <p style="margin: 0; font-size: 13px; color: #8a8a7a; text-align:center;">
+                  Vous souhaitez annuler ? <a href="{{cancel_url}}" style="color:#1a1a0a; text-decoration:underline;">Annuler ce RDV</a>
+                </p>
+
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="background-color: #fffdf0; padding: 24px 40px; border-top: 1px solid #ede8d8;">
+                <p style="margin: 0 0 2px; font-size: 13px; font-weight: 600; color: #1a1a0a;">A2C Énergies</p>
+                <p style="margin: 0 0 6px; font-size: 12px; color: #8a8a7a;">Installateur Photovoltaïque et Borne de Recharge</p>
+                <p style="margin: 0; font-size: 12px;">
+                  <a href="{{site_url}}" style="color:#1a1a0a; text-decoration:none;">{{site_url}}</a>
+                </p>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>

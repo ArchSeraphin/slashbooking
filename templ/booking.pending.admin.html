@@ -1,14 +1,14 @@
 <!--
   SlashBooking — template adapté pour le client A2C Énergies.
   Événement : booking.pending.admin (nouvelle demande en attente de validation)
-  Sujet suggéré : "Nouvelle demande de RDV — {service_name}"
+  Sujet suggéré : "Nouvelle demande de RDV — {{service_name}}"
 
   Tags utilisés (rendu par TemplateRenderer) :
-  - {service_name}, {service_duration}
-  - {appointment_date}, {appointment_time}, {appointment_end}
-  - {customer_name}, {customer_email}, {customer_phone}, {customer_address}, {notes}
-  - {confirm_url}, {reject_url}  (HMAC 72h)
-  - {site_url}, {site_name}, {company_logo}, {company_phone}
+  - {{service_name}}, {{service_duration}}
+  - {{appointment_date}}, {{appointment_time}}, {{appointment_end}}
+  - {{customer_name}}, {{customer_email}}, {{customer_phone}}, {{customer_address}}, {{notes}}
+  - {{confirm_url}}, {{reject_url}}  (HMAC 72h)
+  - {{site_url}}, {{site_name}}, {{company_logo}}, {{company_phone}}
 
   Ce fichier NE FAIT PAS PARTIE du build (templ/ n'est pas dans le ZIP de
   distribution). Pour activer : copier-coller le HTML dans WP Admin →
@@ -57,9 +57,9 @@
                     <tr>
                       <td style="padding: 20px 24px;">
                         <p style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #fcc300;">Type de rendez-vous</p>
-                        <p style="margin: 0 0 16px; font-size: 17px; font-weight: 600; color: #1a1a0a;">{service_name} <span style="color:#8a8a7a; font-weight:400;">— {service_duration}</span></p>
+                        <p style="margin: 0 0 16px; font-size: 17px; font-weight: 600; color: #1a1a0a;">{{service_name}} <span style="color:#8a8a7a; font-weight:400;">— {{service_duration}}</span></p>
                         <p style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #fcc300;">Quand</p>
-                        <p style="margin: 0; font-size: 17px; font-weight: 600; color: #1a1a0a;">{appointment_date} <span style="color:#3a3a2a; font-weight:500;">— de {appointment_time} à {appointment_end}</span></p>
+                        <p style="margin: 0; font-size: 17px; font-weight: 600; color: #1a1a0a;">{{appointment_date}} <span style="color:#3a3a2a; font-weight:500;">— de {{appointment_time}} à {{appointment_end}}</span></p>
                       </td>
                     </tr>
                   </tbody>
@@ -71,11 +71,11 @@
                   <tbody>
                     <tr>
                       <td style="padding: 20px 24px; font-size: 15px; color: #3a3a2a; line-height: 1.7;">
-                        <strong style="color:#1a1a0a;">{customer_name}</strong><br />
-                        <a href="mailto:{customer_email}" style="color:#1a1a0a; text-decoration:underline;">{customer_email}</a><br />
-                        <a href="tel:{customer_phone}" style="color:#1a1a0a; text-decoration:underline;">{customer_phone}</a><br />
-                        <span style="color:#6b6a5a;">{customer_address}</span><br />
-                        <em style="display:block; margin-top:10px; color:#6b6a5a; font-size:13px;">Notes : {notes}</em>
+                        <strong style="color:#1a1a0a;">{{customer_name}}</strong><br />
+                        <a href="mailto:{{customer_email}}" style="color:#1a1a0a; text-decoration:underline;">{{customer_email}}</a><br />
+                        <a href="tel:{{customer_phone}}" style="color:#1a1a0a; text-decoration:underline;">{{customer_phone}}</a><br />
+                        <span style="color:#6b6a5a;">{{customer_address}}</span><br />
+                        <em style="display:block; margin-top:10px; color:#6b6a5a; font-size:13px;">Notes : {{notes}}</em>
                       </td>
                     </tr>
                   </tbody>
@@ -86,14 +86,14 @@
                   <tbody>
                     <tr>
                       <td align="center" style="padding-bottom: 12px;">
-                        <a href="{confirm_url}" style="background-color:#1a1a0a; color:#ffffff; text-decoration:none; font-size:15px; font-weight:600; padding:14px 32px; border-radius:8px; letter-spacing:0.3px; display:inline-block;">
+                        <a href="{{confirm_url}}" style="background-color:#1a1a0a; color:#ffffff; text-decoration:none; font-size:15px; font-weight:600; padding:14px 32px; border-radius:8px; letter-spacing:0.3px; display:inline-block;">
                           ✓ Confirmer ce RDV
                         </a>
                       </td>
                     </tr>
                     <tr>
                       <td align="center">
-                        <a href="{reject_url}" style="color:#a85a00; text-decoration:none; font-size:13px; font-weight:600; padding:6px 12px; display:inline-block;">
+                        <a href="{{reject_url}}" style="color:#a85a00; text-decoration:none; font-size:13px; font-weight:600; padding:6px 12px; display:inline-block;">
                           ✕ Refuser cette demande
                         </a>
                       </td>
@@ -114,7 +114,7 @@
                 <p style="margin: 0 0 2px; font-size: 13px; font-weight: 600; color: #1a1a0a;">A2C Énergies</p>
                 <p style="margin: 0 0 6px; font-size: 12px; color: #8a8a7a;">Installateur Photovoltaïque et Borne de Recharge</p>
                 <p style="margin: 0; font-size: 12px;">
-                  <a href="{site_url}" style="color:#1a1a0a; text-decoration:none;">{site_url}</a>
+                  <a href="{{site_url}}" style="color:#1a1a0a; text-decoration:none;">{{site_url}}</a>
                 </p>
               </td>
             </tr>
