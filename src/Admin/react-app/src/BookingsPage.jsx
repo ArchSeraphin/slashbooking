@@ -114,8 +114,6 @@ export default function BookingsPage() {
 				) ) }
 			</div>
 
-			<ShortcodeMemo />
-
 			<Card>
 				<CardBody>
 					<div className="sb-bookings__toolbar">
@@ -180,6 +178,8 @@ export default function BookingsPage() {
 					) }
 				</CardBody>
 			</Card>
+
+			<ShortcodeMemo />
 		</section>
 	);
 }
