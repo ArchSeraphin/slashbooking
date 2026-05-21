@@ -167,6 +167,14 @@
 	padding: 20px;
 	margin-bottom: 16px;
 	box-shadow: var(--sb-shadow-sm);
+	/* Leave 100px clear above when scrollIntoView lands on this element —
+	   prevents sticky site headers from covering the heading. */
+	scroll-margin-top: 100px;
+}
+
+/* Same offset for the whole widget (used by renderSuccess scroll-to-top). */
+.sb-widget {
+	scroll-margin-top: 100px;
 }
 
 /* Hidden steps before a service has been picked (multi-service shortcode). */
