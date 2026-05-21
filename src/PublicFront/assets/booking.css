@@ -588,10 +588,10 @@
 	border: 2px solid rgba(255,255,255,.4);
 	border-top-color: #fff;
 	border-radius: 50%;
-	animation: tb-spin 700ms linear infinite;
+	animation: sb-spin 700ms linear infinite;
 }
 
-@keyframes tb-spin {
+@keyframes sb-spin {
 	to { transform: rotate(360deg); }
 }
 

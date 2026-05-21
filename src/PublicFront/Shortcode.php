@@ -50,7 +50,7 @@ final class Shortcode
         $this->enqueueAssets();
 
         return sprintf(
-            '<div class="sb-widget" data-tb-service="%s" data-tb-rest="%s"></div>',
+            '<div class="sb-widget" data-sb-service="%s" data-sb-rest="%s"></div>',
             esc_attr($serviceAttr),
             esc_url_raw(rest_url(Plugin::REST_NAMESPACE . '/')),
         );

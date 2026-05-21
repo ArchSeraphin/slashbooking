@@ -178,6 +178,9 @@
 	box-shadow: var(--sb-shadow-sm);
 	overflow: hidden;
 }
+.sb-admin .components-card + .components-card {
+	margin-top: var(--sb-space-4);
+}
 .sb-admin .components-card-header {
 	background: var(--sb-c-surface);
 	border-bottom: 1px solid var(--sb-c-border);

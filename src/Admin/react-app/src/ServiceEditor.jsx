@@ -238,7 +238,7 @@ export default function ServiceEditor( { slug, onClose } ) {
 								const ranges = service.weekly_hours[ d.key ] || [];
 								const open = ranges.length > 0;
 								return (
-									<div key={ d.key } className={ `tb-day ${ open ? 'is-open' : 'is-closed' }` }>
+									<div key={ d.key } className={ `sb-day ${ open ? 'is-open' : 'is-closed' }` }>
 										<div className="sb-day__head">
 											<ToggleControl
 												label={ d.label }

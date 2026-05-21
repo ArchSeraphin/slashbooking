@@ -32,7 +32,7 @@ export default function BookingRow( { booking, onAct } ) {
 				</div>
 			</td>
 			<td>
-				<span className={ `tb-status tb-status--${ s }` }>
+				<span className={ `sb-status sb-status--${ s }` }>
 					{ STATUS_LABELS[ s ] || s }
 				</span>
 			</td>

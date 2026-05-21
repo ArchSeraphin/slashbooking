@@ -98,7 +98,7 @@ export default function ServicesPage() {
 									</td>
 									<td>{ daysSummary( s.weekly_hours ) }</td>
 									<td>
-										<span className={ `tb-status tb-status--${ s.active ? 'confirmed' : 'cancelled' }` }>
+										<span className={ `sb-status sb-status--${ s.active ? 'confirmed' : 'cancelled' }` }>
 											{ s.active
 												? __( 'Actif', 'slashbooking' )
 												: __( 'Désactivé', 'slashbooking' ) }

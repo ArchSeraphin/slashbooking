@@ -13,8 +13,8 @@
 	var MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 	function init(root) {
-		var rest = root.dataset.tbRest;
-		var rawServiceAttr = (root.dataset.tbService || '').trim();
+		var rest = root.dataset.sbRest;
+		var rawServiceAttr = (root.dataset.sbService || '').trim();
 		var serviceWhitelist = rawServiceAttr === '' ? [] : rawServiceAttr.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 		var nonce = window.SlashBooking && window.SlashBooking.nonce;
 		// WP returns "fr_FR" (underscore); Intl APIs want BCP-47 "fr-FR" (hyphen).
@@ -252,7 +252,7 @@
 
 		function legendItem(state, label) {
 			var w = el('span', 'sb-cal__legend-item');
-			var sw = el('span', 'sb-cal__legend-swatch tb-cal-day--' + state);
+			var sw = el('span', 'sb-cal__legend-swatch sb-cal-day--' + state);
 			var t = el('span'); t.textContent = label;
 			w.append(sw, t);
 			return w;
@@ -274,7 +274,7 @@
 
 			// Pad with previous-month blanks
 			for (var i = 0; i < offset; i++) {
-				els.grid.append(el('div', 'sb-cal-day tb-cal-day--blank'));
+				els.grid.append(el('div', 'sb-cal-day sb-cal-day--blank'));
 			}
 
 			for (var d = 1; d <= lastDay.getDate(); d++) {
@@ -454,7 +454,7 @@
 			hp.querySelector('input').setAttribute('autocomplete', 'off');
 			els.formStep.append(hp);
 
-			var consentWrap = el('div', 'sb-field tb-field--consent');
+			var consentWrap = el('div', 'sb-field sb-field--consent');
 			var consent = el('input');
 			consent.type = 'checkbox';
 			consent.id = 'sb-consent';

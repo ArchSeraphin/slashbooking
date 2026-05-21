@@ -188,7 +188,7 @@ export default function TemplateEditor( { eventKey, onClose } ) {
 							{ __( 'Édition : ', 'slashbooking' ) }
 							<code>{ eventKey }</code>
 							{ template?.is_custom && (
-								<span className="sb-badge tb-badge-custom" style={ { marginLeft: 8 } }>
+								<span className="sb-badge sb-badge-custom" style={ { marginLeft: 8 } }>
 									{ __( 'Personnalisé', 'slashbooking' ) }
 								</span>
 							) }

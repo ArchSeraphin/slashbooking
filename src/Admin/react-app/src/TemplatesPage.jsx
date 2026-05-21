@@ -62,7 +62,7 @@ export default function TemplatesPage() {
 						</Notice>
 					) }
 					{ items && (
-						<table className="widefat striped tb-templates-table">
+						<table className="widefat striped sb-templates-table">
 							<thead>
 								<tr>
 									<th>{ __( 'Évènement', 'slashbooking' ) }</th>
@@ -86,11 +86,11 @@ export default function TemplatesPage() {
 										<td>{ t.subject }</td>
 										<td>
 											{ t.is_custom ? (
-												<span className="sb-badge tb-badge-custom">
+												<span className="sb-badge sb-badge-custom">
 													{ __( 'Personnalisé', 'slashbooking' ) }
 												</span>
 											) : (
-												<span className="sb-badge tb-badge-default">
+												<span className="sb-badge sb-badge-default">
 													{ __( 'Défaut', 'slashbooking' ) }
 												</span>
 											) }

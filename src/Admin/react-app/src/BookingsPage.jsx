@@ -105,7 +105,7 @@ export default function BookingsPage() {
 		<section className="sb-bookings">
 			<div className="sb-kpi-grid">
 				{ kpiCards.map( ( c ) => (
-					<div key={ c.label } className={ `tb-kpi tb-kpi--${ c.variant }` }>
+					<div key={ c.label } className={ `sb-kpi sb-kpi--${ c.variant }` }>
 						<p className="sb-kpi__label">{ c.label }</p>
 						<p className="sb-kpi__value">{ c.value }</p>
 						<p className="sb-kpi__hint">{ c.hint }</p>
