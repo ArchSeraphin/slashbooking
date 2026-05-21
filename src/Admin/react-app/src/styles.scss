@@ -181,6 +181,47 @@
 .sb-admin .components-card + .components-card {
 	margin-top: var(--sb-space-4);
 }
+
+/* ============================================================
+   Shortcode memo (dashboard reminder)
+   ============================================================ */
+.sb-shortcode-memo {
+	width: 100%;
+	border-collapse: collapse;
+
+	td {
+		padding: var(--sb-space-2) var(--sb-space-3);
+		border-bottom: 1px solid var(--sb-c-border);
+		vertical-align: middle;
+		font-size: var(--sb-fs-13);
+	}
+	tr:last-child td { border-bottom: none; }
+
+	&__code {
+		width: 1%;
+		white-space: nowrap;
+
+		code {
+			background: var(--sb-c-surface-alt);
+			border: 1px solid var(--sb-c-border);
+			border-radius: var(--sb-radius-sm);
+			padding: 2px 8px;
+			font-size: var(--sb-fs-13);
+			color: var(--sb-c-text);
+			font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+		}
+	}
+
+	&__label {
+		color: var(--sb-c-text-soft);
+	}
+
+	&__action {
+		width: 1%;
+		text-align: right;
+		white-space: nowrap;
+	}
+}
 .sb-admin .components-card-header {
 	background: var(--sb-c-surface);
 	border-bottom: 1px solid var(--sb-c-border);

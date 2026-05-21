@@ -3,6 +3,7 @@ import { SelectControl, Spinner, Button, Notice, Card, CardBody } from '@wordpre
 import { __ } from '@wordpress/i18n';
 import { listBookings, actBooking, setupApi } from './api';
 import BookingRow from './BookingRow';
+import ShortcodeMemo from './ShortcodeMemo';
 
 setupApi();
 
@@ -112,6 +113,8 @@ export default function BookingsPage() {
 					</div>
 				) ) }
 			</div>
+
+			<ShortcodeMemo />
 
 			<Card>
 				<CardBody>
