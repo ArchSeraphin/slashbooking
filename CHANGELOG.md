@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.17] — 2026-05-22
+
+### Fixed
+
+- **Fatal PUC encore présent en v1.0.16** malgré le fix des clés de registre. Vraie cause racine : le bootstrap faisait `if (!class_exists(PucFactory::class)) require plugin-update-checker.php`, mais comme le build composer utilise `--classmap-authoritative`, `PucFactory.php` est autoloadable directement via le classmap → `class_exists` retourne `true` → le `require` est skip → `load-v5p6.php` n'est jamais exécuté → le registre `$classVersions` reste vide → lookup miss → trigger_error. Fix : toujours faire le `require_once` de l'entrypoint (idempotent), peu importe l'état de `class_exists`. Combiné au patcher des clés de registre (v1.0.16), PUC fonctionne maintenant correctement.
+
+---
+
 ## [1.0.16] — 2026-05-22
 
 ### Fixed

@@ -22,14 +22,18 @@ final class UpdateChecker
 
     public static function bootstrap(string $pluginFile): void
     {
-        if (!class_exists(PucFactory::class)) {
-            // PUC autoloader file is loaded once via the library entrypoint.
-            $loader = \dirname($pluginFile) . '/vendor/yahnis-elsts/plugin-update-checker/plugin-update-checker.php';
-            if (!is_readable($loader)) {
-                return;
-            }
-            require_once $loader;
+        // CRITICAL: always require the entrypoint, even if PucFactory::class is
+        // already known to the composer classmap (classmap-authoritative scans
+        // vendor/ at build time so PucFactory.php is autoloadable directly).
+        // The class registry that powers PucFactory::buildUpdateChecker() lives
+        // in load-v5p6.php which is *only* sourced via plugin-update-checker.php.
+        // Skipping this require leaves the registry empty → fatal
+        // "PUC does not support updates for plugins hosted on GitHub".
+        $loader = \dirname($pluginFile) . '/vendor/yahnis-elsts/plugin-update-checker/plugin-update-checker.php';
+        if (!is_readable($loader)) {
+            return;
         }
+        require_once $loader;
 
         $checker = PucFactory::buildUpdateChecker(
             self::REPO_URL,
