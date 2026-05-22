@@ -6,6 +6,15 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.20] — 2026-05-22
+
+### Added
+
+- **Rôle WP "Éditeur" autorisé à utiliser le plugin.** `Capabilities::install()` accorde maintenant `slashbooking_view` + `slashbooking_manage` aux rôles `administrator` ET `editor`. Couvre le cas d'usage typique TPE : l'office manager / commercial qui gère les RDV au quotidien sans avoir besoin d'accès admin technique (Réglages WP, autres plugins, etc).
+- **Migration automatique des caps sur upgrade.** Nouvelle méthode `Capabilities::syncOnUpgrade()` appelée depuis `Plugin::register()` qui compare l'option `slashbooking_caps_revision` (entier) à `Capabilities::REVISION` (constante). Si la revision stockée est inférieure, ré-appelle `install()` puis bump l'option. Évite de demander à l'utilisateur de désactiver/réactiver le plugin pour bénéficier d'un nouveau cap layout. Idempotent et cheap (single `get_option` à chaque page load).
+
+---
+
 ## [1.0.19] — 2026-05-22
 
 ### Fixed

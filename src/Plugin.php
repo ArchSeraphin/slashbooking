@@ -5,7 +5,7 @@ namespace Slash\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.19';
+    public const VERSION = '1.0.20';
     public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'slashbooking/v1';
@@ -90,6 +90,10 @@ final class Plugin
         // WP-Cron (DOING_CRON=true, is_admin()=false). Skipping bootstrap on
         // those contexts left the transient stale and made updates undetectable.
         Updates\UpdateChecker::bootstrap($this->pluginFile);
+
+        // Propagate capability changes to existing installs that were activated
+        // under an older revision (e.g. before editor role got plugin access).
+        Admin\Capabilities::syncOnUpgrade();
 
         $router = new Http\RestRouter();
         $router->register();

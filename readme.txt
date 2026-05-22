@@ -4,7 +4,7 @@ Tags: booking, appointment, calendar, google-calendar, calendly
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.19
+Stable tag: 1.0.20
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 
 == Changelog ==
 
+= 1.0.20 =
+*Sorti le 2026-05-22.* Le rôle WP **Éditeur** a maintenant accès au menu SlashBooking et à toutes les opérations (gestion des réservations, services, Google, modèles d'e-mail, réglages). Utile quand un commercial ou un assistant gère les RDV sans avoir les droits d'admin technique. Migration automatique pour les installations existantes — pas besoin de désactiver/réactiver.
+
 = 1.0.19 =
 *Sorti le 2026-05-22.* Fix défensif sur le parsing de la version : ajout d'un `trim()` via filtre PUC pour les contextes où `_cleanup_header_comment` n'est pas disponible (cron, builds WP exotiques). Le `is_admin()` guard sur le bootstrap est retiré : PUC tourne maintenant dans tous les contextes qui peuvent rafraîchir le transient `update_plugins`.
 
@@ -111,6 +114,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 Voir le [CHANGELOG complet](https://github.com/ArchSeraphin/slashbooking/blob/main/CHANGELOG.md).
 
 == Upgrade Notice ==
+
+= 1.0.20 =
+Le rôle Éditeur a maintenant accès au plugin. Migration automatique des permissions, aucune action requise.
 
 = 1.0.19 =
 Fix critique du parsing de version dans le système de mise à jour. Si tu es sur 1.0.17 ou 1.0.18, installe celle-ci manuellement (les mises à jour 1-clic ne détectaient pas la nouvelle version à cause d'un whitespace).
