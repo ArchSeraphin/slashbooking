@@ -49,5 +49,21 @@ final class UpdateChecker
             // a source-tree tarball which has no built /vendor.
             $vcs->enableReleaseAssets('/slashbooking-.*\.zip$/i');
         }
+
+        // Defensive trim. PUC reads the Version header from the remote
+        // slashbooking.php and only trims via _cleanup_header_comment() if
+        // function_exists() — which can return false in some environments
+        // (cron contexts, exotic WP builds). When that happens, the version
+        // ends up with 11+ leading spaces (from header alignment padding) and
+        // version_compare() in the update injection fails silently. Trimming
+        // here closes the gap regardless of context.
+        $trimVersion = static function ($result) {
+            if (is_object($result) && isset($result->version) && is_string($result->version)) {
+                $result->version = trim($result->version);
+            }
+            return $result;
+        };
+        add_filter('puc_request_info_result-' . self::PLUGIN_SLUG, $trimVersion);
+        add_filter('puc_request_update_result-' . self::PLUGIN_SLUG, $trimVersion);
     }
 }

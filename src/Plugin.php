@@ -5,7 +5,7 @@ namespace Slash\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.18';
+    public const VERSION = '1.0.19';
     public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'slashbooking/v1';
@@ -85,9 +85,11 @@ final class Plugin
         // install fatals on `new DecisionTokenSigner('')` further down.
         Activator::ensureDecisionSecret();
 
-        if (is_admin()) {
-            Updates\UpdateChecker::bootstrap($this->pluginFile);
-        }
+        // No is_admin() guard: PUC's filters need to be registered in any
+        // context that may refresh the update_plugins transient — including
+        // WP-Cron (DOING_CRON=true, is_admin()=false). Skipping bootstrap on
+        // those contexts left the transient stale and made updates undetectable.
+        Updates\UpdateChecker::bootstrap($this->pluginFile);
 
         $router = new Http\RestRouter();
         $router->register();

@@ -4,7 +4,7 @@ Tags: booking, appointment, calendar, google-calendar, calendly
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.18
+Stable tag: 1.0.19
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,27 +89,31 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 
 == Changelog ==
 
-= 1.0.18 — 2026-05-22 =
-* Ajout du `readme.txt` pour la page "Afficher les détails" dans wp-admin
+= 1.0.19 =
+*Sorti le 2026-05-22.* Fix défensif sur le parsing de la version : ajout d'un `trim()` via filtre PUC pour les contextes où `_cleanup_header_comment` n'est pas disponible (cron, builds WP exotiques). Le `is_admin()` guard sur le bootstrap est retiré : PUC tourne maintenant dans tous les contextes qui peuvent rafraîchir le transient `update_plugins`.
 
-= 1.0.17 — 2026-05-22 =
-* Fix critique : système de mise à jour PUC opérationnel (le classmap-authoritative du build composer bypassait l'init du registre PUC)
+= 1.0.18 =
+*Sorti le 2026-05-22.* Ajout du `readme.txt` au format wp.org pour la page "Afficher les détails" dans wp-admin.
 
-= 1.0.16 — 2026-05-22 =
-* Fix : patcher PHP-Scoper qui préserve les clés string du registre PUC après scoping
+= 1.0.17 =
+*Sorti le 2026-05-22.* Fix critique : système de mise à jour PUC opérationnel (le `classmap-authoritative` du build composer bypassait l'init du registre PUC).
 
-= 1.0.15 — 2026-05-22 =
-* Mises à jour 1-clic depuis wp-admin via Plugin Update Checker + GitHub Releases
-* Workflow GitHub Actions qui build et publie une release sur push de tag
+= 1.0.16 =
+*Sorti le 2026-05-22.* Fix : patcher PHP-Scoper qui préserve les clés string du registre PUC après scoping.
 
-= 1.0.14 — 2026-05-22 =
-* Buffer symétrique de 30 min autour des événements Google Calendar
-* Le dernier créneau peut maintenant démarrer à l'heure de fin de plage (ex: 18h pile)
+= 1.0.15 =
+*Sorti le 2026-05-22.* Mises à jour 1-clic depuis wp-admin via Plugin Update Checker + GitHub Releases. Workflow GitHub Actions qui build et publie une release sur push de tag.
+
+= 1.0.14 =
+*Sorti le 2026-05-22.* Buffer symétrique de 30 min autour des événements Google Calendar. Le dernier créneau peut maintenant démarrer à l'heure de fin de plage.
 
 = Versions antérieures =
 Voir le [CHANGELOG complet](https://github.com/ArchSeraphin/slashbooking/blob/main/CHANGELOG.md).
 
 == Upgrade Notice ==
+
+= 1.0.19 =
+Fix critique du parsing de version dans le système de mise à jour. Si tu es sur 1.0.17 ou 1.0.18, installe celle-ci manuellement (les mises à jour 1-clic ne détectaient pas la nouvelle version à cause d'un whitespace).
 
 = 1.0.18 =
 Ajoute la page de description riche dans wp-admin. Pas de breaking change.

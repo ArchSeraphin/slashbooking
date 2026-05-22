@@ -6,6 +6,20 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.19] — 2026-05-22
+
+### Fixed
+
+- **PUC ne déclenchait pas la notif de mise à jour** sur certains environnements (observé sur un site qui rapporte `get_bloginfo('version') === '7.0'`). Cause racine identifiée via debug script terrain : `Slash\Booking\Vendor\YahnisElsts\PluginUpdateChecker\v5p6\InstalledPackage::getFileHeader()` n'appelle `_cleanup_header_comment()` que si `function_exists()` retourne `true` — quand ce n'est pas le cas, la valeur du header `Version:` est stockée brute, avec les **11 espaces de padding** de mon alignement visuel. Stocké en DB sous `external_updates-slashbooking.update.version = "           1.0.18"`. `version_compare()` côté injection se trompe à cause du whitespace → le transient `update_plugins` n'est jamais alimenté → WP affiche "à jour".
+- **Fix défensif** : 2 filtres `puc_request_{info,update}_result-slashbooking` qui font `trim($result->version)` après la requête PUC, indépendamment de la dispo de `_cleanup_header_comment`. Le padding du `Version:` dans `slashbooking.php` est aussi compacté à 1 espace pour réduire la surface d'erreur.
+
+### Changed
+
+- **Suppression du guard `is_admin()`** autour de `UpdateChecker::bootstrap()` dans `Plugin::register()`. PUC doit installer ses filtres dans tous les contextes qui peuvent rafraîchir le transient `update_plugins` — y compris WP-Cron (`DOING_CRON=true`, `is_admin()=false`). Le guard empêchait les checks programmés de tourner.
+- **`readme.txt` Changelog** repassé au format wp.org standard `= X.Y.Z =` (la date est désormais dans le contenu de chaque entrée).
+
+---
+
 ## [1.0.18] — 2026-05-22
 
 ### Added
