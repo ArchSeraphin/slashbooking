@@ -6,6 +6,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.16] — 2026-05-22
+
+### Fixed
+
+- **Fatal "PUC does not support updates for plugins hosted on GitHub"** au chargement du plugin en v1.0.15. Cause : PHP-Scoper avait préfixé les clés du registre dans `load-v5p6.php` (`'Vcs\PluginUpdateChecker'` → `'Slash\Booking\Vendor\Vcs\PluginUpdateChecker'`), mais le dispatch interne de `PucFactory::buildUpdateChecker()` reconstruit la clé à runtime par concaténation de strings (`'Vcs\\' . $type . 'UpdateChecker'`) que scoper ne peut pas voir → lookup miss → `trigger_error(..., E_USER_ERROR)`. Fix : patcher scoper.inc.php qui revert les 4 clés de registre à leur forme non-préfixée. Les classes pointées par ces clés restent scopées.
+
+**Action requise côté site cassé en v1.0.15** : remplacer le dossier `wp-content/plugins/slashbooking/` par le contenu du ZIP v1.0.16 via FTP/SSH (l'admin WP est inaccessible tant que le fatal n'est pas levé). À partir de v1.0.16, les mises à jour passent par wp-admin normalement.
+
+---
+
 ## [1.0.15] — 2026-05-22
 
 ### Added

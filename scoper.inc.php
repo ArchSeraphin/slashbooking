@@ -123,5 +123,31 @@ return [
             }
             return $content;
         },
+        // Plugin Update Checker fait une dispatch interne par concaténation de
+        // strings à runtime : `'Vcs\\' . $type . 'UpdateChecker'`. Scoper ne
+        // voit pas ces strings construites dynamiquement et ne les préfixe
+        // pas, alors qu'il a préfixé les clés du registre dans load-v5p6.php
+        // — résultat : lookup miss et fatal "PUC does not support updates for
+        // plugins hosted on GitHub". Revert les clés à leur forme originale.
+        static function (string $filePath, string $prefix, string $content): string {
+            if (!str_contains($filePath, 'plugin-update-checker/load-v5p6.php')) {
+                return $content;
+            }
+            return str_replace(
+                [
+                    "'{$prefix}\\Plugin\\UpdateChecker'",
+                    "'{$prefix}\\Theme\\UpdateChecker'",
+                    "'{$prefix}\\Vcs\\PluginUpdateChecker'",
+                    "'{$prefix}\\Vcs\\ThemeUpdateChecker'",
+                ],
+                [
+                    "'Plugin\\UpdateChecker'",
+                    "'Theme\\UpdateChecker'",
+                    "'Vcs\\PluginUpdateChecker'",
+                    "'Vcs\\ThemeUpdateChecker'",
+                ],
+                $content,
+            );
+        },
     ],
 ];
