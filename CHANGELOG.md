@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.21] — 2026-05-22
+
+### Added
+
+- **Widget Dashboard `slashbooking_dashboard`** dans le tableau de bord WP (`Admin\DashboardWidget`). Deux sections : **À valider** (statut `pending`, limite 5) et **À venir 7 jours** (statut `confirmed`, limite 5). Pour chaque réservation : date+heure formatées via `wp_date()` dans le fuseau du site, nom du client, nom du service. Badge compteur coloré (orange pour pending, bleu pour upcoming). Lien footer vers `admin.php?page=slashbooking#/bookings`. Gate sur la capability `slashbooking_view` (admin + éditeur). Styles inline scopés sous `.sb-dash` pour zéro fuite vers les autres widgets. Hook : `wp_dashboard_setup`. Fallback `wp_date() === false` → format ISO `Y-m-d H:i` pour garantir un rendu propre même si la locale échoue.
+
+---
+
 ## [1.0.20] — 2026-05-22
 
 ### Added

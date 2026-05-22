@@ -4,7 +4,7 @@ Tags: booking, appointment, calendar, google-calendar, calendly
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.20
+Stable tag: 1.0.21
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 
 == Changelog ==
 
+= 1.0.21 =
+*Sorti le 2026-05-22.* **Widget Dashboard** : ajoute un encart dans le tableau de bord WP qui affiche les **réservations en attente** (à valider) et les **RDV confirmés à venir sous 7 jours**. Pour chaque ligne : date+heure, nom client, service. Compteur badge sur chaque section. Lien direct vers la liste complète. Visible par admin + éditeur.
+
 = 1.0.20 =
 *Sorti le 2026-05-22.* Le rôle WP **Éditeur** a maintenant accès au menu SlashBooking et à toutes les opérations (gestion des réservations, services, Google, modèles d'e-mail, réglages). Utile quand un commercial ou un assistant gère les RDV sans avoir les droits d'admin technique. Migration automatique pour les installations existantes — pas besoin de désactiver/réactiver.
 
@@ -114,6 +117,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 Voir le [CHANGELOG complet](https://github.com/ArchSeraphin/slashbooking/blob/main/CHANGELOG.md).
 
 == Upgrade Notice ==
+
+= 1.0.21 =
+Nouveau widget Dashboard pour voir les réservations en attente et à venir en un coup d'œil.
 
 = 1.0.20 =
 Le rôle Éditeur a maintenant accès au plugin. Migration automatique des permissions, aucune action requise.

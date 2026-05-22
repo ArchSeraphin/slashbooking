@@ -5,7 +5,7 @@ namespace Slash\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.20';
+    public const VERSION = '1.0.21';
     public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'slashbooking/v1';
@@ -404,6 +404,7 @@ final class Plugin
 
         (new Admin\AdminMenu())->register();
         (new Admin\Assets($this))->register();
+        (new Admin\DashboardWidget($bookings, $services))->register();
 
         if (defined('WP_CLI') && WP_CLI) {
             $pullNow = static function (Domain\GoogleAccount $account) use ($clientBuilder, $buildSyncEngine): Google\PullResult {
