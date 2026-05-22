@@ -6,6 +6,24 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.15] — 2026-05-22
+
+### Added
+
+- **Mises à jour en 1 clic depuis wp-admin (Plugin Update Checker + GitHub Releases).** Le plugin sonde régulièrement `https://github.com/ArchSeraphin/slashbooking/releases/latest` ; WordPress affiche la notif "Mise à jour disponible" dans la liste des plugins et propose le bouton **Mettre à jour** comme pour un plugin wp.org. Aucune saisie de token côté client (repo public). PUC scopé via PHP-Scoper sous `Slash\Booking\Vendor\YahnisElsts\PluginUpdateChecker\…` pour éviter les collisions avec d'autres plugins embarquant la lib.
+- **Release automatisée via GitHub Actions** (`.github/workflows/release.yml`). Push d'un tag `vX.Y.Z` → workflow build le ZIP (composer + npm + scoper + zip) → publie une release GitHub avec le ZIP en asset et la section du CHANGELOG en body. Garde-fou : le tag doit matcher `Plugin::VERSION`, sinon le workflow plante.
+
+---
+
+## [1.0.14] — 2026-05-22
+
+### Changed
+
+- **Buffer symétrique autour des événements calendrier (Google).** Les événements importés depuis le calendrier connecté reçoivent maintenant un cushion `bufferAfter` (30 min par défaut) **après** leur fin, en plus du cushion `bufferAfter` que le candidat applique déjà **avant** leur début. Résultat : un événement GCal à 14h-15h bloque les créneaux entre 13h30 et 15h30 (au lieu de 13h30 → 15h). S'applique aussi à la validation de création (`slotIsFree`) pour empêcher le bypass via POST direct.
+- **Le dernier créneau peut démarrer à la fin de la plage horaire.** `SlotGenerator` itère désormais tant que `startLocal <= windowClose` (au lieu de `endLocal <= windowClose`). Si la plage se termine à 18h00 et que la durée du service est 45 min, le dernier créneau bookable démarre à 18h00 (et finit à 18h45) au lieu de 17h15.
+
+---
+
 ## [1.0.9] — 2026-05-20
 
 ### Added

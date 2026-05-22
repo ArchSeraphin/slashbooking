@@ -35,6 +35,7 @@ return [
             // ->in('vendor/phpseclib')   // idem
             ->in('vendor/ralouphie')
             ->in('vendor/symfony')
+            ->in('vendor/yahnis-elsts')
             ->name('*.php'),
 
         // 3) Composer autoloader files (pour que le build régénère un autoload classmap propre).

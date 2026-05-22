@@ -32,8 +32,16 @@ final class RestRouter
                 if ($blocking !== []) {
                     return false;
                 }
-                foreach ($busy->findInRange($slot->start, $slot->end) as $bb) {
-                    if ($slot->overlaps($bb->slot)) {
+                // Calendar events use the same symmetric buffer policy as availability:
+                // candidate.bufferAfter covers the "before" side, an explicit expansion
+                // covers the "after" side.
+                $bufferAfter = $svc->bufferAfterMin;
+                $candidateExpanded = $slot->expand(0, $bufferAfter);
+                $searchFrom = $slot->start->modify('-' . $bufferAfter . ' minutes');
+                $searchTo   = $slot->end->modify('+' . $bufferAfter . ' minutes');
+                foreach ($busy->findInRange($searchFrom, $searchTo) as $bb) {
+                    $busySlot = $bb->slot->expand(0, $bufferAfter);
+                    if ($candidateExpanded->overlaps($busySlot)) {
                         return false;
                     }
                 }

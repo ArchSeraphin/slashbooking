@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # required to create GitHub Releases and upload assets
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Sanity check — tag matches Plugin::VERSION
+        run: |
+          PLUGIN_VERSION=$(grep -E "^[[:space:]]*public const VERSION" src/Plugin.php | sed -E "s/.*'([^']+)'.*/\1/")
+          if [ "$PLUGIN_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::Tag v${{ steps.version.outputs.version }} does not match Plugin::VERSION=$PLUGIN_VERSION"
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build release ZIP
+        run: bash bin/build-release.sh ${{ steps.version.outputs.version }}
+
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\["v"\\]" { capture=1; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Release ${VERSION}" > release-notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SlashBooking ${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          files: |
+            build/slashbooking-${{ steps.version.outputs.version }}.zip
+            build/slashbooking-${{ steps.version.outputs.version }}.zip.sha256
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false

@@ -120,10 +120,20 @@ final class PublicBookingController
             ),
         );
 
-        $busyEntries = $this->busyBlocks->findInRange($rangeStart, $rangeEnd);
+        // Calendar events get an additional "after" cushion (in addition to the
+        // candidate's bufferAfter that already covers the "before" side) so external
+        // events end up with a symmetric buffer on both sides — matching the
+        // behavior expected for personal calendar commitments.
+        $busyEntries = $this->busyBlocks->findInRange(
+            $rangeStart->modify('-' . $svc->bufferAfterMin . ' minutes'),
+            $rangeEnd->modify('+' . $svc->bufferAfterMin . ' minutes'),
+        );
         $busy = array_merge(
             $blocking,
-            array_map(static fn ($bb) => $bb->slot, $busyEntries),
+            array_map(
+                static fn ($bb) => $bb->slot->expand(0, $svc->bufferAfterMin),
+                $busyEntries,
+            ),
         );
 
         $calc = new AvailabilityCalculator(

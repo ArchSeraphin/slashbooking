@@ -56,7 +56,7 @@ final class SlotGenerator
                 while (true) {
                     $startLocal = $cursor;
                     $endLocal   = $cursor->modify('+' . $service->durationMin . ' minutes');
-                    if ($endLocal > $windowClose) {
+                    if ($startLocal > $windowClose) {
                         break;
                     }
                     $startUtc = $startLocal->setTimezone($utc);

@@ -5,7 +5,7 @@ namespace Slash\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.13';
+    public const VERSION = '1.0.15';
     public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'slashbooking/v1';
@@ -84,6 +84,10 @@ final class Plugin
         // register_activation_hook fires. Without this idempotent seed, a fresh
         // install fatals on `new DecisionTokenSigner('')` further down.
         Activator::ensureDecisionSecret();
+
+        if (is_admin()) {
+            Updates\UpdateChecker::bootstrap($this->pluginFile);
+        }
 
         $router = new Http\RestRouter();
         $router->register();

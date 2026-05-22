@@ -36,11 +36,14 @@ final class SlotGeneratorTest extends TestCase
         );
 
         // 1 juin 2026 = lundi. Horaires 9-12, durée 90 min, pas 15.
-        // Slots possibles : 09:00, 09:15, 09:30, … jusqu'au dernier qui finit ≤ 12:00.
-        // 09:00→10:30, 09:15→10:45, …, 10:30→12:00. = 7 slots.
-        self::assertCount(7, $slots);
+        // Le dernier slot peut DÉMARRER à windowClose (12:00), il peut donc dépasser
+        // la fin de la plage. Slots de 09:00 à 12:00 par pas de 15 min = 13 slots.
+        self::assertCount(13, $slots);
         self::assertSame('2026-06-01T07:00:00+00:00', $slots[0]->start->format('c')); // 09:00 Paris en juin = UTC+2
         self::assertSame('2026-06-01T08:30:00+00:00', $slots[0]->end->format('c'));
+        // Dernier slot démarre à 12:00 et finit à 13:30 (dépasse windowClose, c'est voulu).
+        self::assertSame('2026-06-01T10:00:00+00:00', $slots[12]->start->format('c'));
+        self::assertSame('2026-06-01T11:30:00+00:00', $slots[12]->end->format('c'));
     }
 
     public function test_generates_nothing_for_closed_day(): void
