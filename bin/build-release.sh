@@ -69,6 +69,7 @@ cp "${ROOT_DIR}/slashbooking.php" "${STAGING_DIR}/slashbooking.php"
 cp "${ROOT_DIR}/uninstall.php" "${STAGING_DIR}/uninstall.php"
 cp "${ROOT_DIR}/README.md" "${STAGING_DIR}/README.md"
 cp "${ROOT_DIR}/CHANGELOG.md" "${STAGING_DIR}/CHANGELOG.md" 2>/dev/null || true
+cp "${ROOT_DIR}/readme.txt" "${STAGING_DIR}/readme.txt" 2>/dev/null || true
 cp -R "${ROOT_DIR}/assets" "${STAGING_DIR}/assets"
 cp -R "${ROOT_DIR}/languages" "${STAGING_DIR}/languages"
 # Strip JSX sources from staged copy (we shipped only assets/dist)

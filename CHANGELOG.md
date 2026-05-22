@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.18] — 2026-05-22
+
+### Added
+
+- **`readme.txt` au format wp.org** à la racine du repo + dans le ZIP. PUC le lit lors d'un clic sur **"Afficher les détails"** dans la liste des extensions et affiche une fiche complète (Description, Installation, FAQ, Changelog, Upgrade Notice) comme pour un plugin du dépôt officiel. Format `=== H1 ===`, `== H2 ==`, listes `*`, headers `Contributors / Tags / Requires at least / Tested up to / Stable tag / Requires PHP`.
+
+---
+
 ## [1.0.17] — 2026-05-22
 
 ### Fixed
