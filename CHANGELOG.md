@@ -12,6 +12,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 - **Calendrier public — jours non travaillés peints "Complet" rouge au lieu de "Fermé" gris.** `loadMonth()` marquait tout jour avec 0 slots en `state: 'full'` sans distinguer un jour configuré fermé (pas de plage dans `weekly_hours[isoDay]`) d'un jour avec slots tous pris. Conséquence visuelle : samedi/dimanche sur un service Lun-Ven (config par défaut) ressortaient en `--full` rouge "Complet". Fix front-only : nouveau helper `dayIsClosed(iso, weeklyHours)` qui inspecte la map `weekly_hours` retournée par `/services` (déjà exposée par `PublicBookingController::listServices()` depuis v1.0.0) et bascule l'état sur `'closed'` quand le ISO weekday n'a pas de fenêtre. Accepte les deux shapes JSON (clés numériques vs strings — PHP int → JSON string). `currentService()` extrait l'objet service complet depuis `state.services` via `state.service` (slug). Zéro changement backend.
 
+---
+
+## [1.0.23] — 2026-05-26
+
 ### Fixed
 
 - **Calendrier public — débordement des chiffres sur mobile (récurrence post-1.0.8).** Le fix de 1.0.8 avait réduit padding/gaps/font sous 480 px mais ne traitait pas la cause racine : (1) les `<button>` héritent du padding user-agent (~2 px) qui pousse le digit hors de la case `aspect-ratio: 1`, (2) les grid items ont `min-width: auto` par défaut, donc le `min-content` du bouton (digit bold + padding UA) gonfle la colonne et fait déborder le grid hors du `.sb-step` sur viewports étroits, (3) le `line-height: 1.5` hérité du widget créait du débordement vertical dans une case carrée de ~40 px. Fix : `.sb-cal-day` reçoit `padding: 0`, `min-width: 0`, `line-height: 1`, `overflow: hidden`. Nouvelle media query `@media (max-width: 380px)` qui downshift step padding (14→10 px lat.), font cellule (13→12 px), font day-of-week (10→9 px) et gap grid (2→1 px) pour iPhone SE et thèmes avec sidebar mobile.
