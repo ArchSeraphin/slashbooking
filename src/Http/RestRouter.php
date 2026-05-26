@@ -7,12 +7,81 @@ use Slash\Booking\Availability\SlotGenerator;
 use Slash\Booking\Persistence\BookingRepository;
 use Slash\Booking\Persistence\BusyBlockRepository;
 use Slash\Booking\Persistence\ServiceRepository;
+use Slash\Booking\Plugin;
 
 final class RestRouter
 {
+    /**
+     * Routes intentionally exposed to unauthenticated visitors. Validated
+     * separately via signed tokens (cancel/decide/webhook), Turnstile +
+     * honeypot + rate-limiting (bookings), or open by design (services,
+     * availability).
+     */
+    private const PUBLIC_ROUTES = [
+        'services',
+        'availability',
+        'bookings',
+        'cancel',
+        'decide',
+        'google/webhook',
+    ];
+
     public function register(): void
     {
         add_action('rest_api_init', [$this, 'registerRoutes']);
+        // Some security plugins / snippets block the entire REST API for
+        // guests via rest_authentication_errors, which short-circuits before
+        // our routes' '__return_true' permission_callback can run. Whitelist
+        // our public endpoints so the booking widget works in incognito.
+        add_filter('rest_authentication_errors', [$this, 'unblockPublicEndpoints'], 99);
+    }
+
+    /**
+     * @param  mixed $result
+     * @return mixed
+     */
+    public function unblockPublicEndpoints($result)
+    {
+        if (!is_wp_error($result)) {
+            return $result;
+        }
+
+        // Only relax "not authenticated" style errors. Never bypass nonce or
+        // cookie validation failures that indicate a real auth-state mismatch.
+        $bypassable = [
+            'rest_not_logged_in',
+            'rest_forbidden',
+            'rest_cannot_access',
+            'rest_login_required',
+            'rest_user_invalid',
+        ];
+        if (!in_array($result->get_error_code(), $bypassable, true)) {
+            return $result;
+        }
+
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+        $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+        if ($uri === '') {
+            return $result;
+        }
+
+        $prefix = '/' . Plugin::REST_NAMESPACE . '/';
+        foreach (self::PUBLIC_ROUTES as $route) {
+            $needle = $prefix . $route;
+            $pos = strpos($uri, $needle);
+            if ($pos === false) {
+                continue;
+            }
+            // Boundary check: must be followed by /, ?, &, or end of string,
+            // so '/slashbooking/v1/services' does not also match a hypothetical
+            // '/slashbooking/v1/services-extra' route.
+            $after = $uri[$pos + strlen($needle)] ?? '';
+            if ($after === '' || $after === '/' || $after === '?' || $after === '&') {
+                return true;
+            }
+        }
+
+        return $result;
     }
 
     public function registerRoutes(): void

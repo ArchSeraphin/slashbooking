@@ -4,7 +4,7 @@ Tags: booking, appointment, calendar, google-calendar, calendly
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.21
+Stable tag: 1.0.22
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 
 == Changelog ==
 
+= 1.0.22 =
+*Sorti le 2026-05-26.* **Fix critique frontend public** : le widget de booking restait bloqué (étape "Projet" invisible, calendrier grisé) pour les visiteurs non connectés sur les sites qui restreignent la REST API aux utilisateurs authentifiés (Disable REST API, Wordfence, iThemes Security, snippets custom). SlashBooking whiteliste désormais ses routes publiques (`services`, `availability`, `bookings`, `cancel`, `decide`, `google/webhook`) au niveau de `rest_authentication_errors` — les autres endpoints REST restent protégés par la config du site.
+
 = 1.0.21 =
 *Sorti le 2026-05-22.* **Widget Dashboard** : ajoute un encart dans le tableau de bord WP qui affiche les **réservations en attente** (à valider) et les **RDV confirmés à venir sous 7 jours**. Pour chaque ligne : date+heure, nom client, service. Compteur badge sur chaque section. Lien direct vers la liste complète. Visible par admin + éditeur.
 
@@ -117,6 +120,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 Voir le [CHANGELOG complet](https://github.com/ArchSeraphin/slashbooking/blob/main/CHANGELOG.md).
 
 == Upgrade Notice ==
+
+= 1.0.22 =
+Fix critique : le booking redevient utilisable en mode visiteur (non connecté) sur les sites qui bloquent la REST API aux guests. À installer si ton formulaire reste figé en chargement pour les clients.
 
 = 1.0.21 =
 Nouveau widget Dashboard pour voir les réservations en attente et à venir en un coup d'œil.

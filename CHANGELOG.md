@@ -6,6 +6,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
+## [1.0.22] — 2026-05-26
+
+### Fixed
+
+- **Widget de booking inutilisable pour les visiteurs non connectés sur les sites qui restreignent la REST API aux utilisateurs authentifiés.** Symptôme remonté en validation prod : étape "Projet" invisible, calendrier figé en chargement (cellules grisées), aucune date cliquable, console DevTools = `401/403` sur `GET /wp-json/slashbooking/v1/services`. Cause racine : un filtre `rest_authentication_errors` actif (plugin Disable REST API, Wordfence/iThemes/SecuPress "REST API restriction", ou snippet custom dans `functions.php`) court-circuite la pile d'authentification REST et retourne un `WP_Error` (`rest_not_logged_in`) AVANT que le `permission_callback => '__return_true'` de nos endpoints publics ne soit consulté. Fix : `Http\RestRouter` enregistre un filtre `rest_authentication_errors` au priority 99 qui clear l'erreur uniquement pour nos 6 routes publiques (`services`, `availability`, `bookings`, `cancel`, `decide`, `google/webhook`) ET uniquement quand le code d'erreur est dans une whitelist de codes "non-authentifié" connus (`rest_not_logged_in`, `rest_forbidden`, `rest_cannot_access`, `rest_login_required`, `rest_user_invalid`) — les erreurs de nonce/cookie restent strictes. Détection de route via `$_SERVER['REQUEST_URI']` avec boundary check (`/`, `?`, `&`, fin de chaîne) pour éviter qu'un nom de route soit confondu avec un préfixe d'une autre route. Compatible URL pretty (`/wp-json/...`) et fallback (`/?rest_route=...`).
+
+---
+
 ## [1.0.21] — 2026-05-22
 
 ### Added

@@ -5,7 +5,7 @@ namespace Slash\Booking;
 
 final class Plugin
 {
-    public const VERSION = '1.0.21';
+    public const VERSION = '1.0.22';
     public const TEXT_DOMAIN = 'slashbooking';
     public const DB_VERSION = 1;
     public const REST_NAMESPACE = 'slashbooking/v1';
