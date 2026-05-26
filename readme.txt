@@ -4,7 +4,7 @@ Tags: booking, appointment, calendar, google-calendar, calendly
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.22
+Stable tag: 1.0.23
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 
 == Changelog ==
 
+= 1.0.23 =
+*Sorti le 2026-05-26.* **Fix mobile calendrier** : les chiffres des jours débordaient encore visuellement de leur case sur les écrans étroits (iPhone SE, certaines mises en page avec sidebar mobile). Trois correctifs CSS combinés : padding `<button>` par défaut du navigateur supprimé, `min-width: 0` ajouté aux cellules grid (évite le blowout des colonnes), `line-height: 1` pour éviter le débordement vertical hérité, plus une nouvelle media query sous 380 px qui réduit le padding du step et la taille de police pour garantir 7 colonnes propres jusqu'à 320 px.
+
 = 1.0.22 =
 *Sorti le 2026-05-26.* **Fix critique frontend public** : le widget de booking restait bloqué (étape "Projet" invisible, calendrier grisé) pour les visiteurs non connectés sur les sites qui restreignent la REST API aux utilisateurs authentifiés (Disable REST API, Wordfence, iThemes Security, snippets custom). SlashBooking whiteliste désormais ses routes publiques (`services`, `availability`, `bookings`, `cancel`, `decide`, `google/webhook`) au niveau de `rest_authentication_errors` — les autres endpoints REST restent protégés par la config du site.
 
@@ -120,6 +123,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 Voir le [CHANGELOG complet](https://github.com/ArchSeraphin/slashbooking/blob/main/CHANGELOG.md).
 
 == Upgrade Notice ==
+
+= 1.0.23 =
+Fix UI mobile : les chiffres du calendrier ne débordent plus de leur case sur les petits écrans. Pas de breaking change.
 
 = 1.0.22 =
 Fix critique : le booking redevient utilisable en mode visiteur (non connecté) sur les sites qui bloquent la REST API aux guests. À installer si ton formulaire reste figé en chargement pour les clients.

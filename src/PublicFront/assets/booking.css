@@ -331,6 +331,18 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	/* min-width: 0 is required on grid items to allow the 7 columns to shrink
+	   below their min-content size on very narrow viewports — otherwise the
+	   button's intrinsic min-content (digit + UA padding) inflates the column
+	   track and makes the grid overflow the step container. */
+	min-width: 0;
+	/* Strip user-agent <button> padding so a 2-digit number stays centered
+	   within the aspect-ratio square instead of bleeding beyond it. */
+	padding: 0;
+	/* Numbers don't need the widget's 1.5 line-height — collapsing to 1
+	   removes vertical overflow risk inside the small square. */
+	line-height: 1;
+	overflow: hidden;
 	font: inherit;
 	font-size: 14px;
 	font-weight: 600;
@@ -423,6 +435,20 @@
 	.sb-cal__nav   { width: 32px; height: 32px; }
 	.sb-cal__nav svg { width: 16px; height: 16px; }
 	.sb-cal__legend { gap: 8px 12px; font-size: 11px; }
+}
+
+/* Very narrow viewports (iPhone SE ≈ 320 px, Galaxy A03 ≈ 360 px, also any
+   theme that wraps content in a padded sidebar): tighten the step padding
+   and downshift the day-number font so two-digit dates never visually exceed
+   their square. Without this, themes that add ~16 px of side padding leave
+   each cell at ~36 px square, and a bold 13 px digit ends up touching or
+   crossing the cell border. */
+@media (max-width: 380px) {
+	.sb-step      { padding: 12px 10px; }
+	.sb-cal-day   { font-size: 12px; }
+	.sb-cal__dow  { font-size: 9px; }
+	.sb-cal__grid,
+	.sb-cal__dows { gap: 1px; }
 }
 
 /* Slot list also needs an overflow safety net on very narrow screens. */
