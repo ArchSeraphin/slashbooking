@@ -370,12 +370,21 @@
 							:    c >= 1 ? 'partial' : 'full';
 						state.dayStates[d] = { state: st, count: c };
 					});
-					// Mark days with no slots (in horizon) as full.
+					// Mark days with no slots. Distinguish 'closed' (service does
+					// not operate that weekday — e.g. Sat/Sun on a Mon-Fri service)
+					// from 'full' (service operates but every slot is taken). Without
+					// this, weekends on a Mon-Fri service were painted red "Complet"
+					// even though they were never bookable to begin with.
+					var svc = currentService();
+					var weeklyHours = (svc && svc.weekly_hours) || {};
 					Array.from(els.grid.querySelectorAll('.sb-cal-day')).forEach(function (cell) {
 						if (cell.classList.contains('sb-cal-day--blank') || cell.disabled) return;
 						var iso = cell.dataset.date;
 						if (!state.dayStates[iso]) {
-							state.dayStates[iso] = { state: 'full', count: 0 };
+							state.dayStates[iso] = {
+								state: dayIsClosed(iso, weeklyHours) ? 'closed' : 'full',
+								count: 0,
+							};
 						}
 					});
 					refreshCalendar();
@@ -685,6 +694,28 @@
 
 			wrap.append(lbl, input);
 			return wrap;
+		}
+
+		function currentService() {
+			if (!state.service) return null;
+			for (var i = 0; i < state.services.length; i++) {
+				if (state.services[i].slug === state.service) return state.services[i];
+			}
+			return null;
+		}
+
+		// Returns true if the service is configured as not operating on the
+		// given ISO date. weeklyHours is keyed by ISO weekday (1=Mon..7=Sun);
+		// missing keys or empty windows = closed that day. JSON deserializes
+		// integer PHP keys as strings, so we accept both shapes.
+		function dayIsClosed(iso, weeklyHours) {
+			if (!weeklyHours) return false;
+			var parts = iso.split('-');
+			var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+			var jsDay = d.getDay();              // 0=Sun..6=Sat
+			var isoDay = jsDay === 0 ? 7 : jsDay; // 1=Mon..7=Sun
+			var windows = weeklyHours[isoDay] || weeklyHours[String(isoDay)];
+			return !Array.isArray(windows) || windows.length === 0;
 		}
 
 		function hint(t) { var p = el('p', 'sb-step__hint'); p.textContent = t; return p; }

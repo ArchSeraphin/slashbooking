@@ -1,6 +1,6 @@
 {
   "name": "slashbooking-admin",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "private": true,
   "description": "Admin SPA for slashbooking",
   "scripts": {

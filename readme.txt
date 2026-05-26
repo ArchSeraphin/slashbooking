@@ -4,7 +4,7 @@ Tags: booking, appointment, calendar, google-calendar, calendly
 Requires at least: 6.5
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.0.23
+Stable tag: 1.0.24
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 
 == Changelog ==
 
+= 1.0.24 =
+*Sorti le 2026-05-26.* **Fix visuel calendrier** : les jours sans plage horaire configurée (typiquement samedi + dimanche sur un service Lun-Ven) apparaissaient en rouge "Complet" au lieu de gris "Fermé". Le widget différencie désormais correctement les deux états en s'appuyant sur `weekly_hours` du service.
+
 = 1.0.23 =
 *Sorti le 2026-05-26.* **Fix mobile calendrier** : les chiffres des jours débordaient encore visuellement de leur case sur les écrans étroits (iPhone SE, certaines mises en page avec sidebar mobile). Trois correctifs CSS combinés : padding `<button>` par défaut du navigateur supprimé, `min-width: 0` ajouté aux cellules grid (évite le blowout des colonnes), `line-height: 1` pour éviter le débordement vertical hérité, plus une nouvelle media query sous 380 px qui réduit le padding du step et la taille de police pour garantir 7 colonnes propres jusqu'à 320 px.
 
@@ -123,6 +126,9 @@ Oui. Les schémas de tables sont versionnés et migrés automatiquement, les opt
 Voir le [CHANGELOG complet](https://github.com/ArchSeraphin/slashbooking/blob/main/CHANGELOG.md).
 
 == Upgrade Notice ==
+
+= 1.0.24 =
+Fix visuel : les jours non travaillés (samedi/dimanche par défaut) s'affichent maintenant "Fermé" gris au lieu de "Complet" rouge.
 
 = 1.0.23 =
 Fix UI mobile : les chiffres du calendrier ne débordent plus de leur case sur les petits écrans. Pas de breaking change.

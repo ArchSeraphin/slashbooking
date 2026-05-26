@@ -6,7 +6,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) et le pr
 
 ---
 
-## [1.0.23] — 2026-05-26
+## [1.0.24] — 2026-05-26
+
+### Fixed
+
+- **Calendrier public — jours non travaillés peints "Complet" rouge au lieu de "Fermé" gris.** `loadMonth()` marquait tout jour avec 0 slots en `state: 'full'` sans distinguer un jour configuré fermé (pas de plage dans `weekly_hours[isoDay]`) d'un jour avec slots tous pris. Conséquence visuelle : samedi/dimanche sur un service Lun-Ven (config par défaut) ressortaient en `--full` rouge "Complet". Fix front-only : nouveau helper `dayIsClosed(iso, weeklyHours)` qui inspecte la map `weekly_hours` retournée par `/services` (déjà exposée par `PublicBookingController::listServices()` depuis v1.0.0) et bascule l'état sur `'closed'` quand le ISO weekday n'a pas de fenêtre. Accepte les deux shapes JSON (clés numériques vs strings — PHP int → JSON string). `currentService()` extrait l'objet service complet depuis `state.services` via `state.service` (slug). Zéro changement backend.
 
 ### Fixed
 
